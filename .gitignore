@@ -1,0 +1,9 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
+dummy_code_runner_payload.json
+
+Code Submission UML.pdf
