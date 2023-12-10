@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Entities.Difficulty;
 // import com.codinglemonsbackend.Entities.Difficulty;
@@ -33,6 +34,21 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
         }
 
         System.out.println("DIFFICULTY OF THE PROBLEM ADDED "+problemDifficulty);
+
+        List<String> constraints = new ArrayList<String>();
+        for (JsonNode item: node.get("constraints")){
+            constraints.add(item.asText());
+        }
+
+        List<Example> examples = new ArrayList<Example>();
+        for (JsonNode item: node.get("examples")){
+            Example exampleItem = Example.builder()
+                                .input(item.get("input").asText())
+                                .output(item.get("output").asText())
+                                .explanation(item.get("explanation").asText())
+                                .build();
+            examples.add(exampleItem);
+        }
 
         List<String> testCases = new ArrayList<String>();
         for (JsonNode item: node.get("testCases")){
@@ -68,6 +84,8 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
         ProblemDto problemDto = ProblemDto.builder()
                                     .title(node.get("title").asText())
                                     .description(node.get("description").asText())
+                                    .constraints(constraints)
+                                    .examples(examples)
                                     .difficulty(problemDifficulty)
                                     .testCases(testCases)
                                     .testCaseOutputs(testCaseOutputs)
@@ -75,6 +93,8 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                                     .optimalSolutions(optimalSolutions)
                                     .topics(topics)
                                     .build();
+
+        System.out.println("Deserialization completed");
 
         return problemDto;
     }

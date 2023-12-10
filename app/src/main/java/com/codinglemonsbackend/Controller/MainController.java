@@ -35,17 +35,8 @@ public class MainController {
     @Autowired
     private SubmissionService submissionService;
 
-    @Value("${mongodb.username:Manish}")
-    private String uname;
-
-
-    @Value("${mongodb.password:Manish}")
-    private String pass;
-
     @GetMapping("/hello")
     public String hello(){
-        System.out.println("uname = " + uname);
-        System.out.println("uname = " + pass);
         return "Hello";
     }
     
@@ -55,21 +46,16 @@ public class MainController {
         if (size > MAXSIZE) size = MAXSIZE;
 
         System.out.println(difficultyStr + " " + topicsStr);
-
-        // if ((difficultyStr == null || difficultyStr.length() == 0) && (topicsStr == null || topicsStr.length() == 0)) {
-            
-        //     // no filtering needed based on topics and/or difficulty
-        //     return problemRepositoryService.getAllProblems(page, size);
-        // }
         
         return problemRepositoryService.getProblems(difficultyStr, topicsStr, page, size);
     }
 
     @GetMapping("/problem/{id}")
-    public ResponseEntity<?> getProblem(@PathVariable Integer id) {
-        ProblemEntity problemEntity = problemRepositoryService.getProblem(id);
+    public ResponseEntity<ProblemDto> getProblem(@PathVariable Integer id) {
+        
+        ProblemDto problemDto = problemRepositoryService.getProblem(id);
 
-        return ResponseEntity.ok().body(problemEntity);
+        return ResponseEntity.ok().body(problemDto);
     }
 
     @PostMapping("addProblem")

@@ -75,7 +75,15 @@ public class ProblemsRepository {
       
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
-        List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->ProblemDto.builder().title(prob.getTitle()).description(prob.getDescription()).topics(prob.getTopics()).difficulty(prob.getDifficulty()).build()).collect(Collectors.toList());
+        List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->ProblemDto.builder()
+                                                                                        .title(prob.getTitle())
+                                                                                        .description(prob.getDescription())
+                                                                                        .constraints(prob.getConstraints())
+                                                                                        .examples(prob.getExamples())
+                                                                                        .topics(prob.getTopics())
+                                                                                        .difficulty(prob.getDifficulty())
+                                                                                        .build())
+                                                                    .collect(Collectors.toList());
 
         return new ProblemSetResponse(
             mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class),

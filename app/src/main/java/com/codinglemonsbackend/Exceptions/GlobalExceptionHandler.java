@@ -40,7 +40,7 @@ public class GlobalExceptionHandler {
    
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ExceptionMessage> handleException(BadCredentialsException e){
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Username or password incorrect"), HttpStatus.BAD_REQUEST);
     }
 }
     

@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.codinglemonsbackend.Dto.Example;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 
@@ -27,6 +29,8 @@ public class ProblemEntity {
     Integer problemId;
     String title;
     String description;
+    List<String> constraints;
+    List<Example> examples;
     List<String> testCases;
     List<String> testCaseOutputs;
     Difficulty difficulty;

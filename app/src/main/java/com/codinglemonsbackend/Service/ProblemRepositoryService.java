@@ -1,6 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +35,8 @@ public class ProblemRepositoryService {
         ProblemEntity entity = ProblemEntity.builder()
                                     .title(problemDto.getTitle())
                                     .description(problemDto.getDescription())
+                                    .constraints(problemDto.getConstraints())
+                                    .examples(problemDto.getExamples())
                                     .testCases(problemDto.getTestCases())
                                     .testCaseOutputs(problemDto.getTestCaseOutputs())
                                     .difficulty(problemDto.getDifficulty())
@@ -48,8 +49,21 @@ public class ProblemRepositoryService {
     }
 
     // Caching does not fit here as it is very less probable that a same problem will be accessed multiple times by multiple users
-    public ProblemEntity getProblem(Integer id) {
-        return problemsRepository.getProblemById(id).orElseThrow();
+    public ProblemDto getProblem(Integer id) {
+        ProblemEntity probEntity = problemsRepository.getProblemById(id).orElseThrow();
+        return ProblemDto.builder()
+                        .title(probEntity.getTitle())
+                        .description(probEntity.getDescription())
+                        .constraints(probEntity.getConstraints())
+                        .examples(probEntity.getExamples())
+                        .testCases(probEntity.getTestCases())
+                        .testCaseOutputs(probEntity.getTestCaseOutputs())
+                        .difficulty(probEntity.getDifficulty())
+                        .driverCodes(probEntity.getDriverCodes())
+                        .optimalSolutions(probEntity.getOptimalSolutions())
+                        .topics(probEntity.getTopics())
+                        .acceptance(probEntity.getAcceptance())
+                        .build();
     }
 
     public void removeAllProblems() {

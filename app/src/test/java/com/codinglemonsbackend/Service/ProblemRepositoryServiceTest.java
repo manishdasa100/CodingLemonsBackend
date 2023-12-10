@@ -125,7 +125,7 @@ public class ProblemRepositoryServiceTest {
         when(mockRepository.getProblemById(id)).thenReturn(Optional.of(actualEntity));
 
         //when
-        ProblemEntity receivedEntity = underTest.getProblem(id);
+        ProblemDto receivedEntity = underTest.getProblem(id);
 
         //then
         assertThat(actualEntity).isEqualTo(receivedEntity);

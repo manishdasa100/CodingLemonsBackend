@@ -7,6 +7,8 @@ import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
 import com.codinglemonsbackend.Utils.ProblemEntityDeserializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import jakarta.validation.constraints.NotEmpty;
@@ -34,6 +36,12 @@ public class ProblemDto {
     String description;
 
     @NotEmpty
+    List<String> constraints;
+
+    @NotEmpty
+    List<Example> examples;
+
+    @NotEmpty
     List<String> testCases;
 
     @NotEmpty
@@ -50,4 +58,7 @@ public class ProblemDto {
     
     @NotEmpty
     List<String> topics;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    Integer acceptance;
 }

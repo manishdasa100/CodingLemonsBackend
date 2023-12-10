@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.CodeOutput;
+import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.RunCodeMatadata;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
@@ -106,7 +107,7 @@ public class SubmissionService {
         ProgrammingLanguage programingLanguage = request.getLanguage();
         String userCode = request.getUserCode();
 
-        ProblemEntity problemEntity = problemRepositoryService.getProblem(problemId);
+        ProblemDto problemEntity = problemRepositoryService.getProblem(problemId);
 
         List<String> testCasesToUse = (submission) ? problemEntity.getTestCases() : problemEntity.getTestCases().subList(0, numberOfTestcasesToUseForRunCodeRequest);
 
