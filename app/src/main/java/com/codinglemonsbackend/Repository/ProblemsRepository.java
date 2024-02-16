@@ -11,9 +11,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Payloads.ProblemSetResponse;
 
 @Repository
 public class ProblemsRepository {
@@ -35,36 +35,27 @@ public class ProblemsRepository {
     //         ()->mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class)
     //     );
     // } 
-    public ProblemSetResponse findAll(Integer page, Integer size) {
-        Query query = new Query().skip(page*size).limit(size);
-
-        List<ProblemEntity> problemSet = mongoTemplate.find(query, ProblemEntity.class, "problems");
-
-        List<ProblemDto> problemDtos = problemSet.stream().map(prob->ProblemDto.builder().title(prob.getTitle()).description(prob.getDescription()).topics(prob.getTopics()).difficulty(prob.getDifficulty()).build()).collect(Collectors.toList());
-         
-        return new ProblemSetResponse(
-            mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class),
-            problemDtos
-        );
+    public ProblemSet findAll(Integer page, Integer size) {
+        
+       return getProblems(null, null, page, size);
     } 
     
 
-    public ProblemSetResponse getFilteredProblems(List<Difficulty> difficulties, String[] topics, int page, int size) {
+    public ProblemSet getProblems(List<Difficulty> difficulties, String[] topics, int page, int size) {
 
-        if(difficulties == null && topics == null) throw new IllegalArgumentException("Atleast one of the filter criteria must be provided. Found both difficulty and topics array to be null or empty");
+        // if(difficulties == null && topics == null) throw new IllegalArgumentException("Atleast one of the filter criteria must be provided. Found both difficulty and topics array to be null or empty");
 
         List<ProblemEntity> filteredProblemSet;
 
         Query query; 
 
-        if (topics == null) {  // filter problems based on difficulty only
-            System.out.println("ello"); 
+        if (difficulties == null && topics == null){
+            query = new Query().skip(page*size).limit(size);
+        } else if (topics == null) {  // filter problems based on difficulty only
             query = new Query(Criteria.where("difficulty").in(difficulties)).skip(page*size).limit(size);
         } else if (difficulties == null) {  // filter problems based on topics array only
-            System.out.println("mello"); 
             query = new Query(Criteria.where("topics").all((Object[])topics)).skip(page*size).limit(size);
         } else {  // filter problems based on both difficulty and topics array
-            System.out.println("Hello"); 
             query = new Query(
                 new Criteria().andOperator(
                     Criteria.where("difficulty").in(difficulties), 
@@ -76,16 +67,18 @@ public class ProblemsRepository {
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
         List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->ProblemDto.builder()
+                                                                                        .problemId(prob.getProblemId())
                                                                                         .title(prob.getTitle())
                                                                                         .description(prob.getDescription())
                                                                                         .constraints(prob.getConstraints())
                                                                                         .examples(prob.getExamples())
                                                                                         .topics(prob.getTopics())
                                                                                         .difficulty(prob.getDifficulty())
+                                                                                        .acceptance(prob.getAcceptance())
                                                                                         .build())
                                                                     .collect(Collectors.toList());
 
-        return new ProblemSetResponse(
+        return new ProblemSet(
             mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class),
             problemDtos
         );

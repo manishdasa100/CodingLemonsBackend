@@ -15,7 +15,7 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.Role;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
-import com.codinglemonsbackend.Payloads.LoginRequest;
+import com.codinglemonsbackend.Payloads.LoginRequestPayload;
 import com.codinglemonsbackend.Utils.JwtUtils;
 
 @Service
@@ -43,6 +43,7 @@ public class AuthenticationService {
                             .password(passwordEncoder.encode(userDto.getPassword()))
                             .role((isAdmin)?Role.ADMIN:Role.USER)
                             .points(0)
+                            // .problemLists(UserRepositoryService.getDefaultProblemList())
                             .submissions(new ArrayList<>())
                             .build();
 
@@ -54,7 +55,7 @@ public class AuthenticationService {
     }
     
 
-    public String loginUser(LoginRequest request){
+    public String loginUser(LoginRequestPayload request){
 
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 request.getUsername(), 

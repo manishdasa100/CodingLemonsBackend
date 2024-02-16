@@ -10,9 +10,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Payloads.ProblemSetResponse;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
 
 @Service
@@ -23,8 +23,31 @@ public class ProblemRepositoryService {
     private ProblemsRepository problemsRepository;
 
     @Cacheable
-    private ProblemSetResponse getAllProblems(Integer page, Integer size) {
+    public ProblemSet getAllProblems(Integer page, Integer size) {
         return problemsRepository.findAll(page, size);
+    }
+
+    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, int page, int size){
+        
+        // if ((difficultyStr == null || difficultyStr.length() == 0) && (topicsStr == null || topicsStr.length() == 0)) {
+            
+        //     // no filtering needed based on topics and/or difficulty
+        //     return getAllProblems(page, size);
+        // }
+
+        String[] topicsArray = null;
+
+        List<Difficulty> difficulties = null;
+
+        if (difficultyStr != null) {
+            String[] difficultiesArray = difficultyStr.trim().split(",");
+            difficulties = List.of(difficultiesArray).stream().map(e -> Difficulty.valueOf(e)).collect(Collectors.toList());
+        }
+        if (topicsStr != null) {
+            topicsArray = topicsStr.trim().split(",");
+        }
+
+        return problemsRepository.getProblems(difficulties, topicsArray, page, size);
     }
 
     @CacheEvict(allEntries = true)
@@ -52,6 +75,7 @@ public class ProblemRepositoryService {
     public ProblemDto getProblem(Integer id) {
         ProblemEntity probEntity = problemsRepository.getProblemById(id).orElseThrow();
         return ProblemDto.builder()
+                        .problemId(probEntity.getProblemId())
                         .title(probEntity.getTitle())
                         .description(probEntity.getDescription())
                         .constraints(probEntity.getConstraints())
@@ -77,26 +101,4 @@ public class ProblemRepositoryService {
     //     return problemsRepository.getFilteredProblems(difficulty, topicsArray, page, size);
     // }
 
-    public ProblemSetResponse getProblems(String difficultyStr, String topicsStr, int page, int size){
-        
-        if ((difficultyStr == null || difficultyStr.length() == 0) && (topicsStr == null || topicsStr.length() == 0)) {
-            
-            // no filtering needed based on topics and/or difficulty
-            return getAllProblems(page, size);
-        }
-
-        String[] topicsArray = null;
-
-        List<Difficulty> difficulties = null;
-
-        if (difficultyStr != null) {
-            String[] difficultiesArray = difficultyStr.trim().split(",");
-            difficulties = List.of(difficultiesArray).stream().map(e -> Difficulty.valueOf(e)).collect(Collectors.toList());
-        }
-        if (topicsStr != null) {
-            topicsArray = topicsStr.trim().split(",");
-        }
-
-        return problemsRepository.getFilteredProblems(difficulties, topicsArray, page, size);
-    }
 }

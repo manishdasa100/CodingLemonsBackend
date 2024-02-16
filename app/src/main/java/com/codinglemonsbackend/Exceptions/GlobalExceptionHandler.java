@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -33,14 +34,21 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ExceptionMessage> handleException(Exception e){
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Internal server error"), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    // @ExceptionHandler(Exception.class)
+    // public ResponseEntity<ExceptionMessage> handleException(Exception e){
+    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Internal server error"), HttpStatus.INTERNAL_SERVER_ERROR);
+    // }
+
    
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ExceptionMessage> handleException(BadCredentialsException e){
+    public ResponseEntity<ExceptionMessage> handleBadCredentialsException(BadCredentialsException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Username or password incorrect"), HttpStatus.BAD_REQUEST);
+    }
+
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<ExceptionMessage> handleResourceAlreadyExistsException(ResourceAlreadyExistsException e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 }
     

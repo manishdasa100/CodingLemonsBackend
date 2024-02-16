@@ -3,6 +3,7 @@ package com.codinglemonsbackend;
 import java.util.Arrays;
 import java.util.List;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -41,6 +42,11 @@ public class App {
     @Bean
     public RestTemplate getRestTemplate() {
         return new RestTemplate();
+    }
+
+    @Bean
+    public ModelMapper getModelMapper(){
+        return new ModelMapper();
     }
 
     public static void main(String[] args) {

@@ -54,6 +54,9 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 
+	//Modelmapper
+	implementation 'org.modelmapper:modelmapper:3.1.1'
+
 	//Cache
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
 

@@ -1,8 +1,6 @@
 package com.codinglemonsbackend.Payloads;
 
-import java.util.List;
-
-import com.codinglemonsbackend.Dto.ProblemDto;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,9 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ProblemSetResponse {
+public class LoginRequestPayload {
     
-    private Long total;
+    @NotEmpty
+    private String username;
 
-    private List<ProblemDto> problems;
+    @NotEmpty
+    private String password;
 }

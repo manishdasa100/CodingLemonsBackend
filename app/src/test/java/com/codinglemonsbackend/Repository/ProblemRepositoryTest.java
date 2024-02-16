@@ -17,9 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Payloads.ProblemSetResponse;
 
 // @DataMongoTest
 @SpringBootTest
@@ -87,7 +87,7 @@ public class ProblemRepositoryTest {
 
         int page = 1, size = 2;
 
-        ProblemSetResponse response = underTest.findAll(page, size);
+        ProblemSet response = underTest.findAll(page, size);
 
         assertNotNull(response);
 
@@ -105,7 +105,7 @@ public class ProblemRepositoryTest {
             mongoTemplate.save(dummyProblemEntity); 
         }
 
-        ProblemSetResponse response = underTest.getFilteredProblems(List.of(Difficulty.EASY, Difficulty.MEDIUM), null, page, size);
+        ProblemSet response = underTest.getFilteredProblems(List.of(Difficulty.EASY, Difficulty.MEDIUM), null, page, size);
 
         assertThat(response.getProblems()).asList().hasSize(1);
 
@@ -121,7 +121,7 @@ public class ProblemRepositoryTest {
             mongoTemplate.save(dummyProblemEntity); 
         }
 
-        ProblemSetResponse response = underTest.getFilteredProblems(null, new String[]{"Arrays"}, page, size);
+        ProblemSet response = underTest.getFilteredProblems(null, new String[]{"Arrays"}, page, size);
 
         assertThat(response.getProblems()).asList().hasSize(2);
 
@@ -140,7 +140,7 @@ public class ProblemRepositoryTest {
             mongoTemplate.save(dummyProblemEntity); 
         }
 
-        ProblemSetResponse response = underTest.getFilteredProblems(List.of(Difficulty.EASY, Difficulty.MEDIUM), new String[]{"Arrays"}, page, size);
+        ProblemSet response = underTest.getFilteredProblems(List.of(Difficulty.EASY, Difficulty.MEDIUM), new String[]{"Arrays"}, page, size);
 
         assertThat(response.getProblems()).asList().hasSize(2);
 

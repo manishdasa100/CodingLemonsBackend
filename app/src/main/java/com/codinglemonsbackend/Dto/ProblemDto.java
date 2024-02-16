@@ -26,6 +26,9 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "optimalSolutions"}, allowSetters = true)
 @JsonDeserialize(using=ProblemEntityDeserializer.class) 
 public class ProblemDto {
+
+    @JsonProperty(access = Access.READ_ONLY)
+    Integer problemId;
     
     @NotEmpty
     @Size(min = 5, max = 30)
