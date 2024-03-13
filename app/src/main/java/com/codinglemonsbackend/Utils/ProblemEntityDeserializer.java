@@ -65,6 +65,12 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
             topics.add(item.asText());
         }
 
+        Float cpuTimeLimit = node.get("cpuTimeLimit").floatValue();
+        
+        Float memoryLimit = node.get("memoryLimit").floatValue();
+
+        Integer stackLimit = node.get("stackLimit").asInt();
+
         Map<ProgrammingLanguage, String> driverCodes = new HashMap<>();
         ObjectNode driverCodesNode = (ObjectNode)node.get("driverCodes");
         for (ProgrammingLanguage language : ProgrammingLanguage.values()) {
@@ -73,13 +79,13 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
             }
         }
 
-        Map<ProgrammingLanguage, String> optimalSolutions = new HashMap<>();
+        /*Map<ProgrammingLanguage, String> optimalSolutions = new HashMap<>();
         ObjectNode optimalSolutionsNode = (ObjectNode)node.get("optimalSolutions");
         for (ProgrammingLanguage language : ProgrammingLanguage.values()) {
             if (optimalSolutionsNode.has(language.name())) {
                 optimalSolutions.put(language, optimalSolutionsNode.get(language.name()).asText());
             }
-        }
+        }*/
 
         ProblemDto problemDto = ProblemDto.builder()
                                     .title(node.get("title").asText())
@@ -89,8 +95,11 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                                     .difficulty(problemDifficulty)
                                     .testCases(testCases)
                                     .testCaseOutputs(testCaseOutputs)
+                                    .cpuTimeLimit(cpuTimeLimit)
+                                    .memoryLimit(memoryLimit)
+                                    .stackLimit(stackLimit)
                                     .driverCodes(driverCodes)
-                                    .optimalSolutions(optimalSolutions)
+                                    //.optimalSolutions(optimalSolutions)
                                     .topics(topics)
                                     .build();
 

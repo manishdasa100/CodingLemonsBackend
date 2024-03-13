@@ -23,8 +23,25 @@ def get_random_difficulty():
 
 def createProblem(id, difficulty, topics, acceptance):
     problem = {
-        "title": id,
+        "title": "Title " + str(id),
         "description": "Description of the problem" + str(id),
+        "constraints":[
+            "constraint 1",
+            "constraint 2",
+            "constraint 3"
+        ],
+        "examples": [
+            {
+                "input":"input 1",
+                "output":"output 1",
+                "explanation":"Explanation 1"
+            },
+            {
+                "input":"input 2",
+                "output":"output 2",
+                "explanation":"Explanation 2"
+            }
+        ],
         "testCases": [
             "test1",
             "test2",
@@ -38,17 +55,24 @@ def createProblem(id, difficulty, topics, acceptance):
             "testoutput4"
         ],
         "difficulty": difficulty,
-        "driverCode": "driver code",
-        "optimalSolution": "optimal solution",
-        "topics": list(topics),
-        "acceptance": acceptance
+        "driverCodes": {
+            "JAVA":"import java.util.Scanner;class Main{public static void main(String[] args){Scanner sc=new Scanner(System.in);Solution solution=new Solution();while(sc.hasNext()){String str=sc.nextLine();System.out.println(solution.myFunction(str));}}}",
+            "PYTHON":"Python driver code",
+            "JAVASCRIPT":"Javascript friver code"
+        },
+        "cpuTimeLimit":1.0,
+        "memoryLimit":128000.0,
+        "stackLimit":32000,
+        "topics": list(topics)
     }
     return problem
 
-response = requests.delete(remove_prob_api_url)
+admin_auth_token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbjEiLCJpYXQiOjE3MDkzMDU1MTgsImV4cCI6MTcwOTM5MTkxOH0.Rk20UwPEoxzsDr_LEs0RvO3KUptR6BIHlrTbzrc_JnE"
+
+response = requests.delete(remove_prob_api_url, headers={"Authorization":"Bearer %s" %auth_token})
 
 for i in range(PROBLEM_COUNT):
     problem = createProblem(i+1, get_random_difficulty(), get_random_topics(), random.randint(0, 100)) 
-    response = requests.post(add_prob_api_url, json=problem)
+    response = requests.post(add_prob_api_url, json=problem, headers={"Content-Type": "application/json","Authorization":"Bearer %s" %auth_token})
     response.json()
-    print(response)
+    print(response.content)

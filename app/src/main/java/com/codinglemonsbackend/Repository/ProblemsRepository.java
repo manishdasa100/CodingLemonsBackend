@@ -36,7 +36,8 @@ public class ProblemsRepository {
     //     );
     // } 
     public ProblemSet findAll(Integer page, Integer size) {
-        
+       
+       System.out.println("CACHE MISS");
        return getProblems(null, null, page, size);
     } 
     

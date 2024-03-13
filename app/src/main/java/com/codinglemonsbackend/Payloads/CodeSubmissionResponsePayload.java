@@ -1,26 +1,23 @@
 package com.codinglemonsbackend.Payloads;
 
-public abstract class CodeSubmissionResponsePayload {
+import com.codinglemonsbackend.Dto.SubmissionDto;
+import com.codinglemonsbackend.Entities.Submission;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
-    // private Boolean runSuccess;
-    // private String error;
-    // private List<String> codeAnswer;
-    // private List<String> expectedAnswer;
-    // private Integer totalTestCases;
-    // private Integer totalCorrect;
-    // private String failedTestCase;
-    // private StatusMessage statusMsg;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-    private String stdIn;
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@JsonInclude(value = Include.NON_NULL)
+public class CodeSubmissionResponsePayload {
 
-    private String expectedOutput;
+    private String status;
 
-    private String stdout;
-
-    private String time;
-
-    private Float memory;
-
-    private String stderr;
-    
+    private SubmissionDto submission;
 }

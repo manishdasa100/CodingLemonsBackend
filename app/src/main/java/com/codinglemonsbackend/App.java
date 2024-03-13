@@ -1,21 +1,12 @@
 package com.codinglemonsbackend;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.client.RestTemplate;
-
-import com.codinglemonsbackend.Service.CodeRunner;
-import com.codinglemonsbackend.Service.JavaRunner;
-import com.codinglemonsbackend.Service.PythonRunner;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootApplication
 @EnableCaching
@@ -42,6 +33,11 @@ public class App {
     @Bean
     public RestTemplate getRestTemplate() {
         return new RestTemplate();
+    }
+
+    @Bean
+    public WebClient.Builder getWebClient() {
+        return WebClient.builder();
     }
 
     @Bean

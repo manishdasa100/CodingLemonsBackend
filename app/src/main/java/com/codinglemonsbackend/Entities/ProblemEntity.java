@@ -35,7 +35,10 @@ public class ProblemEntity {
     List<String> testCaseOutputs;
     Difficulty difficulty;
     Map<ProgrammingLanguage, String> driverCodes;
-    Map<ProgrammingLanguage, String> optimalSolutions;
+    float cpuTimeLimit;
+    float memoryLimit;
+    int stackLimit;
+    //Map<ProgrammingLanguage, String> optimalSolutions;
     List<String> topics;
     Integer acceptance;
 }

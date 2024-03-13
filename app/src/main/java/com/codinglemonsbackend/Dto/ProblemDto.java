@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Dto;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +24,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "optimalSolutions"}, allowSetters = true)
+@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
 @JsonDeserialize(using=ProblemEntityDeserializer.class) 
-public class ProblemDto {
+public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
     Integer problemId;
@@ -45,19 +46,37 @@ public class ProblemDto {
     List<Example> examples;
 
     @NotEmpty
+    @JsonProperty(access = Access.WRITE_ONLY)
     List<String> testCases;
 
     @NotEmpty
+    @JsonProperty(access = Access.WRITE_ONLY)
     List<String> testCaseOutputs;
+
+    // @NotEmpty
+    // Map<String, String> testcaseAndExpectedOutputs;
 
     @NotNull(message = "Difficulty must be either EASY/MEDIUM/HARD")
     Difficulty difficulty;
 
     @NotEmpty
+    @JsonProperty(access = Access.WRITE_ONLY)
     Map<ProgrammingLanguage, String> driverCodes;
 
-    @NotEmpty
-    Map<ProgrammingLanguage, String> optimalSolutions;
+    @NotNull
+    @JsonProperty(access = Access.WRITE_ONLY)
+    Float cpuTimeLimit;
+
+    @NotNull
+    @JsonProperty(access = Access.WRITE_ONLY)
+    Float memoryLimit;
+
+    @NotNull
+    @JsonProperty(access = Access.WRITE_ONLY)
+    Integer stackLimit;
+
+    // @NotEmpty
+    // Map<ProgrammingLanguage, String> optimalSolutions;
     
     @NotEmpty
     List<String> topics;

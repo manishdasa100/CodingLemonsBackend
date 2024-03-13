@@ -2,11 +2,11 @@ package com.codinglemonsbackend.Exceptions;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
 
     // @ExceptionHandler(Exception.class)
     // public ResponseEntity<ExceptionMessage> handleException(Exception e){
-    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Internal server error"), HttpStatus.INTERNAL_SERVER_ERROR);
+    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
     // }
 
    
@@ -49,6 +49,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<ExceptionMessage> handleResourceAlreadyExistsException(ResourceAlreadyExistsException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+    
+    }
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ExceptionMessage> resourceNotFound(NoSuchElementException e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ExceptionMessage> handleSubmissionFailure(IllegalStateException e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FAILED_DEPENDENCY);
     }
 }
     

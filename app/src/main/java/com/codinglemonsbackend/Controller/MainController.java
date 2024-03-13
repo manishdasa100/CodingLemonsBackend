@@ -15,12 +15,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
+import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Payloads.CodeSubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
+import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
+import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
 import com.codinglemonsbackend.Payloads.UserProblemListPayload;
+import com.codinglemonsbackend.Service.Judge0SubmissionServiceImpl.Judge0SubmissionToken;
 import com.codinglemonsbackend.Service.MainService;
 import jakarta.validation.Valid;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import java.util.List;
 
 @RestController
@@ -86,13 +94,21 @@ public class MainController {
         return ResponseEntity.ok().body(userFavorites);
     }
 
-    // @PostMapping("runcode")
-    // public CodeSubmissionResponse runCode(@RequestBody RunCodeRequest request) {
-    //     return submissionService.handleSubmission(request, false);
-    // }
+    @PostMapping("submission/submit")
+    public ResponseEntity<SubmitCodeResponsePayload> submit(@RequestBody SubmitCodeRequestPayload payload){
 
-    // @PostMapping("submitcode")
-    // public CodeSubmissionResponse submitCode(@RequestBody RunCodeRequest request) {
-    //     return submissionService.handleSubmission(request, true);
-    // }
+        String submissionId = mainService.submitCode(payload);
+
+        SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);
+
+        return ResponseEntity.accepted().body(responsePayload);
+    }
+
+    @GetMapping("submission/get/{submissionId}")
+    public ResponseEntity<CodeSubmissionResponsePayload> getSubmission(@PathVariable String submissionId){
+
+        CodeSubmissionResponsePayload payload = mainService.getSubmission(submissionId);
+
+        return ResponseEntity.ok().body(payload);
+    }
 }

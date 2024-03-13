@@ -11,10 +11,15 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
+import com.codinglemonsbackend.Dto.SubmissionDto;
+import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Payloads.CodeSubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
+import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
+
 
 @Service
 public class MainServiceImpl implements MainService{
@@ -27,8 +32,13 @@ public class MainServiceImpl implements MainService{
     @Autowired
     private UserProblemListRepositoryService userProblemListRepositoryService;
 
-    // @Autowired
-    // private SubmissionService submissionService;
+    @Autowired
+    private SubmissionService submissionService;
+
+    @Autowired
+    private RedisService redisService;
+
+    private final String PENDING_SUBMISSION_REDIS_KEY = "submissions:pending";
 
     private UserEntity getCurrentlySignedInUser(){
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -126,6 +136,48 @@ public class MainServiceImpl implements MainService{
     @Override
     public List<UserProblemList> getUserFavorites() {
         return userProblemListRepositoryService.geAlltProblemListOfUser(getCurrentlySignedInUser().getUsername());
+    }
+
+    @Override
+    public String submitCode(SubmitCodeRequestPayload payload) {
+
+        ProblemDto problemDto = getProblem(payload.getProblemId()).getProblem();
+
+        SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
+                                                .problemDto(problemDto)
+                                                .language(payload.getLanguage())
+                                                .username(getCurrentlySignedInUser().getUsername())
+                                                .userCode(payload.getUserCode())
+                                                .build();
+
+        //Mono<List<Judge0SubmissionToken>> submissionTokens = submissionService.submitCode(submissionMetadata);
+        String submissionToken = submissionService.submitCode(submissionMetadata);
+
+        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString());
+
+        //submissionTokens.subscribe(e -> {for(Judge0SubmissionToken token:e){System.out.println(token.getToken());}});
+        return submissionToken;
+
+    }
+
+    @Override
+    public CodeSubmissionResponsePayload getSubmission(String submissionId) {
+
+        // First check if the submission is present in redis hash, if yes then return the status as pending
+        // else search the database for the submission and return 
+
+        if (redisService.hashKeyExists(PENDING_SUBMISSION_REDIS_KEY, submissionId)) {
+            String status = redisService.getHashValue(PENDING_SUBMISSION_REDIS_KEY, submissionId);
+            if (status.equals(PendingOrdersStatus.FAILED.toString()) || status.equals(PendingOrdersStatus.HAULTED.toString())) {
+                redisService.deleteHashEntry(PENDING_SUBMISSION_REDIS_KEY, submissionId);
+                throw new IllegalStateException("Submission " + status);
+            } 
+            return CodeSubmissionResponsePayload.builder().status(status).build();
+        }
+
+        SubmissionDto submissionDto = submissionService.getSubmission(submissionId);
+
+        return CodeSubmissionResponsePayload.builder().status("Completed").submission(submissionDto).build();
     } 
  
 }

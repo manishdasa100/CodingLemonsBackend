@@ -1,35 +1,45 @@
 package com.codinglemonsbackend.Entities;
 
 public enum ProgrammingLanguage {
-    // JAVA("java"),
-    // PYTHON("python"),
-    // C("C"),
-    // CPP("cpp"),
-    // CSHARP("csharp"),
-    // JAVASCRIPT("javascript"),
-    // GO("go"),
-    // RUBY("ruby"),
-    // SWIFT("swift"),
-    // KOTLIN("kotlin"),
-    // PHP("php"),
-    // TYPESCRIPT("typescript");
+    JAVA(62, "OpenJDK 13.0.1"),
+    PYTHON(70, "3.8.1"),
+    C(50, "GCC 9.2.0"),
+    CPP(54, "GCC 9.2.0"),
+    CSHARP(51, "MONO 6.6.0.161"),
+    JAVASCRIPT(63, "NodeJs 12.14.0"),
+    GO(60, "1.13.5"),
+    RUBY(72, "2.7.0"),
+    RUST(73, "1.40.0"),
+    PHP(68, "7.4.1"),
+    TYPESCRIPT(74, "3.7.4");
 
-    // private String name;
+    private Integer languagId;
 
-    // private ProgrammingLanguage(String language){
-    //     this.name = language;
-    // }
+    private String languageVersion;
 
-    JAVA,
-    PYTHON,
-    C,
-    CPP,
-    CSHARP,
-    JAVASCRIPT,
-    GO,
-    RUBY,
-    SWIFT,
-    KOTLIN,
-    PHP,
-    TYPESCRIPT;
+    private ProgrammingLanguage(Integer languageId, String languageVersion){
+        this.languagId = languageId;
+        this.languageVersion = languageVersion;
+    }
+
+    public Integer getLanguagId() {
+        return languagId;
+    }
+
+    public String getLanguageVersion() {
+        return languageVersion;
+    }
+
+    // JAVA,
+    // PYTHON,
+    // C,
+    // CPP,
+    // CSHARP,
+    // JAVASCRIPT,
+    // GO,
+    // RUBY,
+    // SWIFT,
+    // KOTLIN,
+    // PHP,
+    // TYPESCRIPT;
 }

@@ -34,6 +34,16 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
+	// Redis dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	// implementation 'redis.clients:jedis:5.1.0'
+
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// RabbitMQ dependency
+	implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+	// Reactive webflux dependency
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
 	// Spring security dependency
@@ -44,6 +54,9 @@ dependencies {
 
 	// jasypt dependency
 	implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'
+
+	//Dev tools dependency for faster application restart and live reload
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	 // JWT dependencies
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
