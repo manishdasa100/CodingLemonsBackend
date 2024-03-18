@@ -13,6 +13,8 @@ import com.codinglemonsbackend.Entities.DatabaseSequence;
 @Repository
 public class SequenceGeneratorRepository {
 
+    public static final String COLLECTION_NAME = "database_sequences";
+
     private MongoTemplate mongoTemplate;
 
     public SequenceGeneratorRepository(@Autowired MongoTemplate mongoTemplate){
@@ -20,10 +22,11 @@ public class SequenceGeneratorRepository {
     }
     
     public void saveSequence(DatabaseSequence sequence) {
-        mongoTemplate.save(sequence, "database_sequences");
+        mongoTemplate.save(sequence, COLLECTION_NAME);
     }
 
-    public DatabaseSequence getSequence(String sequenceName) {
+    public DatabaseSequence getNextSequence(String sequenceName) {
+        
         Query query = new Query(Criteria.where("id").is(sequenceName));
 
         DatabaseSequence counter = mongoTemplate.findAndModify(
@@ -31,9 +34,16 @@ public class SequenceGeneratorRepository {
             new Update().inc("seq", 1),
             FindAndModifyOptions.options().returnNew(true), 
             DatabaseSequence.class, 
-            "database_sequences");
+            COLLECTION_NAME);
 
         return counter;
 
+    }
+
+    public DatabaseSequence getCurrentSequence(String sequenceName) {
+
+        DatabaseSequence dbSeq = mongoTemplate.findById(sequenceName, DatabaseSequence.class, COLLECTION_NAME);
+
+        return dbSeq;
     }
 }

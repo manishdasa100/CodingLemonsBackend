@@ -1,9 +1,12 @@
 package com.codinglemonsbackend.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +23,11 @@ import com.codinglemonsbackend.Payloads.CodeSubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 
+import lombok.extern.slf4j.Slf4j;
+
 
 @Service
+@Slf4j
 public class MainServiceImpl implements MainService{
 
     private static final Integer PROBLEMSETMAXSIZE = 100;
@@ -34,6 +40,9 @@ public class MainServiceImpl implements MainService{
 
     @Autowired
     private SubmissionService submissionService;
+
+    @Autowired
+    private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired
     private RedisService redisService;
@@ -51,7 +60,7 @@ public class MainServiceImpl implements MainService{
         String username = currentSignedInUserEntity.getUsername();
 
         UserProblemList acceptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
-        UserProblemList atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
+        UserProblemList atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
         
         return List.of(
             acceptedProblemList.getProblemIds(), 
@@ -170,6 +179,7 @@ public class MainServiceImpl implements MainService{
             String status = redisService.getHashValue(PENDING_SUBMISSION_REDIS_KEY, submissionId);
             if (status.equals(PendingOrdersStatus.FAILED.toString()) || status.equals(PendingOrdersStatus.HAULTED.toString())) {
                 redisService.deleteHashEntry(PENDING_SUBMISSION_REDIS_KEY, submissionId);
+                log.info("Submission {} for username {} {}", submissionId, getCurrentlySignedInUser(), status);
                 throw new IllegalStateException("Submission " + status);
             } 
             return CodeSubmissionResponsePayload.builder().status(status).build();
@@ -178,6 +188,16 @@ public class MainServiceImpl implements MainService{
         SubmissionDto submissionDto = submissionService.getSubmission(submissionId);
 
         return CodeSubmissionResponsePayload.builder().status("Completed").submission(submissionDto).build();
+    }
+
+    @Override
+    public ProblemDto getProblemOfTheDay() {
+        
+        ProblemDto problemOfTheDay = problemOfTheDayService.getProblemOfTheDay();
+
+        if (Objects.isNull(problemOfTheDay)) throw new NoSuchElementException("Problem of the day not set");
+
+        return problemOfTheDay;
     } 
  
 }

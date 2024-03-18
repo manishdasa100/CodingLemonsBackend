@@ -29,8 +29,9 @@ public class ProblemRepositoryService {
     @Autowired
     private ProblemsRepository problemsRepository;
 
-    @Cacheable
+    @Cacheable(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
     public ProblemSet getAllProblems(Integer page, Integer size) {
+        System.out.println("CACHE MISS");
         return problemsRepository.findAll(page, size);
     }
 

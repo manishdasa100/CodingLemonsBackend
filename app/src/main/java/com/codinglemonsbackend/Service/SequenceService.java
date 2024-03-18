@@ -9,17 +9,17 @@ import com.codinglemonsbackend.Entities.DatabaseSequence;
 import com.codinglemonsbackend.Repository.SequenceGeneratorRepository;
 
 @Service
-public class SequenceGeneratorService {
+public class SequenceService {
 
     private SequenceGeneratorRepository sequenceGeneratorRepository;
 
-    public SequenceGeneratorService(@Autowired SequenceGeneratorRepository sequenceGeneratorRepository) {
+    public SequenceService(@Autowired SequenceGeneratorRepository sequenceGeneratorRepository) {
         this.sequenceGeneratorRepository = sequenceGeneratorRepository;
     }
     
-    public Integer getSequence(String sequenceName) {
+    public Integer getNextSequence(String sequenceName) {
         
-        DatabaseSequence counter = sequenceGeneratorRepository.getSequence(sequenceName);
+        DatabaseSequence counter = sequenceGeneratorRepository.getNextSequence(sequenceName);
 
         if (!Objects.isNull(counter)) {
             return counter.getSeq();
@@ -30,5 +30,16 @@ public class SequenceGeneratorService {
         }
 
         return 1;
+    }
+
+    public Integer getCurrentSequence(String sequenceName) {
+
+        DatabaseSequence seq = sequenceGeneratorRepository.getCurrentSequence(sequenceName);
+
+        if (!Objects.isNull(seq)) {
+            return seq.getSeq();
+        }
+
+        return -1;
     }
 }

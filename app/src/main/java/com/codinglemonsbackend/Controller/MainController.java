@@ -111,4 +111,12 @@ public class MainController {
 
         return ResponseEntity.ok().body(payload);
     }
+
+    @GetMapping("problem/today")
+    public ResponseEntity<ProblemDto> getProblemOfTheDay(){
+
+        ProblemDto problemOfTheDay = mainService.getProblemOfTheDay();
+
+        return ResponseEntity.ok().body(problemOfTheDay);
+    }
 }

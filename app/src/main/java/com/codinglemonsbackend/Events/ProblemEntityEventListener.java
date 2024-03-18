@@ -6,15 +6,15 @@ import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.stereotype.Component;
 
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Service.SequenceGeneratorService;
+import com.codinglemonsbackend.Service.SequenceService;
 
 @Component
 public class ProblemEntityEventListener extends AbstractMongoEventListener<ProblemEntity>{
 
-    private SequenceGeneratorService sequenceGenerator;
+    private SequenceService sequenceService;
 
-    public ProblemEntityEventListener(@Autowired SequenceGeneratorService sequenceGeneratorService){
-        this.sequenceGenerator = sequenceGeneratorService;
+    public ProblemEntityEventListener(@Autowired SequenceService sequenceGeneratorService){
+        this.sequenceService = sequenceGeneratorService;
     }
 
     @Override
@@ -23,7 +23,7 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         System.out.println("onBeforeConvert called" + event.getSource().getProblemId());
         System.out.println("---------------------------------------------");
         // if (event.getSource().getProblemId() < 1) {
-        event.getSource().setProblemId(sequenceGenerator.getSequence(ProblemEntity.SEQUENCE_NAME));
+        event.getSource().setProblemId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
         // }
     }
     
