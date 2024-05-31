@@ -1,12 +1,13 @@
 package com.codinglemonsbackend.Entities;
 
 public enum ProgrammingLanguage {
+    
     JAVA(62, "OpenJDK 13.0.1"),
-    PYTHON(70, "3.8.1"),
+    PYTHON(71, "3.8.1"),
     C(50, "GCC 9.2.0"),
     CPP(54, "GCC 9.2.0"),
     CSHARP(51, "MONO 6.6.0.161"),
-    JAVASCRIPT(63, "NodeJs 12.14.0"),
+    JAVASCRIPT(93, "NodeJs 12.14.0"),
     GO(60, "1.13.5"),
     RUBY(72, "2.7.0"),
     RUST(73, "1.40.0"),

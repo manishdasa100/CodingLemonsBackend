@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Dto;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
@@ -24,7 +25,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
+//@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
 @JsonDeserialize(using=ProblemEntityDeserializer.class) 
 public class ProblemDto implements Serializable {
 
@@ -36,18 +37,18 @@ public class ProblemDto implements Serializable {
     String title;
 
     @NotEmpty
-    @Size(min = 20, max = 100)
+    @Size(min = 20, max = 500)
     String description;
 
     @NotEmpty
-    List<String> constraints;
+    Set<String> constraints;
 
     @NotEmpty
-    List<Example> examples;
+    Set<Example> examples;
 
     @NotEmpty
     @JsonProperty(access = Access.WRITE_ONLY)
-    List<String> testCases;
+    Map<String, String> testCasesWithExpectedOutputs;
 
     @NotEmpty
     @JsonProperty(access = Access.WRITE_ONLY)
@@ -79,8 +80,16 @@ public class ProblemDto implements Serializable {
     // Map<ProgrammingLanguage, String> optimalSolutions;
     
     @NotEmpty
-    List<String> topics;
+    Set<String> topics;
+
+    Set<String> companyTags;
 
     @JsonProperty(access = Access.READ_ONLY)
     Integer acceptance;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    Integer previousProblemId;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    Integer nextProblemId;
 }

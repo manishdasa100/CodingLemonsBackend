@@ -37,7 +37,7 @@ public class SecurityConfigurer {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf->csrf.disable())
-            .authorizeHttpRequests((authorizeHttpRequests)->authorizeHttpRequests.requestMatchers("/api/v1/auth/**","/api/v1/hello").permitAll().anyRequest().authenticated())
+            .authorizeHttpRequests((authorizeHttpRequests)->authorizeHttpRequests.requestMatchers("/api/v1/auth/**","/api/v1/hello","/actuator/**").permitAll().anyRequest().authenticated())
             .sessionManagement((sessionManagement)-> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntrypoint))

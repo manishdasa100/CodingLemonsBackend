@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Entities.Difficulty;
-// import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
@@ -35,12 +37,12 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
 
         System.out.println("DIFFICULTY OF THE PROBLEM ADDED "+problemDifficulty);
 
-        List<String> constraints = new ArrayList<String>();
+        Set<String> constraints = new HashSet<String>();
         for (JsonNode item: node.get("constraints")){
             constraints.add(item.asText());
         }
 
-        List<Example> examples = new ArrayList<Example>();
+        Set<Example> examples = new HashSet<Example>();
         for (JsonNode item: node.get("examples")){
             Example exampleItem = Example.builder()
                                 .input(item.get("input").asText())
@@ -50,19 +52,28 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
             examples.add(exampleItem);
         }
 
-        List<String> testCases = new ArrayList<String>();
-        for (JsonNode item: node.get("testCases")){
-            testCases.add(item.asText());
-        }
+        // List<String> testCases = new ArrayList<String>();
+        // for (JsonNode item: node.get("testCases")){
+        //     testCases.add(item.asText());
+        // }
+        Map<String, String> testCases = new LinkedHashMap<>();
+        node.get("testCases").fields().forEachRemaining((entry) -> {
+            testCases.put(entry.getKey(), entry.getValue().asText());
+        });
 
         List<String> testCaseOutputs = new ArrayList<String>();
         for (JsonNode item: node.get("testCaseOutputs")){
             testCaseOutputs.add(item.asText());
         }
 
-        List<String> topics = new ArrayList<String>();
+        Set<String> topics = new HashSet<String>();
         for (JsonNode item: node.get("topics")){
             topics.add(item.asText());
+        }
+
+        Set<String> companyTags = new HashSet<String>();
+        for (JsonNode item: node.get("companyTags")){
+            companyTags.add(item.asText());
         }
 
         Float cpuTimeLimit = node.get("cpuTimeLimit").floatValue();
@@ -79,28 +90,20 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
             }
         }
 
-        /*Map<ProgrammingLanguage, String> optimalSolutions = new HashMap<>();
-        ObjectNode optimalSolutionsNode = (ObjectNode)node.get("optimalSolutions");
-        for (ProgrammingLanguage language : ProgrammingLanguage.values()) {
-            if (optimalSolutionsNode.has(language.name())) {
-                optimalSolutions.put(language, optimalSolutionsNode.get(language.name()).asText());
-            }
-        }*/
-
         ProblemDto problemDto = ProblemDto.builder()
                                     .title(node.get("title").asText())
                                     .description(node.get("description").asText())
                                     .constraints(constraints)
                                     .examples(examples)
                                     .difficulty(problemDifficulty)
-                                    .testCases(testCases)
+                                    .testCasesWithExpectedOutputs(testCases)
                                     .testCaseOutputs(testCaseOutputs)
                                     .cpuTimeLimit(cpuTimeLimit)
                                     .memoryLimit(memoryLimit)
                                     .stackLimit(stackLimit)
                                     .driverCodes(driverCodes)
-                                    //.optimalSolutions(optimalSolutions)
                                     .topics(topics)
+                                    .companyTags(companyTags)
                                     .build();
 
         System.out.println("Deserialization completed");

@@ -1,28 +1,33 @@
 package com.codinglemonsbackend.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.mongodb.client.result.DeleteResult;
 
 @Repository
 public class ProblemsRepository {
 
+    @Autowired
     private MongoTemplate mongoTemplate;
 
-    public ProblemsRepository(@Autowired MongoTemplate mongoTemplate) {
-        this.mongoTemplate = mongoTemplate;
-    }
+    @Autowired
+    private ModelMapper modelMapper;
 
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);
@@ -67,16 +72,7 @@ public class ProblemsRepository {
       
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
-        List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->ProblemDto.builder()
-                                                                                        .problemId(prob.getProblemId())
-                                                                                        .title(prob.getTitle())
-                                                                                        .description(prob.getDescription())
-                                                                                        .constraints(prob.getConstraints())
-                                                                                        .examples(prob.getExamples())
-                                                                                        .topics(prob.getTopics())
-                                                                                        .difficulty(prob.getDifficulty())
-                                                                                        .acceptance(prob.getAcceptance())
-                                                                                        .build())
+        List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->modelMapper.map(prob, ProblemDto.class))
                                                                     .collect(Collectors.toList());
 
         return new ProblemSet(
@@ -98,11 +94,34 @@ public class ProblemsRepository {
         return Optional.ofNullable(problemEntity);
     }
 
+    public DeleteResult removeProblemById(Integer id) {
+        Query query = new Query(Criteria.where("problemId").is(id));
+        return mongoTemplate.remove(query, ProblemEntity.class);
+    }
 
     public void removeAllProblems() {
         mongoTemplate.dropCollection("problems");
         mongoTemplate.dropCollection("database_sequences");
     }
 
-    
+
+    public void updateProblem(Integer problemId, Map<String, Object> updatePropertiesMap) {
+        
+        Query query = new Query(Criteria.where("problemId").is(problemId));
+
+        Update update = new Update();
+
+        updatePropertiesMap.entrySet().stream().forEach(e -> {
+            update.set(e.getKey(), e.getValue());
+        });
+
+        mongoTemplate.updateFirst(query, update, ProblemEntity.class);
+    }
+
+    public Optional<ProblemEntity> getLasEntity(){
+
+        Query query = new Query().with(Sort.by(Sort.Order.desc("problemId"))).limit(1);
+
+        return Optional.ofNullable(mongoTemplate.findOne(query, ProblemEntity.class));
+    }
 }

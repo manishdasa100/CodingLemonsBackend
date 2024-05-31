@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -36,6 +37,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
     @Autowired
     private ModelMapper modelMapper;
+
+    private final Integer runCodeTestCaseCount = 2;
 
     @Override
     public SubmissionDto getSubmission(String submissionId) {
@@ -81,6 +84,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         private Integer problemId;
 
+        private Boolean isRunCode;
+
         private List<Judge0SubmissionRequestPayload> submissions;
 
     }
@@ -116,37 +121,38 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         submissionMetadata.setSubmissionJobId(submissionJobId);
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY, getSubmissionJob(submissionMetadata));
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY, createSubmissionJob(submissionMetadata));
         
         return submissionJobId;
     }
 
-    public String saveSubmission(Submission submission){
-        
-        return submissionRepository.saveSubmission(submission); 
-    }
-
-    private SubmissionJob getSubmissionJob(SubmissionMetadata submissionMetadata) {
+    private SubmissionJob createSubmissionJob(SubmissionMetadata submissionMetadata) {
 
         System.out.println("RECEIVED SUBMISSION FROM " + submissionMetadata.getUsername());
 
-        String submissionJobId = submissionMetadata.getSubmissionJobId();
+        Boolean isRunCode = submissionMetadata.getIsRunCode();
 
-        ProblemDto problemDto = submissionMetadata.getProblemDto();
+        String submissionJobId = submissionMetadata.getSubmissionJobId();
 
         ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
 
         Integer languageId = programmingLanguage.getLanguagId();
 
-        List<String> testCases = problemDto.getTestCases();
+        ProblemDto problemDto = submissionMetadata.getProblemDto();
 
-        List<String> testCaseOutputs = problemDto.getTestCaseOutputs();
+        // List<Map<String, String>> testCases;
+        // testCases = (isRunCode?problemDto.getTestCases().subList(0, runCodeTestCaseCount):problemDto.getTestCases());
+
+        Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
+
+        // List<String> testCaseOutputs;
+        // testCaseOutputs = (isRunCode?problemDto.getTestCaseOutputs().subList(0, runCodeTestCaseCount):problemDto.getTestCaseOutputs());
 
         String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
 
         String userCode = submissionMetadata.getUserCode();
 
-        String sourceCode = driverCode.concat(userCode);
+        String sourceCode = SourceCodeFormatter.formatCode(driverCode, userCode, programmingLanguage);
 
         Float cpuTimeLimit = problemDto.getCpuTimeLimit();
 
@@ -156,12 +162,13 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         List<Judge0SubmissionRequestPayload> submissions = new ArrayList<Judge0SubmissionRequestPayload>();
 
-        for (int i = 0; i < testCases.size(); i++) {
+        testCases.entrySet().stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
+            System.out.println("test case : "+ entry.getKey());
             Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
-            .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))
+            .source_code(sourceCode)
             .language_id(languageId)
-            .stdin(Base64.getEncoder().encodeToString(testCases.get(i).getBytes()))
-            .expected_output(Base64.getEncoder().encodeToString(testCaseOutputs.get(i).getBytes()))
+            .stdin(entry.getKey())
+            .expected_output(entry.getValue())
             .cpu_time_limit(cpuTimeLimit)
             .memory_limit(memoryLimit)
             .stack_limit(stackLimit)
@@ -169,9 +176,46 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
             .build();
 
             submissions.add(payload);
-        }
+        });
+        // testCases.entrySet().stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
+        //     Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
+        //     .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))
+        //     .language_id(languageId)
+        //     .stdin(Base64.getEncoder().encodeToString(entry.getKey().getBytes()))
+        //     .expected_output(Base64.getEncoder().encodeToString(entry.getValue().getBytes()))
+        //     .cpu_time_limit(cpuTimeLimit)
+        //     .memory_limit(memoryLimit)
+        //     .stack_limit(stackLimit)
+        //     .enable_network(false)
+        //     .build();
 
-        return new SubmissionJob(submissionJobId, submissionMetadata.getUsername(), problemDto.getProblemId(), submissions);
+        //     submissions.add(payload);
+        // });
+
+
+
+        // for (int i = 0; i < testCases.size(); i++) {
+        //     Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
+        //     .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))
+        //     .language_id(languageId)
+        //     .stdin(Base64.getEncoder().encodeToString(testCases.get(i)..getBytes()))
+        //     .expected_output(Base64.getEncoder().encodeToString(testCaseOutputs.get(i).getBytes()))
+        //     .cpu_time_limit(cpuTimeLimit)
+        //     .memory_limit(memoryLimit)
+        //     .stack_limit(stackLimit)
+        //     .enable_network(false)
+        //     .build();
+
+        //     submissions.add(payload);
+        // }
+
+        return new SubmissionJob(
+            submissionJobId, 
+            submissionMetadata.getUsername(), 
+            problemDto.getProblemId(), 
+            isRunCode, 
+            submissions
+        );
         
     }
     

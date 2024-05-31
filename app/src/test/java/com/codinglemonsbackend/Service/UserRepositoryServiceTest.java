@@ -27,7 +27,7 @@ public class UserRepositoryServiceTest {
     private UserRepository mockRepository;
 
     @InjectMocks
-    private UserRepositoryService underTest;
+    private UserService underTest;
 
     
     @Test

@@ -35,6 +35,8 @@ public class UserEntity implements UserDetails{
 
     private String password;
 
+    private String profilePictureId;
+
     private Role role;
 
     private int points;

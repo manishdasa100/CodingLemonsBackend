@@ -1,19 +1,35 @@
 package com.codinglemonsbackend.Events;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventListener;
+
 import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
+import org.springframework.data.mongodb.core.mapping.event.BeforeDeleteEvent;
 import org.springframework.stereotype.Component;
 
+import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Repository.ProblemsRepository;
+import com.codinglemonsbackend.Service.MainService;
 import com.codinglemonsbackend.Service.SequenceService;
 
 @Component
 public class ProblemEntityEventListener extends AbstractMongoEventListener<ProblemEntity>{
 
+    @Autowired
     private SequenceService sequenceService;
 
-    public ProblemEntityEventListener(@Autowired SequenceService sequenceGeneratorService){
+    @Autowired
+    private ProblemsRepository problemsRepository;
+
+    @Autowired
+    private MainService mainService;
+
+    public ProblemEntityEventListener(SequenceService sequenceGeneratorService){
         this.sequenceService = sequenceGeneratorService;
     }
 
@@ -23,8 +39,39 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         System.out.println("onBeforeConvert called" + event.getSource().getProblemId());
         System.out.println("---------------------------------------------");
         // if (event.getSource().getProblemId() < 1) {
-        event.getSource().setProblemId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
+        ProblemEntity entityToSave = event.getSource();
+        entityToSave.setProblemId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
+        Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
+        if (lastProblemEntity.isPresent()){
+            entityToSave.setPreviousProblemId(lastProblemEntity.get().getProblemId());
+            mainService.updateProblem(lastProblemEntity.get().getProblemId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getProblemId()).build());
+        }
         // }
+    }
+
+    @Override
+    public void onBeforeDelete(BeforeDeleteEvent<ProblemEntity> event){
+        System.out.println("BEFORE DELETE EVENT CALLED");
+        Integer problemId = event.getSource().getInteger("_id");
+        System.out.println(problemId);
+        Optional<ProblemEntity> entityToDelete = problemsRepository.getProblemById(problemId);
+        if (entityToDelete.isPresent()){
+            Integer previousProblemId = entityToDelete.get().getPreviousProblemId();
+            Integer nextProblemId = entityToDelete.get().getNextProblemId();
+            if (previousProblemId!= null) {
+                // Updating the previous problem's nextProblemId to deleted problem's nextProblemId
+                Map<String, Object> propertiesMap = new HashMap<>();
+                propertiesMap.put("nextProblemId", entityToDelete.get().getNextProblemId());
+                problemsRepository.updateProblem(previousProblemId, propertiesMap);
+            }
+            if (nextProblemId != null) {
+                // Updating the next problem's previousProblemId to deleted problem's previousProblemId
+                Map<String, Object> propertiesMap = new HashMap<>();
+                propertiesMap.put("previousProblemId", entityToDelete.get().getPreviousProblemId());
+                problemsRepository.updateProblem(nextProblemId, propertiesMap);
+            }
+
+        }
     }
     
 }

@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -56,10 +57,21 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ExceptionMessage> handleSubmissionFailure(IllegalStateException e){
+    @ExceptionHandler(FailedSubmissionException.class)
+    public ResponseEntity<ExceptionMessage> handleSubmissionFailure(FailedSubmissionException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FAILED_DEPENDENCY);
     }
+
+    @ExceptionHandler(ProfilePictureUploadFailureException.class)
+    public ResponseEntity<ExceptionMessage> handleProfilePictureUploadFailureException(ProfilePictureUploadFailureException e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ExceptionMessage> handleHttpMessageNotReadablException(HttpMessageNotReadableException e) {
+       return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST); 
+    }
+
 }
     
 

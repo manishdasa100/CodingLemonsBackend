@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @JsonInclude(value = Include.NON_NULL)
-public class CodeSubmissionResponsePayload {
+public class SubmissionResponsePayload<T> {
 
-    private String status;
+    private String submissionStatus;
 
-    private SubmissionDto submission;
+    private T submission;
 }

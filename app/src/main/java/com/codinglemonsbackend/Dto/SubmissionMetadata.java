@@ -22,4 +22,6 @@ public class SubmissionMetadata {
     private String userCode;
 
     private String username;
+
+    private Boolean isRunCode;
 }

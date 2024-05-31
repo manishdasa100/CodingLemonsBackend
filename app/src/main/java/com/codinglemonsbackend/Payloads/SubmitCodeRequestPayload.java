@@ -3,6 +3,8 @@ package com.codinglemonsbackend.Payloads;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
 
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,12 +14,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SubmitCodeRequestPayload {
     
-    @NotEmpty
+    @NotNull
     private Integer problemId;
 
-    @NotEmpty
+    @NotNull
     private ProgrammingLanguage language;
 
     @NotEmpty
     private String userCode;
+
+    @NotNull
+    private Boolean isRunCode;
 }

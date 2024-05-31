@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-import com.codinglemonsbackend.Service.UserRepositoryService;
+import com.codinglemonsbackend.Service.UserService;
 import com.codinglemonsbackend.Utils.JwtUtils;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,7 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter{
     private JwtUtils jwtUtils;
 
     @Autowired
-    private UserRepositoryService userRepositoryService;
+    private UserService userRepositoryService;
 
     @Autowired
     @Qualifier("handlerExceptionResolver")

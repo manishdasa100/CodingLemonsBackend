@@ -5,23 +5,32 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.parsing.Problem;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
+import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
+import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
-import com.codinglemonsbackend.Payloads.CodeSubmissionResponsePayload;
+import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
+import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
+import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
+import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
+import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +40,9 @@ import lombok.extern.slf4j.Slf4j;
 public class MainServiceImpl implements MainService{
 
     private static final Integer PROBLEMSETMAXSIZE = 100;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
@@ -47,7 +59,15 @@ public class MainServiceImpl implements MainService{
     @Autowired
     private RedisService redisService;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
     private final String PENDING_SUBMISSION_REDIS_KEY = "submissions:pending";
+
+    public final String CODERUN_RESULTS = "coderun:results";
 
     private UserEntity getCurrentlySignedInUser(){
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -131,6 +151,16 @@ public class MainServiceImpl implements MainService{
     }
 
     @Override
+    public void updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
+        problemRepositoryService.updateProblem(problemId, updateMetadata);
+    }
+
+    @Override
+    public void deleteProblemById(Integer problemId) {
+        problemRepositoryService.deleteProblemById(problemId);
+    }
+
+    @Override
     public void clearAllProblems() {
         problemRepositoryService.removeAllProblems();
     }
@@ -157,6 +187,7 @@ public class MainServiceImpl implements MainService{
                                                 .language(payload.getLanguage())
                                                 .username(getCurrentlySignedInUser().getUsername())
                                                 .userCode(payload.getUserCode())
+                                                .isRunCode(payload.getIsRunCode())
                                                 .build();
 
         //Mono<List<Judge0SubmissionToken>> submissionTokens = submissionService.submitCode(submissionMetadata);
@@ -170,7 +201,7 @@ public class MainServiceImpl implements MainService{
     }
 
     @Override
-    public CodeSubmissionResponsePayload getSubmission(String submissionId) {
+    public SubmissionResponsePayload<?> getSubmission(String submissionId) throws FailedSubmissionException {
 
         // First check if the submission is present in redis hash, if yes then return the status as pending
         // else search the database for the submission and return 
@@ -180,15 +211,28 @@ public class MainServiceImpl implements MainService{
             if (status.equals(PendingOrdersStatus.FAILED.toString()) || status.equals(PendingOrdersStatus.HAULTED.toString())) {
                 redisService.deleteHashEntry(PENDING_SUBMISSION_REDIS_KEY, submissionId);
                 log.info("Submission {} for username {} {}", submissionId, getCurrentlySignedInUser(), status);
-                throw new IllegalStateException("Submission " + status);
+                throw new FailedSubmissionException("Submission " + status);
             } 
-            return CodeSubmissionResponsePayload.builder().status(status).build();
+            return new SubmissionResponsePayload<SubmissionDto>(status, null);
+        }
+
+        // Check if the submission is in code run hash
+        if (redisService.hashKeyExists(CODERUN_RESULTS, submissionId)) {
+            String result = redisService.getHashValue(CODERUN_RESULTS, submissionId);
+            try {
+                CodeRunResultDto codeRunResult = objectMapper.readValue(result, CodeRunResultDto.class);
+                redisService.deleteHashEntry(CODERUN_RESULTS, submissionId);
+                return new SubmissionResponsePayload<CodeRunResultDto>("Completed", codeRunResult);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }    
         }
 
         SubmissionDto submissionDto = submissionService.getSubmission(submissionId);
 
-        return CodeSubmissionResponsePayload.builder().status("Completed").submission(submissionDto).build();
+        return new SubmissionResponsePayload<SubmissionDto>("Completed", submissionDto);
     }
+
 
     @Override
     public ProblemDto getProblemOfTheDay() {
@@ -198,6 +242,41 @@ public class MainServiceImpl implements MainService{
         if (Objects.isNull(problemOfTheDay)) throw new NoSuchElementException("Problem of the day not set");
 
         return problemOfTheDay;
+    }
+
+    @Override
+    public boolean updateUserInfo(UserUpdateRequestPayload updateRequest) {
+
+        UserEntity user = (UserEntity)getCurrentlySignedInUser();
+
+        return userService.updateUserProfileInfo(user, updateRequest);
     } 
+
+    @Override
+    public void uploadUserProfilePicture(MultipartFile file) throws ProfilePictureUploadFailureException {
+
+        UserEntity user = getCurrentlySignedInUser();
+
+        userService.uploadUserProfilePicture(user, file);
+    }
+
+    @Override
+    public byte[] getUserProfilePicture() {
+
+        UserEntity user = getCurrentlySignedInUser();
+
+        byte[] profilePicture = userService.getUserProfilePicture(user);
+
+        return profilePicture;
+    
+    }
+
+    @Override
+    public UserDto getUserInfo() {
+
+        UserEntity user = getCurrentlySignedInUser();
+
+        return modelMapper.map(user, UserDto.class); 
+    }
  
 }

@@ -22,7 +22,7 @@ import com.codinglemonsbackend.Utils.JwtUtils;
 public class AuthenticationService {
 
     @Autowired
-    private UserRepositoryService userRepositoryService;
+    private UserService userRepositoryService;
 
     @Autowired
     private JwtUtils jwtUtils; 
@@ -69,6 +69,6 @@ public class AuthenticationService {
         String jwtToken = jwtUtils.generateToken(user);
 
         return jwtToken;
-    }
+    } 
 }
 

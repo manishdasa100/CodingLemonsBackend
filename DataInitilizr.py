@@ -58,7 +58,7 @@ def createProblem(id, difficulty, topics, acceptance):
         "driverCodes": {
             "JAVA":"import java.util.Scanner;class Main{public static void main(String[] args){Scanner sc=new Scanner(System.in);Solution solution=new Solution();while(sc.hasNext()){String str=sc.nextLine();System.out.println(solution.myFunction(str));}}}",
             "PYTHON":"Python driver code",
-            "JAVASCRIPT":"Javascript friver code"
+            "JAVASCRIPT":"Javascript driver code"
         },
         "cpuTimeLimit":1.0,
         "memoryLimit":128000.0,
@@ -67,12 +67,12 @@ def createProblem(id, difficulty, topics, acceptance):
     }
     return problem
 
-admin_auth_token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbjEiLCJpYXQiOjE3MDkzMDU1MTgsImV4cCI6MTcwOTM5MTkxOH0.Rk20UwPEoxzsDr_LEs0RvO3KUptR6BIHlrTbzrc_JnE"
+admin_auth_token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbjEiLCJpYXQiOjE3MTQyOTA3ODksImV4cCI6MTcxNDM3NzE4OX0.i5otRd3v1jw2PcA7qy3CVHvrvzl9whn2ooNfzP-Z5e4"
 
-response = requests.delete(remove_prob_api_url, headers={"Authorization":"Bearer %s" %auth_token})
+response = requests.delete(remove_prob_api_url, headers={"Authorization":"Bearer %s" %admin_auth_token})
 
 for i in range(PROBLEM_COUNT):
     problem = createProblem(i+1, get_random_difficulty(), get_random_topics(), random.randint(0, 100)) 
-    response = requests.post(add_prob_api_url, json=problem, headers={"Content-Type": "application/json","Authorization":"Bearer %s" %auth_token})
+    response = requests.post(add_prob_api_url, json=problem, headers={"Content-Type": "application/json","Authorization":"Bearer %s" %admin_auth_token})
     response.json()
     print(response.content)

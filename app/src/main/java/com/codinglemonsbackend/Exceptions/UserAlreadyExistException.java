@@ -1,6 +1,8 @@
 package com.codinglemonsbackend.Exceptions;
 
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 public class UserAlreadyExistException extends Exception {
 
     public UserAlreadyExistException(String message) {

@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Entities;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,16 +30,19 @@ public class ProblemEntity {
     Integer problemId;
     String title;
     String description;
-    List<String> constraints;
-    List<Example> examples;
-    List<String> testCases;
+    Set<String> constraints;
+    Set<Example> examples;
+    Map<String, String> testCasesWithExpectedOutputs;
     List<String> testCaseOutputs;
     Difficulty difficulty;
     Map<ProgrammingLanguage, String> driverCodes;
     float cpuTimeLimit;
     float memoryLimit;
-    int stackLimit;
+    Integer stackLimit;
     //Map<ProgrammingLanguage, String> optimalSolutions;
-    List<String> topics;
+    Set<String> topics;
+    Set<String> companyTags;
     Integer acceptance;
+    Integer previousProblemId;
+    Integer nextProblemId;
 }
