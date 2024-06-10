@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Dto;
 
 import java.io.Serializable;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,70 +27,66 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 //@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
-@JsonDeserialize(using=ProblemEntityDeserializer.class) 
+// @JsonDeserialize(using=ProblemEntityDeserializer.class) 
 public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
-    Integer problemId;
+    private Integer problemId;
     
     @NotEmpty
-    @Size(min = 5, max = 30)
-    String title;
+    @Size(min = 5, max = 60)
+    private String title;
 
     @NotEmpty
     @Size(min = 20, max = 500)
-    String description;
+    private String description;
 
     @NotEmpty
-    Set<String> constraints;
+    private Set<String> constraints;
 
     @NotEmpty
-    Set<Example> examples;
-
-    @NotEmpty
-    @JsonProperty(access = Access.WRITE_ONLY)
-    Map<String, String> testCasesWithExpectedOutputs;
+    private Set<Example> examples;
 
     @NotEmpty
     @JsonProperty(access = Access.WRITE_ONLY)
-    List<String> testCaseOutputs;
-
-    // @NotEmpty
-    // Map<String, String> testcaseAndExpectedOutputs;
+    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
 
     @NotNull(message = "Difficulty must be either EASY/MEDIUM/HARD")
-    Difficulty difficulty;
+    private Difficulty difficulty;
+
+    @NotEmpty
+    private Map<ProgrammingLanguage, String> codeSnippets;
 
     @NotEmpty
     @JsonProperty(access = Access.WRITE_ONLY)
-    Map<ProgrammingLanguage, String> driverCodes;
+    private Map<ProgrammingLanguage, String> driverCodes;
 
     @NotNull
     @JsonProperty(access = Access.WRITE_ONLY)
-    Float cpuTimeLimit;
+    private Float cpuTimeLimit;
 
     @NotNull
     @JsonProperty(access = Access.WRITE_ONLY)
-    Float memoryLimit;
+    private Float memoryLimit;
 
     @NotNull
     @JsonProperty(access = Access.WRITE_ONLY)
-    Integer stackLimit;
-
-    // @NotEmpty
-    // Map<ProgrammingLanguage, String> optimalSolutions;
+    private Integer stackLimit;
     
     @NotEmpty
-    Set<String> topics;
+    private Set<String> topics;
 
-    Set<String> companyTags;
-
-    @JsonProperty(access = Access.READ_ONLY)
-    Integer acceptance;
+    private Set<String> companyTags;
 
     @JsonProperty(access = Access.READ_ONLY)
-    Integer previousProblemId;
+    private Integer previousProblemId;
 
     @JsonProperty(access = Access.READ_ONLY)
-    Integer nextProblemId;
+    private Integer nextProblemId;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer acceptedCount;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer submissionCount;
 }

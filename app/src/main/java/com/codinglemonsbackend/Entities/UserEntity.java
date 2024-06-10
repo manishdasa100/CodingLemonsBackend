@@ -39,9 +39,7 @@ public class UserEntity implements UserDetails{
 
     private Role role;
 
-    private int points;
-
-    private List<Submission> submissions;
+    // private List<Submission> submissions;
  
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

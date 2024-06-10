@@ -32,6 +32,7 @@ public class UserDto {
     @Size(min = 2, max = 20)
     private String lastName;
 
+    @NotEmpty
     @Pattern(regexp = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$", message = "Not a valid email address")
     private String email;
 

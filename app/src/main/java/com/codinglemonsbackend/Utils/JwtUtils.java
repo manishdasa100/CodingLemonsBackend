@@ -7,8 +7,11 @@ import java.util.function.Function;
 
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+
+import com.codinglemonsbackend.Service.RedisService;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -19,7 +22,10 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtUtils {
     
-    private static String SECERET_KEY = "cae79af95c4ea23cbd769768052491a4c6485ec6573484bcf7a38296c2e8264b";
+    @Value("${jwt.signkey}")
+    private String SECERET_KEY; 
+
+    private RedisService redisService;
 
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
@@ -44,6 +50,10 @@ public class JwtUtils {
 
     public Boolean isTokenExpired(String token){
         return extractExpiration(token).before(new Date());
+    }
+
+    public Boolean isTokenBlacklisted(String token){
+        return redisService.keyExist(token);
     }
 
     public String generateToken(UserDetails userDetails){

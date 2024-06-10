@@ -1,9 +1,7 @@
 package com.codinglemonsbackend.Utils;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -52,19 +50,10 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
             examples.add(exampleItem);
         }
 
-        // List<String> testCases = new ArrayList<String>();
-        // for (JsonNode item: node.get("testCases")){
-        //     testCases.add(item.asText());
-        // }
-        Map<String, String> testCases = new LinkedHashMap<>();
-        node.get("testCases").fields().forEachRemaining((entry) -> {
+        LinkedHashMap<String, String> testCases = new LinkedHashMap<>();
+        node.get("testCasesWithExpectedOutputs").fields().forEachRemaining((entry) -> {
             testCases.put(entry.getKey(), entry.getValue().asText());
         });
-
-        List<String> testCaseOutputs = new ArrayList<String>();
-        for (JsonNode item: node.get("testCaseOutputs")){
-            testCaseOutputs.add(item.asText());
-        }
 
         Set<String> topics = new HashSet<String>();
         for (JsonNode item: node.get("topics")){
@@ -97,7 +86,6 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                                     .examples(examples)
                                     .difficulty(problemDifficulty)
                                     .testCasesWithExpectedOutputs(testCases)
-                                    .testCaseOutputs(testCaseOutputs)
                                     .cpuTimeLimit(cpuTimeLimit)
                                     .memoryLimit(memoryLimit)
                                     .stackLimit(stackLimit)

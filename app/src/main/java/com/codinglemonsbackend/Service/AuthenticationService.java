@@ -1,7 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.util.ArrayList;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,10 +20,16 @@ import com.codinglemonsbackend.Utils.JwtUtils;
 public class AuthenticationService {
 
     @Autowired
-    private UserService userRepositoryService;
+    private UserService userService;
+
+    @Autowired
+    private UserProfileService userProfileService;
 
     @Autowired
     private JwtUtils jwtUtils; 
+
+    @Autowired
+    private RedisService redisService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -42,12 +46,12 @@ public class AuthenticationService {
                             .email(userDto.getEmail())
                             .password(passwordEncoder.encode(userDto.getPassword()))
                             .role((isAdmin)?Role.ADMIN:Role.USER)
-                            .points(0)
-                            // .problemLists(UserRepositoryService.getDefaultProblemList())
-                            .submissions(new ArrayList<>())
                             .build();
 
-        userRepositoryService.saveUser(user);
+        userService.saveUser(user);
+
+        // Think about creating a asyc task for creating a new user profile
+        userProfileService.createAndSaveUserProfile(user);
 
         String jwtToken = jwtUtils.generateToken(user);
 
@@ -64,11 +68,15 @@ public class AuthenticationService {
 
         if (!authentication.isAuthenticated()) throw new BadCredentialsException("");
 
-        UserDetails user = userRepositoryService.loadUserByUsername(request.getUsername());
+        UserDetails user = userService.loadUserByUsername(request.getUsername());
 
         String jwtToken = jwtUtils.generateToken(user);
 
         return jwtToken;
     } 
+
+    public boolean resetUserPassword(String username, String password) {
+        return userService.resetUserPassword(username, passwordEncoder.encode(password));
+    }
 }
 

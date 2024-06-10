@@ -8,6 +8,7 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.UserDto;
+import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
@@ -45,9 +46,10 @@ public interface MainService {
 
     public ProblemDto getProblemOfTheDay();
 
-    public boolean updateUserInfo(UserUpdateRequestPayload updateRequest);
+    //public boolean updateUserDetails(UserUpdateRequestPayload updateRequest);
+    public boolean updateUserProfile(UserProfileDto newUserProfile);
 
-    public UserDto getUserInfo();
+    public UserProfileDto getUserProfile();
 
     public void uploadUserProfilePicture(MultipartFile file) throws ProfilePictureUploadFailureException;
 

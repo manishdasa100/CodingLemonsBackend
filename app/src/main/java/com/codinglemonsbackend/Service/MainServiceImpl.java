@@ -20,6 +20,7 @@ import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
+import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
@@ -43,6 +44,9 @@ public class MainServiceImpl implements MainService{
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserProfileService userProfileService;
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
@@ -244,12 +248,38 @@ public class MainServiceImpl implements MainService{
         return problemOfTheDay;
     }
 
+    // @Override
+    // public boolean updateUserDetails(UserUpdateRequestPayload updateRequest) {
+
+    //     UserEntity user = (UserEntity)getCurrentlySignedInUser();
+
+    //     UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
+
+    //     return userService.updateUserDetails(user, updateRequest);
+    // } 
     @Override
-    public boolean updateUserInfo(UserUpdateRequestPayload updateRequest) {
+    public boolean updateUserProfile(UserProfileDto newUserProfile) {
+
+        System.out.println("UPDATING USER PROFILE");
 
         UserEntity user = (UserEntity)getCurrentlySignedInUser();
 
-        return userService.updateUserProfileInfo(user, updateRequest);
+        UserProfileDto userProfile = userProfileService.getUserProfile(user.getUsername());
+
+        Boolean updateStatus = userProfileService.updateUserProfile(userProfile, newUserProfile);
+
+        if (newUserProfile.getFirstName() != null || newUserProfile.getLastName() != null || newUserProfile.getEmail() != null) {
+            System.out.println("UPDATING USER DETAILS");
+            userService.updateUserDetails(UserDto.builder()
+                                            .username(user.getUsername())
+                                            .firstName(newUserProfile.getFirstName())
+                                            .lastName(newUserProfile.getLastName())
+                                            .email(newUserProfile.getEmail())
+                                            .build(),
+                                            modelMapper.map(user, UserDto.class));
+        }
+
+        return updateStatus;
     } 
 
     @Override
@@ -257,7 +287,7 @@ public class MainServiceImpl implements MainService{
 
         UserEntity user = getCurrentlySignedInUser();
 
-        userService.uploadUserProfilePicture(user, file);
+        userProfileService.uploadUserProfilePicture(user.getUsername(), file);
     }
 
     @Override
@@ -265,18 +295,22 @@ public class MainServiceImpl implements MainService{
 
         UserEntity user = getCurrentlySignedInUser();
 
-        byte[] profilePicture = userService.getUserProfilePicture(user);
+        UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
+
+        byte[] profilePicture = userProfileService.getUserProfilePicture(userProfileDto);
 
         return profilePicture;
     
     }
 
     @Override
-    public UserDto getUserInfo() {
+    public UserProfileDto getUserProfile() {
 
         UserEntity user = getCurrentlySignedInUser();
 
-        return modelMapper.map(user, UserDto.class); 
+        UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
+
+        return userProfileDto;
     }
  
 }

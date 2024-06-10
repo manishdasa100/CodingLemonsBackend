@@ -63,7 +63,8 @@ public class ProblemRepositoryService {
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
         System.out.println("---------------------------------------------");
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
-        entity.setAcceptance(0);
+        entity.setSubmissionCount(0);
+        entity.setAcceptedCount(0);
         problemsRepository.addProblem(entity);
     }
 
@@ -130,8 +131,8 @@ public class ProblemRepositoryService {
             updatePropertiesMap.put("testCasesWithExpectedOutputs", updateMetadata.getTestCasesWithExpectedOutputs());
         }
 
-        if (updateMetadata.getTestCaseOutputs()!= null && !updateMetadata.getTestCaseOutputs().equals(problemDto.getTestCaseOutputs())) {
-            updatePropertiesMap.put("testCaseOutputs", updateMetadata.getTestCaseOutputs());
+        if (updateMetadata.getCodeSnippets()!= null && !updateMetadata.getCodeSnippets().equals(problemDto.getCodeSnippets())) {
+            updatePropertiesMap.put("codeSnippets", updateMetadata.getCodeSnippets());
         }
 
         if (updateMetadata.getDriverCodes()!= null && !updateMetadata.getDriverCodes().equals(problemDto.getDriverCodes())) {

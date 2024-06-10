@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,22 +28,22 @@ public class ProblemEntity {
     public static final String SEQUENCE_NAME = "problem_sequence";
     
     @Id
-    Integer problemId;
-    String title;
-    String description;
-    Set<String> constraints;
-    Set<Example> examples;
-    Map<String, String> testCasesWithExpectedOutputs;
-    List<String> testCaseOutputs;
-    Difficulty difficulty;
-    Map<ProgrammingLanguage, String> driverCodes;
-    float cpuTimeLimit;
-    float memoryLimit;
-    Integer stackLimit;
-    //Map<ProgrammingLanguage, String> optimalSolutions;
-    Set<String> topics;
-    Set<String> companyTags;
-    Integer acceptance;
-    Integer previousProblemId;
-    Integer nextProblemId;
+    private Integer problemId;
+    private String title;
+    private String description;
+    private Set<String> constraints;
+    private Set<Example> examples;
+    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
+    private Difficulty difficulty;
+    private Map<ProgrammingLanguage, String> driverCodes;
+    private Map<ProgrammingLanguage, String> codeSnippets;
+    private float cpuTimeLimit;
+    private float memoryLimit;
+    private Integer stackLimit;
+    private Set<String> topics;
+    private Set<String> companyTags;
+    private Integer previousProblemId;
+    private Integer nextProblemId;
+    private Integer acceptedCount;
+    private Integer submissionCount;
 }

@@ -11,6 +11,7 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.AuthenticationResponse;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;
+import com.codinglemonsbackend.Payloads.ResetPasswordRequestPayload;
 import com.codinglemonsbackend.Service.AuthenticationService;
 
 import jakarta.validation.Valid;
@@ -35,6 +36,15 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> loginUser(@Valid @RequestBody LoginRequestPayload request){
         return ResponseEntity.ok().body(new AuthenticationResponse(authService.loginUser(request)));
+    }
+
+    @PostMapping("/resetpassword")
+    public ResponseEntity<String> resetUserPassword(@Valid @RequestBody ResetPasswordRequestPayload resetPasswordRequestPayload){
+        
+        boolean updateStatus = authService.resetUserPassword(resetPasswordRequestPayload.getUsername(), 
+                                        resetPasswordRequestPayload.getNewPassword());
+
+        return ResponseEntity.ok().body(updateStatus?"Password updated successfully":"Password not updated");
     }
     
 }

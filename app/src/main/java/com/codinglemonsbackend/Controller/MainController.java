@@ -21,6 +21,7 @@ import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.UserDto;
+import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserProblemList;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
@@ -159,20 +160,23 @@ public class MainController {
     }
 
     @GetMapping("user/profile")
-    public UserDto getUserInfo(){
-        return mainService.getUserInfo();
+    public ResponseEntity<UserProfileDto> getUserProfile() {
+
+        UserProfileDto userProfile = mainService.getUserProfile();
+
+        return ResponseEntity.ok().body(userProfile);
     }
 
-    @PutMapping("/user/updateProfile")
-    public ResponseEntity<String> updateUserInfo(@Valid @RequestBody UserUpdateRequestPayload updateRequestPayload) {
+    @PutMapping("/user/update")
+    public ResponseEntity<String> updateUserProfile(@Valid @RequestBody UserProfileDto newUserProfile) {
         
-        boolean updated = mainService.updateUserInfo(updateRequestPayload);
+        boolean updated = mainService.updateUserProfile(newUserProfile);
 
         if (updated) {
             return ResponseEntity.ok().body("Updated");
         }
 
-        return ResponseEntity.badRequest().body("Nothing to update");
+        return ResponseEntity.ok().body("No updates done");
     }
 
     @PostMapping(value = "/user/uploadProfilePic", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)

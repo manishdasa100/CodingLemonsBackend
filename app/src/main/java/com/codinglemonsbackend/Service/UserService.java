@@ -1,6 +1,8 @@
 package com.codinglemonsbackend.Service;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,12 +13,13 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
-import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
 import com.codinglemonsbackend.Properties.S3Buckets;
 import com.codinglemonsbackend.Repository.UserRepository;
+import com.mongodb.client.result.UpdateResult;
 
 @Service
 public class UserService implements UserDetailsService{
@@ -24,11 +27,11 @@ public class UserService implements UserDetailsService{
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private S3Service s3Service;
+    // @Autowired
+    // private S3Service s3Service;
 
-    @Autowired
-    private S3Buckets s3Buckets;
+    // @Autowired
+    // private S3Buckets s3Buckets;
 
     public void saveUser(UserEntity user) throws UserAlreadyExistException{
         try{
@@ -42,15 +45,40 @@ public class UserService implements UserDetailsService{
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Optional<UserEntity> user = userRepository.getUser(username);
-        if (user.isEmpty()) throw new UsernameNotFoundException("User not found");
+        if (user.isEmpty()) throw new UsernameNotFoundException("Username not found");
         return user.get();
     }
 
-    public boolean updateUserProfileInfo(UserEntity user, UserUpdateRequestPayload updateRequest){
-        return userRepository.updateUserInfo(user, updateRequest);
+    public boolean resetUserPassword(String username, String newPassword) throws UsernameNotFoundException {
+        UpdateResult updateResult = userRepository.resetUserPassword(username, newPassword);
+        if (updateResult.getMatchedCount() == 0) throw new UsernameNotFoundException("Username not found");
+        else if (updateResult.getModifiedCount() > 0) return true;
+        return false;
     }
 
-    public void uploadUserProfilePicture(UserEntity user, MultipartFile file) throws ProfilePictureUploadFailureException{
+    // public boolean updateUserDetails(UserEntity user, UserUpdateRequestPayload updateRequest){
+    //     return userRepository.updateUserDetails(user, updateRequest);
+    // }
+    public boolean updateUserDetails(UserDto newUserDetails, UserDto currentUserDetails){
+
+        Map<String, Object> updatePropertiesMap = new HashMap<>();
+        
+        if (newUserDetails.getFirstName()!= null && !newUserDetails.getFirstName().equals(currentUserDetails.getFirstName())) {
+            updatePropertiesMap.put("firstName", newUserDetails.getFirstName());
+        }
+        if (newUserDetails.getLastName() != null && !newUserDetails.getLastName().equals(currentUserDetails.getLastName())) {
+            updatePropertiesMap.put("lastName", newUserDetails.getLastName());
+        }
+        if (newUserDetails.getEmail() !=  null && !newUserDetails.getEmail().equals(currentUserDetails.getEmail())) {
+            updatePropertiesMap.put("email", newUserDetails.getEmail());
+        }
+
+        if (updatePropertiesMap.isEmpty()) return false; 
+
+        return userRepository.updateUserDetails(newUserDetails.getUsername(), updatePropertiesMap);
+    }
+
+    /*public void uploadUserProfilePicture(UserEntity user, MultipartFile file) throws ProfilePictureUploadFailureException{
 
         String profilePictureId = UUID.randomUUID().toString();
 
@@ -80,5 +108,5 @@ public class UserService implements UserDetailsService{
 
         return userProfilePicture;
     }
-
+    */
 }

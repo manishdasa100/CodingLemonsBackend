@@ -140,13 +140,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         ProblemDto problemDto = submissionMetadata.getProblemDto();
 
-        // List<Map<String, String>> testCases;
-        // testCases = (isRunCode?problemDto.getTestCases().subList(0, runCodeTestCaseCount):problemDto.getTestCases());
-
         Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
-
-        // List<String> testCaseOutputs;
-        // testCaseOutputs = (isRunCode?problemDto.getTestCaseOutputs().subList(0, runCodeTestCaseCount):problemDto.getTestCaseOutputs());
 
         String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
 
@@ -177,23 +171,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
             submissions.add(payload);
         });
-        // testCases.entrySet().stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
-        //     Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
-        //     .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))
-        //     .language_id(languageId)
-        //     .stdin(Base64.getEncoder().encodeToString(entry.getKey().getBytes()))
-        //     .expected_output(Base64.getEncoder().encodeToString(entry.getValue().getBytes()))
-        //     .cpu_time_limit(cpuTimeLimit)
-        //     .memory_limit(memoryLimit)
-        //     .stack_limit(stackLimit)
-        //     .enable_network(false)
-        //     .build();
-
-        //     submissions.add(payload);
-        // });
-
-
-
+   
         // for (int i = 0; i < testCases.size(); i++) {
         //     Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
         //     .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))

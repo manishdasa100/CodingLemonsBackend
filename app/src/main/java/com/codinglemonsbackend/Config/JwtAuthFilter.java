@@ -29,7 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter{
     private JwtUtils jwtUtils;
 
     @Autowired
-    private UserService userRepositoryService;
+    private UserService userService;
 
     @Autowired
     @Qualifier("handlerExceptionResolver")
@@ -58,11 +58,9 @@ public class JwtAuthFilter extends OncePerRequestFilter{
             }
         }
 
-        System.out.println("Username="+userName);
-
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             System.out.println("User logging in");
-            UserDetails userDetails = this.userRepositoryService.loadUserByUsername(userName);
+            UserDetails userDetails = this.userService.loadUserByUsername(userName);
             if (jwtUtils.validateToken(jwt, userDetails)){
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                     userDetails, 

@@ -31,6 +31,8 @@ public class ProblemUpdateDto {
 
     private List<String> testCaseOutputs;
 
+    private Map<ProgrammingLanguage, String> codeSnippets;
+
     private Map<ProgrammingLanguage, String> driverCodes;
 
     private Difficulty difficulty;

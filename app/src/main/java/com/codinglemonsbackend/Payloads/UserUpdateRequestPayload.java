@@ -16,4 +16,6 @@ public class UserUpdateRequestPayload {
 
     @Pattern(regexp = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$", message = "Not a valid email address")
     private String email;
+
+    private String password;
 }
