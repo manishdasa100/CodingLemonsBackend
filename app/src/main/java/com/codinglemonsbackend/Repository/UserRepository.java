@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Repository;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -37,6 +38,8 @@ public class UserRepository {
         Update update = new Update();
 
         update.set("password", newPassword);
+
+        update.set("passwordIssueDate", new Date(System.currentTimeMillis()));
 
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, UserEntity.class);
 

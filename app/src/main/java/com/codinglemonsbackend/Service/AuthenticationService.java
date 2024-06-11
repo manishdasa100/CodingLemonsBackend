@@ -1,5 +1,10 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.Base64;
+import java.util.Date;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -45,6 +50,7 @@ public class AuthenticationService {
                             .lastName(userDto.getLastName())
                             .email(userDto.getEmail())
                             .password(passwordEncoder.encode(userDto.getPassword()))
+                            .passwordIssueDate(new Date(System.currentTimeMillis()))
                             .role((isAdmin)?Role.ADMIN:Role.USER)
                             .build();
 
@@ -57,7 +63,6 @@ public class AuthenticationService {
 
         return jwtToken;
     }
-    
 
     public String loginUser(LoginRequestPayload request){
 
@@ -78,5 +83,12 @@ public class AuthenticationService {
     public boolean resetUserPassword(String username, String password) {
         return userService.resetUserPassword(username, passwordEncoder.encode(password));
     }
+
+    // private String getRandomPassKey() {
+    //     Random random = ThreadLocalRandom.current();
+    //     byte[] r = new byte[64]; //64 bytes
+    //     random.nextBytes(r);
+    //     return Base64.getEncoder().encodeToString(r);
+    // }
 }
 

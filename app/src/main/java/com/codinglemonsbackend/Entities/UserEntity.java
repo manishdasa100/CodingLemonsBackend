@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -35,7 +36,7 @@ public class UserEntity implements UserDetails{
 
     private String password;
 
-    private String profilePictureId;
+    private Date passwordIssueDate;
 
     private Role role;
 

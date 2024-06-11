@@ -1,23 +1,18 @@
 package com.codinglemonsbackend.Service;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
-import com.codinglemonsbackend.Properties.S3Buckets;
 import com.codinglemonsbackend.Repository.UserRepository;
 import com.mongodb.client.result.UpdateResult;
 

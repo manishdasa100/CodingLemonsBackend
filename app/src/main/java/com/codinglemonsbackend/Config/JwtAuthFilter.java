@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Service.UserService;
 import com.codinglemonsbackend.Utils.JwtUtils;
 
@@ -47,6 +48,7 @@ public class JwtAuthFilter extends OncePerRequestFilter{
             jwt = authorizaitionHeader.substring(7);
             try{
                 userName = jwtUtils.extractUsername(jwt);
+                System.out.println("JWT AUTH FILTER ==> USERNAME = " + userName);
             }catch(ExpiredJwtException e){
                 // exceptionResolver.resolveException(request, response, null, e);
             } 
@@ -61,7 +63,7 @@ public class JwtAuthFilter extends OncePerRequestFilter{
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             System.out.println("User logging in");
             UserDetails userDetails = this.userService.loadUserByUsername(userName);
-            if (jwtUtils.validateToken(jwt, userDetails)){
+            if (jwtUtils.validateToken(jwt, userDetails, ((UserEntity)userDetails).getPasswordIssueDate())){
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                     userDetails, 
                     null, 

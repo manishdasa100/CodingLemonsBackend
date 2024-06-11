@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.codinglemonsbackend.Service.RedisService;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -25,14 +23,16 @@ public class JwtUtils {
     @Value("${jwt.signkey}")
     private String SECERET_KEY; 
 
-    private RedisService redisService;
-
     public String extractUsername(String token){
         return extractClaim(token, Claims::getSubject);
     }
 
     public Date extractExpiration(String token){
         return extractClaim(token, Claims::getExpiration);
+    }
+
+    public Date extractIssuedAt(String token){
+        return extractClaim(token, Claims::getIssuedAt);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver){
@@ -48,12 +48,8 @@ public class JwtUtils {
                 .getBody();
     }
 
-    public Boolean isTokenExpired(String token){
-        return extractExpiration(token).before(new Date());
-    }
-
-    public Boolean isTokenBlacklisted(String token){
-        return redisService.keyExist(token);
+    public Boolean isTokenExpired(String token, Date passowrdIssuedDate){
+        return extractExpiration(token).before(new Date()) || extractIssuedAt(token).before(passowrdIssuedDate);
     }
 
     public String generateToken(UserDetails userDetails){
@@ -70,10 +66,15 @@ public class JwtUtils {
                 .compact();
     }
 
-    public Boolean validateToken(String token, UserDetails userDetails){
+    public Boolean validateToken(String token, UserDetails userDetails, Date passwordIssueDate){
         final String userName = extractUsername(token);
-        return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token));
+        return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token, passwordIssueDate));
     }
+
+    // private SecretKey getSignInKey() {
+    //     byte[] keyBytes = Decoders.BASE64.decode(SECERET_KEY);
+    //     return Keys.hmacShaKeyFor(keyBytes);
+    // }
 
     private SecretKey getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECERET_KEY);
