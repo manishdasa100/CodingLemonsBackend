@@ -1,2 +1,3 @@
 2024-10-28 11:52:24 [restartedMain] INFO  com.codinglemonsbackend.App - Starting App using Java 17.0.10 with PID 29548 (D:\Manish workbench\Projects\CodingLemons\CodingLemonsBackend\app\build\classes\java\main started by manis in D:\Manish workbench\Projects\CodingLemons\CodingLemonsBackend\app)
 2024-10-28 11:52:24 [restartedMain] INFO  com.codinglemonsbackend.App - No active profile set, falling back to 1 default profile: "default"
+2024-10-28 11:52:31 [restartedMain] INFO  com.codinglemonsbackend.App - Started App in 8.007 seconds (process running for 8.783)
