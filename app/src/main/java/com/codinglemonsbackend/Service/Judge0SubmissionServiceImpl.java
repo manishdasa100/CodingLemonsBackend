@@ -84,6 +84,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         private Integer problemId;
 
+        private Integer solutionPoints;
+
         private Boolean isRunCode;
 
         private List<Judge0SubmissionRequestPayload> submissions;
@@ -191,6 +193,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
             submissionJobId, 
             submissionMetadata.getUsername(), 
             problemDto.getProblemId(), 
+            problemDto.getDifficulty().getPoints(),
             isRunCode, 
             submissions
         );

@@ -70,6 +70,8 @@ public class ProblemsRepository {
             ).skip(page*size).limit(size);
         }
       
+        query.fields().include("title", "difficulty", "acceptedCount", "submissionCount");
+
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
         List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->modelMapper.map(prob, ProblemDto.class))

@@ -46,6 +46,7 @@ public class UserProfileService {
                                         .firstName(user.getFirstName())
                                         .lastName(user.getLastName())
                                         .email(user.getEmail())
+                                        .score(0)
                                         .build();
         UserProfileEntity userProfileEntity = mapper.map(userProfileDto, UserProfileEntity.class);
         userProfileRepository.saveUserProfile(userProfileEntity);

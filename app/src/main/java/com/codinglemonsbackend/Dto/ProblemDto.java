@@ -10,6 +10,8 @@ import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
 import com.codinglemonsbackend.Utils.ProblemEntityDeserializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -28,6 +30,7 @@ import lombok.NoArgsConstructor;
 @Builder
 //@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
 // @JsonDeserialize(using=ProblemEntityDeserializer.class) 
+@JsonInclude(value = Include.NON_NULL)
 public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
@@ -89,4 +92,10 @@ public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer submissionCount;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer acceptance;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private ProblemStatus status;
 }

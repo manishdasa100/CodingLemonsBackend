@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Payloads;
 
 import java.util.List;
 
+import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 
 import lombok.AllArgsConstructor;
@@ -17,5 +18,5 @@ public class ProblemSetResponsePayload {
     
     private Long total;
 
-    private List<ProblemDtoWithStatus> problems;
+    private List<ProblemDto> problems;
 }

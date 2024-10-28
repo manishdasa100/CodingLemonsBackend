@@ -32,6 +32,8 @@ public class UserProfileEntity {
 
     private String linkedinUrl;
 
+    private Integer score;
+
     private Integer ranking;
 
     private String avatarUrl;

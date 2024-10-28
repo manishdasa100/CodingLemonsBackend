@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
+import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
@@ -22,9 +23,9 @@ import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
 
 public interface MainService {
 
-    public ProblemSetResponsePayload getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size);
+    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size);
 
-    public ProblemDtoWithStatus getProblem(Integer id);
+    public ProblemDto getProblem(Integer id);
 
     public void addProblem(ProblemDto problemDto);
 

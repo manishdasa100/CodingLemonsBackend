@@ -1,0 +1,42 @@
+<configuration>
+    <!-- Define a console appender that writes logs to the console. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- Set the pattern for console log messages. -->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Define a file appender that writes logs to a file and handles log rotation. -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Specify the log file location. -->
+        <file>logs/app.log</file>
+        <!-- Define the rolling policy for log rotation based on time and size. -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Define the file name pattern for rolled-over log files. -->
+            <fileNamePattern>logs/app-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <!-- Set the policy to roll over based on both time (daily) and size (10MB). -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>10MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- Specify the maximum number of rolled-over log files to keep. -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <!-- Set the pattern for file log messages. -->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Define a logger for a specific package with a specific logging level and appenders. -->
+    <logger name="com.codinglemonsbackend" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <!-- Define the root logger with a default logging level and appenders. -->
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

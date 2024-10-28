@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
+import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.UserDto;
@@ -58,16 +59,16 @@ public class MainController {
     }
     
     @GetMapping("/problemset/all")
-    public ResponseEntity<ProblemSetResponsePayload> getProblemSet(@RequestParam Integer page, @RequestParam Integer size, 
+    public ResponseEntity<ProblemSet> getProblemSet(@RequestParam Integer page, @RequestParam Integer size, 
                                             @RequestParam(name = "difficulties", required = false) String difficultyStr, @RequestParam(name = "topics", required = false) String topicsStr) {
         
         return ResponseEntity.ok().body(mainService.getProblemSet(difficultyStr, topicsStr, page, size));
     }
 
     @GetMapping("/problem/{id}")
-    public ResponseEntity<ProblemDtoWithStatus> getProblem(@PathVariable Integer id) {
+    public ResponseEntity<ProblemDto> getProblem(@PathVariable Integer id) {
         
-        ProblemDtoWithStatus problemDto = mainService.getProblem(id);
+        ProblemDto problemDto = mainService.getProblem(id);
 
         return ResponseEntity.ok().body(problemDto);
     }

@@ -40,6 +40,9 @@ public class UserProfileDto {
     private String linkedinUrl;
 
     @JsonProperty(access = Access.READ_ONLY)
+    private Integer score;
+
+    @JsonProperty(access = Access.READ_ONLY)
     private Integer ranking;
 
     @JsonIgnore

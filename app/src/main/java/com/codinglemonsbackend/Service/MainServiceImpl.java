@@ -96,7 +96,7 @@ public class MainServiceImpl implements MainService{
         // ).getProblemIds();
     }
 
-    public ProblemSetResponsePayload getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size) {
+    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size) {
 
         if (size > PROBLEMSETMAXSIZE) size = PROBLEMSETMAXSIZE;
 
@@ -116,19 +116,23 @@ public class MainServiceImpl implements MainService{
 
         List<ProblemDto> problemDtos = problemSet.getProblems();
 
-        List<ProblemDtoWithStatus> problemSetWithStatus = problemDtos.stream().map((e)->{
-                                    ProblemStatus status = null;
-                                    if (acceptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ACC;
-                                    else if (attemptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ATT;
-                                    else status = ProblemStatus.NATT;
-                                    return ProblemDtoWithStatus.builder().status(status).problem(e).build();
-                                }).collect(Collectors.toList());
+        List<ProblemDto> problemsWithStatus = problemDtos.stream().map((e) -> {
+            ProblemStatus status = null;
+            if (acceptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ACC;
+            else if (attemptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ATT;
+            else status = ProblemStatus.NATT;
+            e.setStatus(status);
+            e.setAcceptance((e.getAcceptedCount()*100)/e.getSubmissionCount());
+            return e;
+        }).collect(Collectors.toList());
 
-        return ProblemSetResponsePayload.builder().total(problemSet.getTotal()).problems(problemSetWithStatus).build();
+        problemSet.setProblems(problemsWithStatus);
+
+        return problemSet;
     }
 
     @Override
-    public ProblemDtoWithStatus getProblem(Integer id) {
+    public ProblemDto getProblem(Integer id) {
         
         ProblemDto problemDto = problemRepositoryService.getProblem(id);
 
@@ -144,7 +148,9 @@ public class MainServiceImpl implements MainService{
         else if (attemptedProblemIds.contains(id)) status = ProblemStatus.ATT;
         else status = ProblemStatus.NATT;
 
-        return ProblemDtoWithStatus.builder().status(status).problem(problemDto).build();
+        problemDto.setStatus(status);
+
+        return problemDto;
     }
 
     @Override
@@ -184,7 +190,7 @@ public class MainServiceImpl implements MainService{
     @Override
     public String submitCode(SubmitCodeRequestPayload payload) {
 
-        ProblemDto problemDto = getProblem(payload.getProblemId()).getProblem();
+        ProblemDto problemDto = getProblem(payload.getProblemId());
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemDto(problemDto)
@@ -248,15 +254,6 @@ public class MainServiceImpl implements MainService{
         return problemOfTheDay;
     }
 
-    // @Override
-    // public boolean updateUserDetails(UserUpdateRequestPayload updateRequest) {
-
-    //     UserEntity user = (UserEntity)getCurrentlySignedInUser();
-
-    //     UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
-
-    //     return userService.updateUserDetails(user, updateRequest);
-    // } 
     @Override
     public boolean updateUserProfile(UserProfileDto newUserProfile) {
 
