@@ -36,15 +36,17 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
     @Override
     public void onBeforeConvert(BeforeConvertEvent<ProblemEntity> event) {
         System.out.println("---------------------------------------------");
-        System.out.println("onBeforeConvert called" + event.getSource().getProblemId());
+        System.out.println("onBeforeConvert called" + event.getSource().getId());
         System.out.println("---------------------------------------------");
         // if (event.getSource().getProblemId() < 1) {
         ProblemEntity entityToSave = event.getSource();
-        entityToSave.setProblemId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
+        entityToSave.setId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
+        entityToSave.setSubmissionCount(0);
+        entityToSave.setAcceptedCount(0);
         Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
         if (lastProblemEntity.isPresent()){
-            entityToSave.setPreviousProblemId(lastProblemEntity.get().getProblemId());
-            mainService.updateProblem(lastProblemEntity.get().getProblemId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getProblemId()).build());
+            entityToSave.setPreviousProblemId(lastProblemEntity.get().getId());
+            mainService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
         }
         // }
     }

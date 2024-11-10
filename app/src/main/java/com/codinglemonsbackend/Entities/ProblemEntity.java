@@ -1,7 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,7 +27,7 @@ public class ProblemEntity {
     public static final String SEQUENCE_NAME = "problem_sequence";
     
     @Id
-    private Integer problemId;
+    private Integer id;
     private String title;
     private String description;
     private Set<String> constraints;

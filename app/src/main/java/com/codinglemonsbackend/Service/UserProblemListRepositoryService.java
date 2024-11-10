@@ -6,7 +6,9 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Entities.UserProblemList;
+import com.codinglemonsbackend.Dto.ProblemListDto;
+import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
 import com.codinglemonsbackend.Repository.UserProblemListRepository;
 
@@ -20,9 +22,9 @@ public class UserProblemListRepositoryService {
     @Autowired
     private UserProblemListRepository userProblemListRepository;
 
-    public List<UserProblemList> geAlltProblemListOfUser(String username) {
+    public List<ProblemListDto> geAlltProblemListOfUser(String username) {
 
-        List<UserProblemList> userProblemLists = userProblemListRepository.getAllProblemListsOfUser(username);
+        List<ProblemListDto> userProblemLists = userProblemListRepository.getAllProblemListsOfUser(username);
 
         // if(userProblemList.isEmpty()) throw new ResourceNotFoundException("Requested problem list not found");
 
@@ -31,14 +33,14 @@ public class UserProblemListRepositoryService {
 
     public void createDefaultProblemList(String username){
         
-        UserProblemList solvedProblemList = UserProblemList.builder()
+        ProblemListEntity solvedProblemList = ProblemListEntity.builder()
                                                 .name(SOLVED_PROBLEM_LIST)
                                                 .description("Your solved problems")
                                                 .problemIds(new ArrayList<Integer>())
                                                 .creator(username)
                                                 .build();
 
-        UserProblemList attemptedProblemList = UserProblemList.builder()
+        ProblemListEntity attemptedProblemList = ProblemListEntity.builder()
                                                 .name(ATTEMPTED_PROBLEM_LIST)
                                                 .description("Your attempted problems")
                                                 .problemIds(new ArrayList<Integer>())
@@ -53,10 +55,10 @@ public class UserProblemListRepositoryService {
         }
     }
     
-    public void saveProblemList(UserProblemList newProblemList) throws ResourceAlreadyExistsException{
+    public void saveProblemList(ProblemListEntity newProblemList) throws ResourceAlreadyExistsException{
         
         //check if the list exists, if not save or else throw error
-        List<UserProblemList> allProblemListsOfUser = geAlltProblemListOfUser(newProblemList.getCreator());
+        List<ProblemListDto> allProblemListsOfUser = geAlltProblemListOfUser(newProblemList.getCreator());
 
         Boolean problemListAlreadyPresent = allProblemListsOfUser.stream().anyMatch(userProblemList -> userProblemList.getName().equalsIgnoreCase(newProblemList.getName()));
     

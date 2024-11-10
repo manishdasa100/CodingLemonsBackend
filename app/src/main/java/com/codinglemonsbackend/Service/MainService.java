@@ -6,11 +6,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
+import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
-import com.codinglemonsbackend.Entities.UserProblemList;
+import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
@@ -35,9 +36,9 @@ public interface MainService {
 
     public void clearAllProblems();
 
-    public void addProblemList(UserProblemList problemList) throws ResourceAlreadyExistsException;
+    public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException;
 
-    public List<UserProblemList> getUserFavorites();
+    public List<ProblemListDto> getUserFavorites();
 
     // public Mono<Judge0CreateSubmissionResponse> createSubmission(SubmitCodeRequestPayload payload);
 

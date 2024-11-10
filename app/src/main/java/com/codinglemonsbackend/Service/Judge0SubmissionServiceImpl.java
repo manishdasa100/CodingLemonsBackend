@@ -192,7 +192,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
         return new SubmissionJob(
             submissionJobId, 
             submissionMetadata.getUsername(), 
-            problemDto.getProblemId(), 
+            problemDto.getId(), 
             problemDto.getDifficulty().getPoints(),
             isRunCode, 
             submissions

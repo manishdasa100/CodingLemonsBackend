@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Document(collection = "UserProblemList")
-public class UserProblemList {
+public class ProblemListEntity {
     
     @Id
     private String id;
@@ -29,4 +29,6 @@ public class UserProblemList {
 
     @Indexed
     private String creator;
+
+    private List<ProblemEntity> problemsData;
 }

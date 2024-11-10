@@ -44,11 +44,11 @@ public class ProblemRepositoryService {
         
         String[] topicsArray = null;
 
-        List<Difficulty> difficulties = null;
+        Difficulty[] difficulties = null;
 
         if (difficultyStr != null) {
             String[] difficultiesArray = difficultyStr.trim().split(",");
-            difficulties = List.of(difficultiesArray).stream().map(e -> Difficulty.valueOf(e)).collect(Collectors.toList());
+            difficulties = List.of(difficultiesArray).stream().map(e -> Difficulty.valueOf(e)).toArray(Difficulty[]::new);
         }
         if (topicsStr != null) {
             topicsArray = topicsStr.trim().split(",");
@@ -63,8 +63,6 @@ public class ProblemRepositoryService {
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
         System.out.println("---------------------------------------------");
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
-        entity.setSubmissionCount(0);
-        entity.setAcceptedCount(0);
         problemsRepository.addProblem(entity);
     }
 
@@ -73,11 +71,17 @@ public class ProblemRepositoryService {
         
         Optional<ProblemEntity> probEntity = problemsRepository.getProblemById(id);
 
-        if(probEntity.isEmpty()) throw new NoSuchElementException("Problem Id "+ id + " not present");
+        if(probEntity.isEmpty()) throw new NoSuchElementException("Problem Id "+ id + " does not exist");
 
         ProblemDto problemDto = modelMapper.map(probEntity, ProblemDto.class);
 
         return problemDto;
+    }
+
+    public List<ProblemDto> getProblemsByIds(Integer[] problemIds) {
+        List<ProblemEntity> probEntities = problemsRepository.getProblemsByIds(problemIds);
+        List<ProblemDto> problemDtos = probEntities.stream().map(probEntity -> modelMapper.map(probEntity, ProblemDto.class)).collect(Collectors.toList());
+        return problemDtos;
     }
 
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)

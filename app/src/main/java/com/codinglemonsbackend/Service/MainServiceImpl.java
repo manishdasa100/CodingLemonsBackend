@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
+import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
@@ -22,7 +23,7 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Entities.UserProblemList;
+import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
@@ -83,12 +84,12 @@ public class MainServiceImpl implements MainService{
 
         String username = currentSignedInUserEntity.getUsername();
 
-        UserProblemList acceptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
-        UserProblemList atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
+        ProblemListDto acceptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
+        ProblemListDto atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
         
         return List.of(
-            acceptedProblemList.getProblemIds(), 
-            atteptedProblemList.getProblemIds()
+            acceptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toList()), 
+            atteptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toList())
         );
         // return userProblemListRepositoryService.getProblemList(
         //     userProblemListRepositoryService.SOLVED_PROBLEM_LIST, 
@@ -105,8 +106,7 @@ public class MainServiceImpl implements MainService{
         ProblemSet problemSet = null;
 
         if (difficultyStr == null && topicsStr == null) problemSet = problemRepositoryService.getAllProblems(page, size);
-        
-        problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, page, size);
+        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, page, size);
 
         List<List<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
 
@@ -118,8 +118,8 @@ public class MainServiceImpl implements MainService{
 
         List<ProblemDto> problemsWithStatus = problemDtos.stream().map((e) -> {
             ProblemStatus status = null;
-            if (acceptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ACC;
-            else if (attemptedProblemIds.contains(e.getProblemId())) status = ProblemStatus.ATT;
+            if (acceptedProblemIds.contains(e.getId())) status = ProblemStatus.ACC;
+            else if (attemptedProblemIds.contains(e.getId())) status = ProblemStatus.ATT;
             else status = ProblemStatus.NATT;
             e.setStatus(status);
             e.setAcceptance((e.getAcceptedCount()*100)/e.getSubmissionCount());
@@ -153,6 +153,8 @@ public class MainServiceImpl implements MainService{
         return problemDto;
     }
 
+    
+
     @Override
     public void addProblem(ProblemDto problemDto) {
         System.out.println("--------PROBLEM DTO--------------");
@@ -176,14 +178,14 @@ public class MainServiceImpl implements MainService{
     }
 
     @Override
-    public void addProblemList(UserProblemList problemList) throws ResourceAlreadyExistsException {
+    public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException {
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
         problemList.setCreator(currentSignedInUserEntity.getUsername());
         userProblemListRepositoryService.saveProblemList(problemList);
     }
 
     @Override
-    public List<UserProblemList> getUserFavorites() {
+    public List<ProblemListDto> getUserFavorites() {
         return userProblemListRepositoryService.geAlltProblemListOfUser(getCurrentlySignedInUser().getUsername());
     }
 

@@ -29,6 +29,8 @@ public class ProblemsRepository {
     @Autowired
     private ModelMapper modelMapper;
 
+    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount"};
+
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);
     //     Query query = new Query();
@@ -47,7 +49,7 @@ public class ProblemsRepository {
     } 
     
 
-    public ProblemSet getProblems(List<Difficulty> difficulties, String[] topics, int page, int size) {
+    public ProblemSet getProblems(Difficulty[] difficulties, String[] topics, int page, int size) {
 
         // if(difficulties == null && topics == null) throw new IllegalArgumentException("Atleast one of the filter criteria must be provided. Found both difficulty and topics array to be null or empty");
 
@@ -58,19 +60,19 @@ public class ProblemsRepository {
         if (difficulties == null && topics == null){
             query = new Query().skip(page*size).limit(size);
         } else if (topics == null) {  // filter problems based on difficulty only
-            query = new Query(Criteria.where("difficulty").in(difficulties)).skip(page*size).limit(size);
+            query = new Query(Criteria.where("difficulty").in((Object[])difficulties)).skip(page*size).limit(size);
         } else if (difficulties == null) {  // filter problems based on topics array only
             query = new Query(Criteria.where("topics").all((Object[])topics)).skip(page*size).limit(size);
         } else {  // filter problems based on both difficulty and topics array
             query = new Query(
                 new Criteria().andOperator(
-                    Criteria.where("difficulty").in(difficulties), 
+                    Criteria.where("difficulty").in((Object[])difficulties), 
                     Criteria.where("topics").all(List.of(topics))
                 )
             ).skip(page*size).limit(size);
         }
       
-        query.fields().include("title", "difficulty", "acceptedCount", "submissionCount");
+        query.fields().include(projectionFields);
 
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
@@ -83,21 +85,28 @@ public class ProblemsRepository {
         );
 
     }
-
     
+    public Optional<ProblemEntity> getProblemById(Integer id) {
+        Query query = new Query(Criteria.where("id").is(id));
+        ProblemEntity problemEntity = mongoTemplate.findOne(query, ProblemEntity.class, "problems");
+        return Optional.ofNullable(problemEntity);
+    }
+
+    public List<ProblemEntity> getProblemsByIds(Integer[] ids) {
+
+        Query query = new Query(Criteria.where("id").in((Object[])ids));
+        query.fields().include(projectionFields);
+        List<ProblemEntity> problemEntities = mongoTemplate.find(query, ProblemEntity.class);
+        return problemEntities;
+    }
+
     public void addProblem(ProblemEntity problemEntity) {
         mongoTemplate.save(problemEntity);
     }
 
 
-    public Optional<ProblemEntity> getProblemById(Integer id) {
-        Query query = new Query(Criteria.where("problemId").is(id));
-        ProblemEntity problemEntity = mongoTemplate.findOne(query, ProblemEntity.class, "problems");
-        return Optional.ofNullable(problemEntity);
-    }
-
     public DeleteResult removeProblemById(Integer id) {
-        Query query = new Query(Criteria.where("problemId").is(id));
+        Query query = new Query(Criteria.where("id").is(id));
         return mongoTemplate.remove(query, ProblemEntity.class);
     }
 
@@ -109,7 +118,7 @@ public class ProblemsRepository {
 
     public void updateProblem(Integer problemId, Map<String, Object> updatePropertiesMap) {
         
-        Query query = new Query(Criteria.where("problemId").is(problemId));
+        Query query = new Query(Criteria.where("id").is(problemId));
 
         Update update = new Update();
 
@@ -122,7 +131,7 @@ public class ProblemsRepository {
 
     public Optional<ProblemEntity> getLasEntity(){
 
-        Query query = new Query().with(Sort.by(Sort.Order.desc("problemId"))).limit(1);
+        Query query = new Query().with(Sort.by(Sort.Order.desc("id"))).limit(1);
 
         return Optional.ofNullable(mongoTemplate.findOne(query, ProblemEntity.class));
     }

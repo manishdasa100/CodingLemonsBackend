@@ -2,19 +2,15 @@ package com.codinglemonsbackend.Dto;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
-import com.codinglemonsbackend.Utils.ProblemEntityDeserializer;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +30,7 @@ import lombok.NoArgsConstructor;
 public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
-    private Integer problemId;
+    private Integer id;
     
     @NotEmpty
     @Size(min = 5, max = 60)
