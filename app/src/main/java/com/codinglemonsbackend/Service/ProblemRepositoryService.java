@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -18,10 +19,13 @@ import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
+import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
+import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
+import com.codinglemonsbackend.Repository.TopicRepository;
 import com.mongodb.client.result.DeleteResult;
 
 @Service
@@ -33,6 +37,12 @@ public class ProblemRepositoryService {
     
     @Autowired
     private ProblemsRepository problemsRepository;
+
+    @Autowired
+    private TopicRepository topicRepository;
+
+    @Autowired
+    private CompanyRepository companyRepository;
 
     @Cacheable(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
     public ProblemSet getAllProblems(Integer page, Integer size) {
@@ -58,10 +68,30 @@ public class ProblemRepositoryService {
     }
 
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
-    public void addProblem(ProblemDto problemDto) {
+    public void addProblem(ProblemDto problemDto) throws Exception {
         System.out.println("---------------------------------------------");
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
         System.out.println("---------------------------------------------");
+        
+        // Verify if the topic tags and company tags are present in database before adding the problem
+        Set<TopicTag> topicTags = problemDto.getTopics();
+        Set<String> topicSlugs = topicTags.stream().map(TopicTag::getSlug).collect(Collectors.toSet());
+
+        if (problemDto.getCompanies() != null) {
+            Set<CompanyTag> companyTags = problemDto.getCompanies();
+            Set<String> companySlugs = companyTags.stream().map(CompanyTag::getSlug).collect(Collectors.toSet());
+            Set<CompanyTag> validCompanies = companyRepository.getValidTags(companySlugs);
+            problemDto.setCompanies(validCompanies);
+        }
+
+        Set<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
+        
+        //Set<TopicTag> validTopics = topicTags.stream().filter(e -> validTopicSlugs.contains(e.getSlug())).collect(Collectors.toSet());
+
+        if(validTopics.isEmpty()) throw new Exception("No matching topics were found. Please provide valid topics."); 
+
+        problemDto.setTopics(validTopics);
+
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
         problemsRepository.addProblem(entity);
     }
@@ -115,8 +145,8 @@ public class ProblemRepositoryService {
             updatePropertiesMap.put("topics", updateMetadata.getTopics());
         }
 
-        if (updateMetadata.getCompanyTags()!= null && !updateMetadata.getCompanyTags().equals(problemDto.getCompanyTags())) {
-            updatePropertiesMap.put("companyTags", updateMetadata.getCompanyTags());
+        if (updateMetadata.getCompanies()!= null && !updateMetadata.getCompanies().equals(problemDto.getCompanies())) {
+            updatePropertiesMap.put("companyTags", updateMetadata.getCompanies());
         }
 
         if (updateMetadata.getStackLimit()!= null && !updateMetadata.getStackLimit().equals(problemDto.getStackLimit())) {

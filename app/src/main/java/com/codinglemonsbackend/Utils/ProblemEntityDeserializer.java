@@ -90,8 +90,8 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                                     .memoryLimit(memoryLimit)
                                     .stackLimit(stackLimit)
                                     .driverCodes(driverCodes)
-                                    .topics(topics)
-                                    .companyTags(companyTags)
+                                    // .topics(topics)
+                                    // .companyTags(companyTags)
                                     .build();
 
         System.out.println("Deserialization completed");

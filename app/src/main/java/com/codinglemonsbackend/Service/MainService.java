@@ -28,14 +28,6 @@ public interface MainService {
 
     public ProblemDto getProblem(Integer id);
 
-    public void addProblem(ProblemDto problemDto);
-
-    public void updateProblem(Integer problemId, ProblemUpdateDto updateMetadata);
-
-    public void deleteProblemById(Integer problemId);
-
-    public void clearAllProblems();
-
     public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException;
 
     public List<ProblemListDto> getUserFavorites();

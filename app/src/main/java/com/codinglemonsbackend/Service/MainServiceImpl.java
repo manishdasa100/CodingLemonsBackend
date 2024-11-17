@@ -152,30 +152,7 @@ public class MainServiceImpl implements MainService{
 
         return problemDto;
     }
-
     
-
-    @Override
-    public void addProblem(ProblemDto problemDto) {
-        System.out.println("--------PROBLEM DTO--------------");
-        System.out.println(problemDto);
-        problemRepositoryService.addProblem(problemDto);
-    }
-
-    @Override
-    public void updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
-        problemRepositoryService.updateProblem(problemId, updateMetadata);
-    }
-
-    @Override
-    public void deleteProblemById(Integer problemId) {
-        problemRepositoryService.deleteProblemById(problemId);
-    }
-
-    @Override
-    public void clearAllProblems() {
-        problemRepositoryService.removeAllProblems();
-    }
 
     @Override
     public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException {

@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Dto;
 
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
 import com.codinglemonsbackend.Entities.StatusMessage;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @JsonInclude(value = Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SubmissionDto {
     
     private Integer problemId;

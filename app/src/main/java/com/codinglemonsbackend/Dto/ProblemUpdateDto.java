@@ -4,9 +4,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Entities.TopicTag;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,6 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ProblemUpdateDto {
     
     private String title;
@@ -43,9 +47,9 @@ public class ProblemUpdateDto {
 
     private Integer stackLimit;
 
-    private Set<String> topics;
+    private Set<TopicTag> topics;
 
-    private Set<String> companyTags;
+    private Set<CompanyTag> companies;
 
     @JsonIgnore
     private Integer previousProblemId;

@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,8 +40,8 @@ public class ProblemEntity {
     private float cpuTimeLimit;
     private float memoryLimit;
     private Integer stackLimit;
-    private Set<String> topics;
-    private Set<String> companyTags;
+    private Set<TopicTag> topics;
+    private Set<CompanyTag> companies;
     private Integer previousProblemId;
     private Integer nextProblemId;
     private Integer acceptedCount;

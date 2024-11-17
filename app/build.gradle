@@ -55,6 +55,9 @@ dependencies {
 	// jasypt dependency
 	implementation 'com.github.ulisesbocchio:jasypt-spring-boot-starter:3.0.5'
 
+	// Slugify dependency
+	implementation 'com.github.slugify:slugify:3.0.7'
+
 	//Dev tools dependency for faster application restart and live reload
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

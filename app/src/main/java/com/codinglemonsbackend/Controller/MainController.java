@@ -74,32 +74,6 @@ public class MainController {
         return ResponseEntity.ok().body(problemDto);
     }
 
-    @PostMapping("/addProblem")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public boolean addProblem(@Valid @RequestBody ProblemDto problemDto){
-
-        mainService.addProblem(problemDto);
-        
-        return true;
-    }
-
-    @PutMapping("/problem/update/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public void updateProblem(@PathVariable Integer id, @RequestBody ProblemUpdateDto updateMetadata){
-        mainService.updateProblem(id, updateMetadata);
-    } 
-
-    @DeleteMapping("/problem/delete/{id}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public void deleteProblemById(@PathVariable Integer id){
-        mainService.deleteProblemById(id);
-    }
-
-    @DeleteMapping("/removeAllProblems")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public void clearAllProblems(){
-        mainService.clearAllProblems();
-    }
 
     @PostMapping("/addList")
     public ResponseEntity<String> addProblemList(@Valid @RequestBody UserProblemListPayload payload) throws ResourceAlreadyExistsException{

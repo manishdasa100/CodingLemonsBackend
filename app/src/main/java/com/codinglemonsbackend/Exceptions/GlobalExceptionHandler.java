@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -37,10 +38,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
-    // @ExceptionHandler(Exception.class)
-    // public ResponseEntity<ExceptionMessage> handleException(Exception e){
-    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
-    // }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ExceptionMessage> handleException(Exception e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
    
     @ExceptionHandler(BadCredentialsException.class)
@@ -82,6 +83,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ExceptionMessage> handleMaxUploadSizeLimitExceedException(MaxUploadSizeExceededException e) {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 }
     

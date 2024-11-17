@@ -2,7 +2,9 @@ package com.codinglemonsbackend.Dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -16,8 +18,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@JsonIgnoreProperties(value = {"password"}, allowSetters = true)
 @JsonInclude(value = Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class UserDto {
 
     @NotEmpty
@@ -38,6 +40,7 @@ public class UserDto {
 
     @NotEmpty
     @Size(min = 8, max = 20)
+    @JsonProperty(access = Access.WRITE_ONLY)
     private String password;
 
 }

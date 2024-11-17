@@ -12,28 +12,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.codinglemonsbackend.Properties.S3Buckets;
 import com.codinglemonsbackend.Service.S3Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.slugify.Slugify;
 
 @SpringBootApplication
 @EnableCaching
 public class App {
-
-    // @Bean
-    // public JavaRunner getJavaRunner() {
-    //     return new JavaRunner();
-    // }
-
-    // @Bean
-    // public PythonRunner getPythonRunner() {
-    //     return new PythonRunner();
-    // }
-
-    // @Bean
-    // public List<CodeRunner> getCodeRunners(){
-    //     return Arrays.asList(
-    //         new JavaRunner(), 
-    //         new PythonRunner()
-    //     );
-    // }
 
     @Bean
     public RestTemplate getRestTemplate() {
@@ -53,6 +36,11 @@ public class App {
     @Bean
     public ObjectMapper getObjectMapper(){
         return new ObjectMapper();    
+    }
+
+    @Bean
+    public Slugify getSlugifyInstance() {
+        return Slugify.builder().build();
     }
 
     public static void main(String[] args) {

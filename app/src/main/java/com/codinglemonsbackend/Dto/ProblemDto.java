@@ -2,11 +2,15 @@ package com.codinglemonsbackend.Dto;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Entities.TopicTag;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +30,7 @@ import lombok.NoArgsConstructor;
 @Builder
 //@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
 // @JsonDeserialize(using=ProblemEntityDeserializer.class) 
+@JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(value = Include.NON_NULL)
 public class ProblemDto implements Serializable {
 
@@ -73,9 +78,9 @@ public class ProblemDto implements Serializable {
     private Integer stackLimit;
     
     @NotEmpty
-    private Set<String> topics;
+    private Set<TopicTag> topics;
 
-    private Set<String> companyTags;
+    private Set<CompanyTag> companies;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer previousProblemId;

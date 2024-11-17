@@ -1,34 +1,27 @@
 package com.codinglemonsbackend.Entities;
 
-import java.util.List;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@Document(collection = "UserProblemList")
-public class ProblemListEntity {
+@Data
+@Document(collection = "topicTags")
+public class TopicTag {
     
     @Id
     private String id;
-    
+
+    @NotEmpty
     private String name;
 
-    private String description;
+    @Indexed(unique = true)
+    private String slug;
 
-    private List<Integer> problemIds;
-
-    private Boolean isPinned;
-
-    @Indexed
-    private String creator;
 }

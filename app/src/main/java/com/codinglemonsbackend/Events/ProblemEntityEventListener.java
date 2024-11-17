@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
+import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Service.MainService;
 import com.codinglemonsbackend.Service.SequenceService;
 
@@ -27,7 +28,7 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
     private ProblemsRepository problemsRepository;
 
     @Autowired
-    private MainService mainService;
+    private AdminServiceImpl adminService;
 
     public ProblemEntityEventListener(SequenceService sequenceGeneratorService){
         this.sequenceService = sequenceGeneratorService;
@@ -46,7 +47,7 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
         if (lastProblemEntity.isPresent()){
             entityToSave.setPreviousProblemId(lastProblemEntity.get().getId());
-            mainService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
+            adminService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
         }
         // }
     }
