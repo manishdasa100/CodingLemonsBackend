@@ -2,12 +2,15 @@ package com.codinglemonsbackend.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
@@ -50,21 +53,38 @@ public class ProblemRepositoryService {
         return problemsRepository.findAll(page, size);
     }
 
-    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, int page, int size){
+    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size){
         
-        String[] topicsArray = null;
-
         Difficulty[] difficulties = null;
 
-        if (difficultyStr != null) {
-            String[] difficultiesArray = difficultyStr.trim().split(",");
-            difficulties = List.of(difficultiesArray).stream().map(e -> Difficulty.valueOf(e)).toArray(Difficulty[]::new);
+        String[] topicSlugs = null;
+
+        String[] companySlugs = null;
+
+        if (StringUtils.isNotBlank(difficultyStr)) {
+            String[] difficultiesArray = Arrays.stream(difficultyStr.trim().split(","))
+                                        .map(String::trim)
+                                        .filter(e -> !e.isEmpty())
+                                        .toArray(String[]::new);
+            difficulties = Arrays.stream(difficultiesArray).map(String::toUpperCase)
+                           .filter(e -> EnumUtils.isValidEnum(Difficulty.class, e))
+                           .map(Difficulty::valueOf)
+                           .toArray(Difficulty[]::new);
         }
-        if (topicsStr != null) {
-            topicsArray = topicsStr.trim().split(",");
+        if (StringUtils.isNotEmpty(topicsStr)) {
+            topicSlugs = Arrays.stream(topicsStr.trim().split(","))
+                            .map(String::trim)
+                            .filter(e -> !e.isEmpty())
+                            .toArray(String[]::new);
+        }
+        if (StringUtils.isNotEmpty(companiesStr)) {
+            companySlugs = Arrays.stream(companiesStr.trim().split(","))
+                            .map(String::trim)
+                            .filter(e -> !e.isEmpty())
+                            .toArray(String[]::new);
         }
 
-        return problemsRepository.getProblems(difficulties, topicsArray, page, size);
+        return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size);
     }
 
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
@@ -86,8 +106,6 @@ public class ProblemRepositoryService {
 
         Set<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
         
-        //Set<TopicTag> validTopics = topicTags.stream().filter(e -> validTopicSlugs.contains(e.getSlug())).collect(Collectors.toSet());
-
         if(validTopics.isEmpty()) throw new Exception("No matching topics were found. Please provide valid topics."); 
 
         problemDto.setTopics(validTopics);

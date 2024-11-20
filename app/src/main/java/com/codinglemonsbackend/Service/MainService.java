@@ -24,7 +24,7 @@ import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
 
 public interface MainService {
 
-    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size);
+    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companiesStr, Integer page, Integer size);
 
     public ProblemDto getProblem(Integer id);
 

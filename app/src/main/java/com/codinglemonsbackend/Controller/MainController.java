@@ -6,8 +6,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,12 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
-import com.codinglemonsbackend.Dto.ProblemUpdateDto;
-import com.codinglemonsbackend.Dto.SubmissionDto;
-import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -30,18 +24,11 @@ import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
 import com.codinglemonsbackend.Payloads.CodeRunResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
-import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
-import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
 import com.codinglemonsbackend.Payloads.UserProblemListPayload;
-import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
-import com.codinglemonsbackend.Service.Judge0SubmissionServiceImpl.Judge0SubmissionToken;
 import com.codinglemonsbackend.Service.MainService;
 import jakarta.validation.Valid;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.util.List;
 
 @RestController
@@ -61,9 +48,9 @@ public class MainController {
     
     @GetMapping("/problemset/all")
     public ResponseEntity<ProblemSet> getProblemSet(@RequestParam Integer page, @RequestParam Integer size, 
-                                            @RequestParam(name = "difficulties", required = false) String difficultyStr, @RequestParam(name = "topics", required = false) String topicsStr) {
+                                            @RequestParam(name = "difficulties", required = false) String difficultyStr, @RequestParam(name = "topics", required = false) String topicsStr, @RequestParam(name = "companies", required = false) String companiesStr) {
         
-        return ResponseEntity.ok().body(mainService.getProblemSet(difficultyStr, topicsStr, page, size));
+        return ResponseEntity.ok().body(mainService.getProblemSet(difficultyStr, topicsStr, companiesStr, page, size));
     }
 
     @GetMapping("/problem/{id}")
@@ -92,16 +79,6 @@ public class MainController {
 
         return ResponseEntity.ok().body(userFavorites);
     }
-
-    // @PostMapping("/runCode")
-    // public ResponseEntity<SubmitCodeResponsePayload> runCode(@Valid @RequestBody SubmitCodeRequestPayload payload){
-
-    //     String submissionId = mainService.submitCode(payload, true);
-
-    //     SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);
-
-    //     return ResponseEntity.accepted().body(responsePayload);
-    // }
 
     @PostMapping("/submission/submit")
     public ResponseEntity<?> submit(@Valid @RequestBody SubmitCodeRequestPayload payload){

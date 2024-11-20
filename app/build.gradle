@@ -58,6 +58,9 @@ dependencies {
 	// Slugify dependency
 	implementation 'com.github.slugify:slugify:3.0.7'
 
+	// Apache commons lang dependency
+	implementation 'org.apache.commons:commons-lang3:3.17.0'
+
 	//Dev tools dependency for faster application restart and live reload
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 

@@ -2,7 +2,6 @@ package com.codinglemonsbackend.Dto;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -93,9 +92,6 @@ public class ProblemDto implements Serializable {
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer submissionCount;
-
-    @JsonProperty(access = Access.READ_ONLY)
-    private Integer acceptance;
 
     @JsonProperty(access = Access.READ_ONLY)
     private ProblemStatus status;

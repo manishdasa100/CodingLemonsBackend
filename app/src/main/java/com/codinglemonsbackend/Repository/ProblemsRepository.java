@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -45,32 +46,27 @@ public class ProblemsRepository {
     public ProblemSet findAll(Integer page, Integer size) {
        
        System.out.println("CACHE MISS");
-       return getProblems(null, null, page, size);
+       return getProblems(null, null, null, page, size);
     } 
     
 
-    public ProblemSet getProblems(Difficulty[] difficulties, String[] topics, int page, int size) {
-
-        // if(difficulties == null && topics == null) throw new IllegalArgumentException("Atleast one of the filter criteria must be provided. Found both difficulty and topics array to be null or empty");
+    public ProblemSet getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size) {
 
         List<ProblemEntity> filteredProblemSet;
 
-        Query query; 
+        Query query = new Query(); 
 
-        if (difficulties == null && topics == null){
-            query = new Query().skip(page*size).limit(size);
-        } else if (topics == null) {  // filter problems based on difficulty only
-            query = new Query(Criteria.where("difficulty").in((Object[])difficulties)).skip(page*size).limit(size);
-        } else if (difficulties == null) {  // filter problems based on topics array only
-            query = new Query(Criteria.where("topics").all((Object[])topics)).skip(page*size).limit(size);
-        } else {  // filter problems based on both difficulty and topics array
-            query = new Query(
-                new Criteria().andOperator(
-                    Criteria.where("difficulty").in((Object[])difficulties), 
-                    Criteria.where("topics").all(List.of(topics))
-                )
-            ).skip(page*size).limit(size);
+        if (ArrayUtils.isNotEmpty(difficulties)) {
+            query.addCriteria(Criteria.where("difficulty").in((Object[])difficulties));
         }
+        if (ArrayUtils.isNotEmpty(topicSlugs)) {
+            query.addCriteria(Criteria.where("topics.slug").in((Object[])topicSlugs));
+        }
+        if (ArrayUtils.isNotEmpty(companySlugs)) {
+            query.addCriteria(Criteria.where("companies.slug").in((Object[])companySlugs));
+        }
+
+        query.skip(page*size).limit(size);
       
         query.fields().include(projectionFields);
 

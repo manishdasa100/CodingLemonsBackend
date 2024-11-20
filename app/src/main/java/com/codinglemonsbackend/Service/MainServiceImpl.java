@@ -3,8 +3,10 @@ package com.codinglemonsbackend.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,7 +43,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MainServiceImpl implements MainService{
 
-    private static final Integer PROBLEMSETMAXSIZE = 100;
+    private static final Integer MAX_PROBLEMSET_SIZE = 100;
+    private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
 
     @Autowired
     private UserService userService;
@@ -78,7 +81,7 @@ public class MainServiceImpl implements MainService{
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
-    private List<List<Integer>> getAcceptedAndAttemptedProblemIdsOfUser(){
+    private List<Set<Integer>> getAcceptedAndAttemptedProblemIdsOfUser(){
         
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
 
@@ -88,8 +91,8 @@ public class MainServiceImpl implements MainService{
         ProblemListDto atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
         
         return List.of(
-            acceptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toList()), 
-            atteptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toList())
+            acceptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toSet()), 
+            atteptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toSet())
         );
         // return userProblemListRepositoryService.getProblemList(
         //     userProblemListRepositoryService.SOLVED_PROBLEM_LIST, 
@@ -97,22 +100,22 @@ public class MainServiceImpl implements MainService{
         // ).getProblemIds();
     }
 
-    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, Integer page, Integer size) {
+    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companiesStr, Integer page, Integer size) {
 
-        if (size > PROBLEMSETMAXSIZE) size = PROBLEMSETMAXSIZE;
-
-        System.out.println(difficultyStr + " " + topicsStr);
+        if (page < 0) page = 0;
+        if (size <= 0) size = DEFAULT_PROBLEMSET_SIZE; 
+        if (size > MAX_PROBLEMSET_SIZE) size = MAX_PROBLEMSET_SIZE;
 
         ProblemSet problemSet = null;
 
-        if (difficultyStr == null && topicsStr == null) problemSet = problemRepositoryService.getAllProblems(page, size);
-        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, page, size);
+        if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companiesStr)) problemSet = problemRepositoryService.getAllProblems(page, size);
+        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companiesStr, page, size);
 
-        List<List<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
+        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
 
-        List<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
+        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
 
-        List<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
+        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
 
         List<ProblemDto> problemDtos = problemSet.getProblems();
 
@@ -122,7 +125,6 @@ public class MainServiceImpl implements MainService{
             else if (attemptedProblemIds.contains(e.getId())) status = ProblemStatus.ATT;
             else status = ProblemStatus.NATT;
             e.setStatus(status);
-            e.setAcceptance((e.getAcceptedCount()*100)/e.getSubmissionCount());
             return e;
         }).collect(Collectors.toList());
 
@@ -136,11 +138,11 @@ public class MainServiceImpl implements MainService{
         
         ProblemDto problemDto = problemRepositoryService.getProblem(id);
 
-        List<List<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
+        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
 
-        List<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
+        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
 
-        List<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
+        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
 
         ProblemStatus status = null;
 
