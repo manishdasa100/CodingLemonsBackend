@@ -15,7 +15,8 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import com.codinglemonsbackend.Entities.Role;
+
+import com.codinglemonsbackend.Dto.Role;
 import com.codinglemonsbackend.Entities.UserEntity;
 
 

@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Events;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -39,17 +40,17 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         System.out.println("---------------------------------------------");
         System.out.println("onBeforeConvert called" + event.getSource().getId());
         System.out.println("---------------------------------------------");
-        // if (event.getSource().getProblemId() < 1) {
         ProblemEntity entityToSave = event.getSource();
         entityToSave.setId(sequenceService.getNextSequence(ProblemEntity.SEQUENCE_NAME));
         entityToSave.setSubmissionCount(0);
         entityToSave.setAcceptedCount(0);
+        entityToSave.setLikes(0);
         Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
         if (lastProblemEntity.isPresent()){
             entityToSave.setPreviousProblemId(lastProblemEntity.get().getId());
-            adminService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
+            //adminService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
+            problemsRepository.updateProblemProperties(lastProblemEntity.get().getId(), Collections.singletonMap("nextProblemId", entityToSave.getId()), ProblemEntity.class);
         }
-        // }
     }
 
     @Override
@@ -65,13 +66,13 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
                 // Updating the previous problem's nextProblemId to deleted problem's nextProblemId
                 Map<String, Object> propertiesMap = new HashMap<>();
                 propertiesMap.put("nextProblemId", entityToDelete.get().getNextProblemId());
-                problemsRepository.updateProblem(previousProblemId, propertiesMap);
+                problemsRepository.updateProblemProperties(previousProblemId, propertiesMap, ProblemEntity.class);
             }
             if (nextProblemId != null) {
                 // Updating the next problem's previousProblemId to deleted problem's previousProblemId
                 Map<String, Object> propertiesMap = new HashMap<>();
                 propertiesMap.put("previousProblemId", entityToDelete.get().getPreviousProblemId());
-                problemsRepository.updateProblem(nextProblemId, propertiesMap);
+                problemsRepository.updateProblemProperties(nextProblemId, propertiesMap, ProblemEntity.class);
             }
 
         }

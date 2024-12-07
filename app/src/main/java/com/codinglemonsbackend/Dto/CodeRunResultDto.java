@@ -1,7 +1,5 @@
 package com.codinglemonsbackend.Dto;
 
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
-import com.codinglemonsbackend.Entities.StatusMessage;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 

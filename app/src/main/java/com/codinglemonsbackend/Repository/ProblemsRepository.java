@@ -14,12 +14,16 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
-import com.codinglemonsbackend.Entities.Difficulty;
+import com.codinglemonsbackend.Entities.DatabaseSequence;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public class ProblemsRepository {
@@ -84,20 +88,35 @@ public class ProblemsRepository {
     
     public Optional<ProblemEntity> getProblemById(Integer id) {
         Query query = new Query(Criteria.where("id").is(id));
-        ProblemEntity problemEntity = mongoTemplate.findOne(query, ProblemEntity.class, "problems");
+        ProblemEntity problemEntity = mongoTemplate.findOne(query, ProblemEntity.class);
         return Optional.ofNullable(problemEntity);
     }
 
     public List<ProblemEntity> getProblemsByIds(Integer[] ids) {
-
         Query query = new Query(Criteria.where("id").in((Object[])ids));
         query.fields().include(projectionFields);
         List<ProblemEntity> problemEntities = mongoTemplate.find(query, ProblemEntity.class);
         return problemEntities;
     }
 
-    public void addProblem(ProblemEntity problemEntity) {
-        mongoTemplate.save(problemEntity);
+    public Optional<ProblemExecutionDetails> getExecutionDetails(Integer id) {
+        ProblemExecutionDetails executionDetails =  mongoTemplate.findById(id, ProblemExecutionDetails.class, "ProblemExecutionDetails");
+        return Optional.ofNullable(executionDetails);
+    }
+
+    public long updateProblemProperties(Integer id, Map<String, Object> updatePropertiesMap, Class<?> entityClass) {
+        Query query = new Query(Criteria.where("id").is(id));
+        Update update = new Update();
+        updatePropertiesMap.entrySet().stream().forEach(e -> update.set(e.getKey(), e.getValue()));
+        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, entityClass);
+        return updateResult.getModifiedCount();
+    }
+
+    @Transactional
+    public void addProblem(ProblemEntity problemEntity, ProblemExecutionDetails executionDetails) {
+        ProblemEntity savedEntity = mongoTemplate.save(problemEntity);
+        executionDetails.setId(savedEntity.getId());
+        mongoTemplate.save(executionDetails);
     }
 
 
@@ -106,24 +125,31 @@ public class ProblemsRepository {
         return mongoTemplate.remove(query, ProblemEntity.class);
     }
 
+    @Transactional
     public void removeAllProblems() {
-        mongoTemplate.dropCollection("problems");
-        mongoTemplate.dropCollection("database_sequences");
-    }
-
-
-    public void updateProblem(Integer problemId, Map<String, Object> updatePropertiesMap) {
+        mongoTemplate.dropCollection(ProblemEntity.ENTITY_COLLECTION_NAME);
         
-        Query query = new Query(Criteria.where("id").is(problemId));
+        Query query = new Query(Criteria.where("id").is(ProblemEntity.SEQUENCE_NAME));
+        mongoTemplate.remove(query, DatabaseSequence.class);
 
-        Update update = new Update();
-
-        updatePropertiesMap.entrySet().stream().forEach(e -> {
-            update.set(e.getKey(), e.getValue());
-        });
-
-        mongoTemplate.updateFirst(query, update, ProblemEntity.class);
+        mongoTemplate.dropCollection(ProblemExecutionDetails.ENTITY_COLLECTION_NAME);
     }
+
+
+    // public long updateProblem(Integer problemId, Map<String, Object> updatePropertiesMap) {
+        
+    //     Query query = new Query(Criteria.where("id").is(problemId));
+
+    //     Update update = new Update();
+
+    //     updatePropertiesMap.entrySet().stream().forEach(e -> {
+    //         update.set(e.getKey(), e.getValue());
+    //     });
+
+    //     UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ProblemEntity.class);
+
+    //     return updateResult.getModifiedCount();
+    // }
 
     public Optional<ProblemEntity> getLasEntity(){
 

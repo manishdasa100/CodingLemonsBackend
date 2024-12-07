@@ -10,6 +10,6 @@ import lombok.Data;
 @Data
 public class S3Buckets {
 
-    private String customer;
+    private String images;
     
 }

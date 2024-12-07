@@ -5,6 +5,9 @@ import java.util.List;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.StatusMessage;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

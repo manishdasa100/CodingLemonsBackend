@@ -15,9 +15,10 @@ import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Config.RabbitMQConfig;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.Submission;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 
@@ -140,28 +141,45 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         Integer languageId = programmingLanguage.getLanguagId();
 
-        ProblemDto problemDto = submissionMetadata.getProblemDto();
+        // ProblemDto problemDto = submissionMetadata.getProblemDto();
+        ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
 
-        Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
+        Map<String, String> testCases = executionDetails.getTestCasesWithExpectedOutputs();
 
-        String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
+        String driverCode = executionDetails.getDriverCodes().get(programmingLanguage);
+        // Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
+
+        // String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
 
         String userCode = submissionMetadata.getUserCode();
 
         String sourceCode = SourceCodeFormatter.formatCode(driverCode, userCode, programmingLanguage);
 
-        Float cpuTimeLimit = problemDto.getCpuTimeLimit();
+        System.out.println("SOURCE CODE: ");
+        System.out.println(sourceCode);
 
-        Float memoryLimit = problemDto.getMemoryLimit();
+        String encodedSourceCode = Base64.getEncoder().encodeToString(sourceCode.getBytes());
 
-        Integer stackLimit = problemDto.getStackLimit();
+        // System.out.println("Source code");
+        // System.out.println(encodedSourceCode);
+
+        Float cpuTimeLimit = executionDetails.getCpuTimeLimit();
+
+        Float memoryLimit = executionDetails.getMemoryLimit();
+
+        Integer stackLimit = executionDetails.getStackLimit();
+        // Float cpuTimeLimit = problemDto.getCpuTimeLimit();
+
+        // Float memoryLimit = problemDto.getMemoryLimit();
+
+        // Integer stackLimit = problemDto.getStackLimit();
 
         List<Judge0SubmissionRequestPayload> submissions = new ArrayList<Judge0SubmissionRequestPayload>();
 
         testCases.entrySet().stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
             System.out.println("test case : "+ entry.getKey());
             Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
-            .source_code(sourceCode)
+            .source_code(encodedSourceCode)
             .language_id(languageId)
             .stdin(entry.getKey())
             .expected_output(entry.getValue())
@@ -192,8 +210,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
         return new SubmissionJob(
             submissionJobId, 
             submissionMetadata.getUsername(), 
-            problemDto.getId(), 
-            problemDto.getDifficulty().getPoints(),
+            submissionMetadata.getProblemId(), 
+            2,
             isRunCode, 
             submissions
         );

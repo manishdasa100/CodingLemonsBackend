@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Entities.Difficulty;
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -85,11 +85,6 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                                     .constraints(constraints)
                                     .examples(examples)
                                     .difficulty(problemDifficulty)
-                                    .testCasesWithExpectedOutputs(testCases)
-                                    .cpuTimeLimit(cpuTimeLimit)
-                                    .memoryLimit(memoryLimit)
-                                    .stackLimit(stackLimit)
-                                    .driverCodes(driverCodes)
                                     // .topics(topics)
                                     // .companyTags(companyTags)
                                     .build();

@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +18,16 @@ import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.codinglemonsbackend.Config.CustomCacheConfig;
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
-import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.TopicTag;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
@@ -71,13 +74,13 @@ public class ProblemRepositoryService {
                            .map(Difficulty::valueOf)
                            .toArray(Difficulty[]::new);
         }
-        if (StringUtils.isNotEmpty(topicsStr)) {
+        if (StringUtils.isNotBlank(topicsStr)) {
             topicSlugs = Arrays.stream(topicsStr.trim().split(","))
                             .map(String::trim)
                             .filter(e -> !e.isEmpty())
                             .toArray(String[]::new);
         }
-        if (StringUtils.isNotEmpty(companiesStr)) {
+        if (StringUtils.isNotBlank(companiesStr)) {
             companySlugs = Arrays.stream(companiesStr.trim().split(","))
                             .map(String::trim)
                             .filter(e -> !e.isEmpty())
@@ -88,30 +91,14 @@ public class ProblemRepositoryService {
     }
 
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
-    public void addProblem(ProblemDto problemDto) throws Exception {
+    public void addProblem(ProblemDto problemDto, ProblemExecutionDetails executionDetails) throws Exception {
         System.out.println("---------------------------------------------");
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
         System.out.println("---------------------------------------------");
-        
-        // Verify if the topic tags and company tags are present in database before adding the problem
-        Set<TopicTag> topicTags = problemDto.getTopics();
-        Set<String> topicSlugs = topicTags.stream().map(TopicTag::getSlug).collect(Collectors.toSet());
-
-        if (problemDto.getCompanies() != null) {
-            Set<CompanyTag> companyTags = problemDto.getCompanies();
-            Set<String> companySlugs = companyTags.stream().map(CompanyTag::getSlug).collect(Collectors.toSet());
-            Set<CompanyTag> validCompanies = companyRepository.getValidTags(companySlugs);
-            problemDto.setCompanies(validCompanies);
-        }
-
-        Set<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
-        
-        if(validTopics.isEmpty()) throw new Exception("No matching topics were found. Please provide valid topics."); 
-
-        problemDto.setTopics(validTopics);
 
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
-        problemsRepository.addProblem(entity);
+
+        problemsRepository.addProblem(entity, executionDetails);
     }
 
     // Caching does not fit here as it is very less probable that a same problem will be accessed multiple times by multiple users
@@ -132,79 +119,100 @@ public class ProblemRepositoryService {
         return problemDtos;
     }
 
+    public ProblemExecutionDetails getExecutionDetails(Integer id) {
+        Optional<ProblemExecutionDetails> executionDetails = problemsRepository.getExecutionDetails(id);
+        if (executionDetails.isEmpty()) throw new NoSuchElementException("No execution details found for id " + id);
+        return executionDetails.get();
+    }
+
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
-    public void updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
+    public long updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
 
         ProblemDto problemDto = getProblem(problemId);
 
-        Map<String, Object> updatePropertiesMap = new HashMap<>();
+        ProblemExecutionDetails oldExecutionDetails = getExecutionDetails(problemId);
 
-        if (updateMetadata.getTitle()!= null  && !updateMetadata.getTitle().equals(problemDto.getTitle())) {
-            updatePropertiesMap.put("title", updateMetadata.getTitle());
+        System.out.println("Hello Hello");
+
+        Map<String, Object> updateProblemDetailsMap = new HashMap<>();
+
+        Map<String, Object> updateExecutionDetailsMap = new HashMap<>();
+
+        if (StringUtils.isNotBlank(updateMetadata.getTitle())  && !updateMetadata.getTitle().equals(problemDto.getTitle())) {
+            updateProblemDetailsMap.put("title", updateMetadata.getTitle());
         }
 
-        if (updateMetadata.getDescription()!= null && !updateMetadata.getDescription().equals(problemDto.getDescription())) {
-            updatePropertiesMap.put("description", updateMetadata.getDescription());
+        if (StringUtils.isNotBlank(updateMetadata.getDescription()) && !updateMetadata.getDescription().equals(problemDto.getDescription())) {
+            updateProblemDetailsMap.put("description", updateMetadata.getDescription());
         }
 
-        if (updateMetadata.getConstraints() != null && !updateMetadata.getConstraints().equals(problemDto.getConstraints())) {
-            updatePropertiesMap.put("constraints", updateMetadata.getConstraints());
+        if (!CollectionUtils.isEmpty(updateMetadata.getConstraints()) && !updateMetadata.getConstraints().equals(problemDto.getConstraints())) {
+            updateProblemDetailsMap.put("constraints", updateMetadata.getConstraints());
         }
 
-        if (updateMetadata.getExamples()!= null && !updateMetadata.getExamples().equals(problemDto.getExamples())) {
-           updatePropertiesMap.put("examples", updateMetadata.getExamples());
+        if (!CollectionUtils.isEmpty(updateMetadata.getExamples()) && !updateMetadata.getExamples().equals(problemDto.getExamples())) {
+           updateProblemDetailsMap.put("examples", updateMetadata.getExamples());
         }
 
-        if (updateMetadata.getDifficulty()!= null && !updateMetadata.getDifficulty().equals(problemDto.getDifficulty())) {
-            updatePropertiesMap.put("difficulty", updateMetadata.getDifficulty());
+        if (ObjectUtils.isNotEmpty(updateMetadata.getDifficulty()) && !updateMetadata.getDifficulty().equals(problemDto.getDifficulty())) {
+            updateProblemDetailsMap.put("difficulty", updateMetadata.getDifficulty());
         }
 
-        if (updateMetadata.getTopics()!= null && !updateMetadata.getTopics().equals(problemDto.getTopics())) {
-            updatePropertiesMap.put("topics", updateMetadata.getTopics());
+        if (!CollectionUtils.isEmpty(updateMetadata.getTopicSlugs()) && !updateMetadata.getTopicSlugs().equals(problemDto.getTopics().stream().map(TopicTag::getSlug).collect(Collectors.toSet()))) {
+            Set<TopicTag> validTopics = topicRepository.getValidTags(updateMetadata.getTopicSlugs());
+            if (!validTopics.isEmpty()) updateProblemDetailsMap.put("topics", validTopics);    
         }
 
-        if (updateMetadata.getCompanies()!= null && !updateMetadata.getCompanies().equals(problemDto.getCompanies())) {
-            updatePropertiesMap.put("companyTags", updateMetadata.getCompanies());
+        if (!CollectionUtils.isEmpty(updateMetadata.getCompanySlugs()) && !updateMetadata.getCompanySlugs().equals(problemDto.getCompanies().stream().map(CompanyTag::getSlug).collect(Collectors.toSet()))) {
+            Set<CompanyTag> validCompanies = companyRepository.getValidTags(updateMetadata.getCompanySlugs());
+            if (!validCompanies.isEmpty()) updateProblemDetailsMap.put("companies", validCompanies);
         }
 
-        if (updateMetadata.getStackLimit()!= null && !updateMetadata.getStackLimit().equals(problemDto.getStackLimit())) {
-            updatePropertiesMap.put("stackLimit", updateMetadata.getStackLimit());
+        if (!CollectionUtils.isEmpty(updateMetadata.getCodeSnippets()) && !updateMetadata.getCodeSnippets().equals(problemDto.getCodeSnippets())) {
+            updateProblemDetailsMap.put("codeSnippets", updateMetadata.getCodeSnippets());
         }
 
-        if (updateMetadata.getMemoryLimit()!= null && !updateMetadata.getMemoryLimit().equals(problemDto.getMemoryLimit())) {
-            updatePropertiesMap.put("memoryLimit", updateMetadata.getMemoryLimit());
+        if (updateMetadata.getStackLimit()!= null && !updateMetadata.getStackLimit().equals(oldExecutionDetails.getStackLimit())) {
+            updateExecutionDetailsMap.put("stackLimit", updateMetadata.getStackLimit());
         }
 
-        if (updateMetadata.getCpuTimeLimit()!= null && !updateMetadata.getCpuTimeLimit().equals(problemDto.getCpuTimeLimit())) {
-            updatePropertiesMap.put("cpuTimeLimit", updateMetadata.getCpuTimeLimit());
+        if (updateMetadata.getMemoryLimit()!= null && !updateMetadata.getMemoryLimit().equals(oldExecutionDetails.getMemoryLimit())) {
+            updateExecutionDetailsMap.put("memoryLimit", updateMetadata.getMemoryLimit());
         }
 
-        if (updateMetadata.getTestCasesWithExpectedOutputs()!= null && !updateMetadata.getTestCasesWithExpectedOutputs().equals(problemDto.getTestCasesWithExpectedOutputs())) {
-            updatePropertiesMap.put("testCasesWithExpectedOutputs", updateMetadata.getTestCasesWithExpectedOutputs());
+        if (updateMetadata.getCpuTimeLimit()!= null && !updateMetadata.getCpuTimeLimit().equals(oldExecutionDetails.getCpuTimeLimit())) {
+            updateExecutionDetailsMap.put("cpuTimeLimit", updateMetadata.getCpuTimeLimit());
         }
 
-        if (updateMetadata.getCodeSnippets()!= null && !updateMetadata.getCodeSnippets().equals(problemDto.getCodeSnippets())) {
-            updatePropertiesMap.put("codeSnippets", updateMetadata.getCodeSnippets());
+        if (!CollectionUtils.isEmpty(updateMetadata.getTestCasesWithExpectedOutputs()) && !updateMetadata.getTestCasesWithExpectedOutputs().equals(oldExecutionDetails.getTestCasesWithExpectedOutputs())){
+            updateExecutionDetailsMap.put("testCasesWithExpectedOutputs", updateMetadata.getTestCasesWithExpectedOutputs());
         }
 
-        if (updateMetadata.getDriverCodes()!= null && !updateMetadata.getDriverCodes().equals(problemDto.getDriverCodes())) {
-            updatePropertiesMap.put("driverCodes", updateMetadata.getDriverCodes());
+        if (!CollectionUtils.isEmpty(updateMetadata.getDriverCodes()) && !updateMetadata.getDriverCodes().equals(oldExecutionDetails.getDriverCodes())) {
+            updateExecutionDetailsMap.put("driverCodes", updateMetadata.getDriverCodes());
+        } 
+
+        // if (updateMetadata.getNextProblemId() != null && !updateMetadata.getNextProblemId().equals(problemDto.getNextProblemId())) { 
+        //     updateProblemDetailsMap.put("nextProblemId", updateMetadata.getNextProblemId());
+        // }
+
+        // if (updateMetadata.getPreviousProblemId() != null && !updateMetadata.getPreviousProblemId().equals(problemDto.getPreviousProblemId())) { 
+        //     updateProblemDetailsMap.put("previousProblemId", updateMetadata.getPreviousProblemId());
+        // }
+
+        long updatedDocumentsCount = 0;
+
+        if (!updateProblemDetailsMap.isEmpty()) {
+            System.out.println("UPDATING PROBLEM DETAILS");
+            updatedDocumentsCount = problemsRepository.updateProblemProperties(problemId, updateProblemDetailsMap, ProblemEntity.class);
+        } 
+
+        if (!updateExecutionDetailsMap.isEmpty()) {
+            System.out.println("UPDATING EXECUTION DETAILS");
+            updatedDocumentsCount += problemsRepository.updateProblemProperties(problemId, updateExecutionDetailsMap, ProblemExecutionDetails.class);
         }
 
-        if (updateMetadata.getNextProblemId() != null && !updateMetadata.getNextProblemId().equals(problemDto.getNextProblemId())) { 
-            updatePropertiesMap.put("nextProblemId", updateMetadata.getNextProblemId());
-        }
-
-        if (updateMetadata.getPreviousProblemId() != null && !updateMetadata.getPreviousProblemId().equals(problemDto.getPreviousProblemId())) { 
-            updatePropertiesMap.put("previousProblemId", updateMetadata.getPreviousProblemId());
-        }
-
-        if (!updatePropertiesMap.isEmpty()) {
-            System.out.println("THERE IS SOMETHING TO UPDATE");
-            problemsRepository.updateProblem(problemId, updatePropertiesMap);
-        } else {
-            System.out.println("THERE IS NOTHING TO UPDATE");
-        }
+        return updatedDocumentsCount;
     }
 
     @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)

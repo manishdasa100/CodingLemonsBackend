@@ -14,8 +14,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.Role;
 import com.codinglemonsbackend.Dto.UserDto;
-import com.codinglemonsbackend.Entities.Role;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;

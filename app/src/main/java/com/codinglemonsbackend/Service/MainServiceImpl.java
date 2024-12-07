@@ -25,6 +25,7 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -171,15 +172,24 @@ public class MainServiceImpl implements MainService{
     @Override
     public String submitCode(SubmitCodeRequestPayload payload) {
 
-        ProblemDto problemDto = getProblem(payload.getProblemId());
+        // ProblemDto problemDto = getProblem(payload.getProblemId());
+        ProblemExecutionDetails executionDetails = problemRepositoryService.getExecutionDetails(payload.getProblemId());
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
-                                                .problemDto(problemDto)
+                                                .problemId(payload.getProblemId())
+                                                .executionDetails(executionDetails)
                                                 .language(payload.getLanguage())
                                                 .username(getCurrentlySignedInUser().getUsername())
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
                                                 .build();
+        // SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
+        //                                         .problemDto(problemDto)
+        //                                         .language(payload.getLanguage())
+        //                                         .username(getCurrentlySignedInUser().getUsername())
+        //                                         .userCode(payload.getUserCode())
+        //                                         .isRunCode(payload.getIsRunCode())
+        //                                         .build();
 
         //Mono<List<Judge0SubmissionToken>> submissionTokens = submissionService.submitCode(submissionMetadata);
         String submissionToken = submissionService.submitCode(submissionMetadata);

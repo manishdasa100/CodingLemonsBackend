@@ -82,17 +82,17 @@ public class UserProfileService {
             System.out.println("LINKEDIN URL");
             updatePropertiesMap.put("linkedinUrl", newProfile.getLinkedinUrl());
         }
-        if (newProfile.getAboutMe() != null && !newProfile.getAboutMe().equals(currentProfile.getAboutMe())) {
+        if (newProfile.getAbout() != null && !newProfile.getAbout().equals(currentProfile.getAbout())) {
             System.out.println("ABOUT ME");
-            updatePropertiesMap.put("aboutMe", newProfile.getAboutMe());
+            updatePropertiesMap.put("about", newProfile.getAbout());
         }
         if (newProfile.getSchool() != null && !newProfile.getSchool().equals(currentProfile.getSchool())) {
             System.out.println("SCHOOL");
             updatePropertiesMap.put("school", newProfile.getSchool());
         }
-        if (newProfile.getCountry() != null && !newProfile.getCountry().equals(currentProfile.getCountry())) {
-            System.out.println("COUNTRY");
-            updatePropertiesMap.put("country", newProfile.getCountry());
+        if (newProfile.getLocation() != null && !newProfile.getLocation().equals(currentProfile.getLocation())) {
+            System.out.println("LOCATION");
+            updatePropertiesMap.put("location", newProfile.getLocation());
         }
         if (newProfile.getCompany() != null && !newProfile.getCompany().equals(currentProfile.getCompany())) {
             System.out.println("COMPANY");
@@ -107,7 +107,11 @@ public class UserProfileService {
             updatePropertiesMap.put("skillTags", newProfile.getSkillTags());
         }
 
-        Boolean profileUpdateStatus = userProfileRepository.updateUserProfile(username, updatePropertiesMap);
+        Boolean profileUpdateStatus = false;
+        
+        if (!updatePropertiesMap.isEmpty()){
+            profileUpdateStatus = userProfileRepository.updateUserProfile(username, updatePropertiesMap);
+        }
 
         return profileUpdateStatus;
     }
@@ -118,7 +122,7 @@ public class UserProfileService {
 
         try {
             s3Service.putObject(
-                s3Buckets.getCustomer(), 
+                s3Buckets.getImages(), 
                 "profile-picture/%s/%s".formatted(username, profilePictureId), 
                 file.getBytes()
             );
@@ -134,7 +138,7 @@ public class UserProfileService {
         String profilePictureId = userProfile.getProfilePictureId();
 
         byte[] userProfilePicture = s3Service.getObject(
-            s3Buckets.getCustomer(), 
+            s3Buckets.getImages(), 
             "profile-picture/%s/%s".formatted(userProfile.getUsername(), profilePictureId)
         );
 

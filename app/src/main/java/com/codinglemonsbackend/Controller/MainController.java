@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
+import com.codinglemonsbackend.Dto.TestcasesDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -28,6 +29,7 @@ import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
 import com.codinglemonsbackend.Payloads.UserProblemListPayload;
 import com.codinglemonsbackend.Service.MainService;
+
 import jakarta.validation.Valid;
 import java.util.List;
 
@@ -90,12 +92,6 @@ public class MainController {
         return ResponseEntity.accepted().body(responsePayload);
     }
 
-    @GetMapping("/runCode/get/{interpretId}")
-    public ResponseEntity<CodeRunResponsePayload> getRunCodeResult(@PathVariable String interpretId){
-
-        return null;
-    }
-
     @GetMapping("/submission/get/{submissionId}")
     public ResponseEntity<SubmissionResponsePayload<?>> getSubmission(@PathVariable String submissionId) throws FailedSubmissionException{
 
@@ -104,7 +100,7 @@ public class MainController {
         return ResponseEntity.ok().body(payload);
     }
 
-    @GetMapping("problem/today")
+    @GetMapping("/problem/today")
     public ResponseEntity<ProblemDto> getProblemOfTheDay(){
 
         ProblemDto problemOfTheDay = mainService.getProblemOfTheDay();
@@ -112,7 +108,7 @@ public class MainController {
         return ResponseEntity.ok().body(problemOfTheDay);
     }
 
-    @GetMapping("user/profile")
+    @GetMapping("/user/profile")
     public ResponseEntity<UserProfileDto> getUserProfile() {
 
         UserProfileDto userProfile = mainService.getUserProfile();
@@ -142,4 +138,5 @@ public class MainController {
     public byte[] getUserProfilePicture(){
         return mainService.getUserProfilePicture();
     }
+
 }

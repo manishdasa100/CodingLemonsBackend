@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -19,12 +21,15 @@ import org.springframework.data.annotation.Transient;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "problems")
+@Document(collection = "Problems")
 @Builder
 public class ProblemEntity {
 
     @Transient
     public static final String SEQUENCE_NAME = "problem_sequence";
+
+    @Transient
+    public static final String ENTITY_COLLECTION_NAME = "Problems";
     
     @Id
     private Integer id;
@@ -32,15 +37,11 @@ public class ProblemEntity {
     private String description;
     private Set<String> constraints;
     private Set<Example> examples;
-    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
     private Difficulty difficulty;
-    private Map<ProgrammingLanguage, String> driverCodes;
     private Map<ProgrammingLanguage, String> codeSnippets;
-    private float cpuTimeLimit;
-    private float memoryLimit;
-    private Integer stackLimit;
     private Set<TopicTag> topics;
     private Set<CompanyTag> companies;
+    private Integer likes;
     private Integer previousProblemId;
     private Integer nextProblemId;
     private Integer acceptedCount;

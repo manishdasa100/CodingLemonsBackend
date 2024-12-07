@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -49,13 +50,13 @@ public class UserProfileDto {
     private String profilePictureId;
 
     @Size(min = 5, max = 500)
-    private String aboutMe;
+    private String about;
 
     @Size(min = 10, max = 100)
     private String school;
 
-    @Size(min = 4, max = 56)
-    private String country;
+    @Valid
+    private Location location;
 
     private String company;
 

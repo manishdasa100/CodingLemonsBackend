@@ -19,8 +19,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Entities.Difficulty;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
 

@@ -62,7 +62,7 @@ dependencies {
 	implementation 'org.apache.commons:commons-lang3:3.17.0'
 
 	//Dev tools dependency for faster application restart and live reload
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	//developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	 // JWT dependencies
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

@@ -1,13 +1,10 @@
 package com.codinglemonsbackend.Dto;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.codinglemonsbackend.Entities.CompanyTag;
-import com.codinglemonsbackend.Entities.Difficulty;
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
-import com.codinglemonsbackend.Entities.TopicTag;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -31,7 +28,7 @@ public class ProblemUpdateDto {
 
     private Set<Example> examples;
 
-    private Map<String, String> testCasesWithExpectedOutputs;
+    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
 
     private List<String> testCaseOutputs;
 
@@ -47,9 +44,9 @@ public class ProblemUpdateDto {
 
     private Integer stackLimit;
 
-    private Set<TopicTag> topics;
+    private Set<String> topicSlugs;
 
-    private Set<CompanyTag> companies;
+    private Set<String> companySlugs;
 
     @JsonIgnore
     private Integer previousProblemId;

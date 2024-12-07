@@ -3,6 +3,8 @@ package com.codinglemonsbackend.Entities;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.codinglemonsbackend.Dto.Location;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,11 +40,11 @@ public class UserProfileEntity {
 
     private String avatarUrl;
 
-    private String aboutMe;
+    private String about;
 
     private String school;
 
-    private String country;
+    private Location location;
 
     private String company;
 

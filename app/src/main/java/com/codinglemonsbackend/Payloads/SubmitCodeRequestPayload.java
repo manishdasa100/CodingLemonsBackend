@@ -1,6 +1,6 @@
 package com.codinglemonsbackend.Payloads;
 
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;

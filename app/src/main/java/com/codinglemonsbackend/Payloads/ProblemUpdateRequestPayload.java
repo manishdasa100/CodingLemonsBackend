@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.List;
 
+import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
-import com.codinglemonsbackend.Entities.Difficulty;
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

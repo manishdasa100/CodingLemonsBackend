@@ -10,6 +10,8 @@ import lombok.Data;
 @AllArgsConstructor
 @Document(collection = "database_sequences")
 public class DatabaseSequence {
+
+    public static final String ENTITY_COLLECTION_NAME = "database_sequences";
     
     @Id
     private String id;

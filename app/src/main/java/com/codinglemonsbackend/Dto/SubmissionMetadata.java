@@ -1,6 +1,6 @@
 package com.codinglemonsbackend.Dto;
 
-import com.codinglemonsbackend.Entities.ProgrammingLanguage;
+import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +15,10 @@ public class SubmissionMetadata {
 
     private String submissionJobId;
     
-    private ProblemDto problemDto;
+    private Integer problemId;
+
+    // private ProblemDto problemDto;
+    private ProblemExecutionDetails executionDetails;
 
     private ProgrammingLanguage language;
 

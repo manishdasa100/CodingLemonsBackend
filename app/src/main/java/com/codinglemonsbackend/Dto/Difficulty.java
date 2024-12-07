@@ -1,4 +1,4 @@
-package com.codinglemonsbackend.Entities;
+package com.codinglemonsbackend.Dto;
 
 public enum Difficulty {
     EASY(1),
