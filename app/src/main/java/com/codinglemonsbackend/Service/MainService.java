@@ -1,25 +1,21 @@
 package com.codinglemonsbackend.Service;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
-import com.codinglemonsbackend.Dto.ProblemUpdateDto;
-import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
-import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
-import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
-import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
-import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
+import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 
 
 public interface MainService {
@@ -28,11 +24,15 @@ public interface MainService {
 
     public ProblemDto getProblem(Integer id);
 
-    public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException;
+    public void addProblemList(ProblemListDto problemListDto) throws ResourceAlreadyExistsException;
 
-    public List<ProblemListDto> getUserFavorites();
+    public int addProblemToList(String listId, Set<Integer> problemIds);
 
-    // public Mono<Judge0CreateSubmissionResponse> createSubmission(SubmitCodeRequestPayload payload);
+    public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest updateRequest);
+
+    public List<ProblemListDto> getUserFavorites(String username);
+
+    public ProblemListDto getUserProblemList(String username, String name);
 
     public String submitCode(SubmitCodeRequestPayload payload);
 
@@ -40,10 +40,9 @@ public interface MainService {
 
     public ProblemDto getProblemOfTheDay();
 
-    //public boolean updateUserDetails(UserUpdateRequestPayload updateRequest);
     public boolean updateUserProfile(UserProfileDto newUserProfile);
 
-    public UserProfileDto getUserProfile();
+    public UserProfileDto getUserProfile(String username);
 
     public void uploadUserProfilePicture(MultipartFile file) throws ProfilePictureUploadFailureException;
 

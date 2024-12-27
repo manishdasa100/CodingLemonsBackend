@@ -1,8 +1,11 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +37,7 @@ import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
 import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
+import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -88,12 +92,12 @@ public class MainServiceImpl implements MainService{
 
         String username = currentSignedInUserEntity.getUsername();
 
-        ProblemListDto acceptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
-        ProblemListDto atteptedProblemList = userProblemListRepositoryService.geAlltProblemListOfUser(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
+        ProblemListEntity acceptedProblemList = userProblemListRepositoryService.getUserProblemLists(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
+        ProblemListEntity atteptedProblemList = userProblemListRepositoryService.getUserProblemLists(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
         
         return List.of(
-            acceptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toSet()), 
-            atteptedProblemList.getProblemsData().stream().map(problem -> problem.getId()).collect(Collectors.toSet())
+            acceptedProblemList.getProblemIds(), 
+            atteptedProblemList.getProblemIds()
         );
         // return userProblemListRepositoryService.getProblemList(
         //     userProblemListRepositoryService.SOLVED_PROBLEM_LIST, 
@@ -158,21 +162,52 @@ public class MainServiceImpl implements MainService{
     
 
     @Override
-    public void addProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException {
+    public void addProblemList(ProblemListDto problemListDto) throws ResourceAlreadyExistsException {
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
-        problemList.setCreator(currentSignedInUserEntity.getUsername());
-        userProblemListRepositoryService.saveProblemList(problemList);
+        ProblemListEntity enitityToSave = modelMapper.map(problemListDto, ProblemListEntity.class);
+        enitityToSave.setCreator(currentSignedInUserEntity.getUsername());
+        userProblemListRepositoryService.saveProblemList(enitityToSave);
+    }
+
+    public int addProblemToList(String listId, Set<Integer> problemIds) {
+        Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds))
+                                        .stream()
+                                        .map(ProblemDto::getId)
+                                        .collect(Collectors.toSet());
+
+        if (validProblemIds.isEmpty()) {
+            throw new IllegalArgumentException("No valid problem ids found");
+        }
+
+        return userProblemListRepositoryService.addProblemToProblemList(listId, validProblemIds);
+    }
+
+    public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest newListDetails) {
+        return userProblemListRepositoryService.updateProblemList(listId, newListDetails);
     }
 
     @Override
-    public List<ProblemListDto> getUserFavorites() {
-        return userProblemListRepositoryService.geAlltProblemListOfUser(getCurrentlySignedInUser().getUsername());
+    public List<ProblemListDto> getUserFavorites(String username) {
+        List<ProblemListDto> userProblemListDtos =  userProblemListRepositoryService.getUserProblemLists(username)
+                .stream()
+                .map(entity -> modelMapper.map(entity, ProblemListDto.class))
+                .collect(Collectors.toList());
+
+        if (userProblemListDtos.isEmpty()) {
+            throw new NoSuchElementException("No problem lists found for user " + username);
+        }
+
+        return userProblemListDtos;
+    }
+
+    public ProblemListDto getUserProblemList(String username, String name) {
+        
+        return userProblemListRepositoryService.getUserProblemList(username, name);
     }
 
     @Override
     public String submitCode(SubmitCodeRequestPayload payload) {
 
-        // ProblemDto problemDto = getProblem(payload.getProblemId());
         ProblemExecutionDetails executionDetails = problemRepositoryService.getExecutionDetails(payload.getProblemId());
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
@@ -183,20 +218,11 @@ public class MainServiceImpl implements MainService{
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
                                                 .build();
-        // SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
-        //                                         .problemDto(problemDto)
-        //                                         .language(payload.getLanguage())
-        //                                         .username(getCurrentlySignedInUser().getUsername())
-        //                                         .userCode(payload.getUserCode())
-        //                                         .isRunCode(payload.getIsRunCode())
-        //                                         .build();
-
-        //Mono<List<Judge0SubmissionToken>> submissionTokens = submissionService.submitCode(submissionMetadata);
+        
         String submissionToken = submissionService.submitCode(submissionMetadata);
 
         redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString());
 
-        //submissionTokens.subscribe(e -> {for(Judge0SubmissionToken token:e){System.out.println(token.getToken());}});
         return submissionToken;
 
     }
@@ -217,7 +243,7 @@ public class MainServiceImpl implements MainService{
             return new SubmissionResponsePayload<SubmissionDto>(status, null);
         }
 
-        // Check if the submission is in code run hash
+        // Check if the submission is in code run hashc
         if (redisService.hashKeyExists(CODERUN_RESULTS, submissionId)) {
             String result = redisService.getHashValue(CODERUN_RESULTS, submissionId);
             try {
@@ -292,11 +318,9 @@ public class MainServiceImpl implements MainService{
     }
 
     @Override
-    public UserProfileDto getUserProfile() {
+    public UserProfileDto getUserProfile(String username) {
 
-        UserEntity user = getCurrentlySignedInUser();
-
-        UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
+        UserProfileDto userProfileDto = userProfileService.getUserProfile(username);
 
         return userProfileDto;
     }

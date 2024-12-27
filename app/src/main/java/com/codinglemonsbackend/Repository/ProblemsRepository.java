@@ -92,8 +92,8 @@ public class ProblemsRepository {
         return Optional.ofNullable(problemEntity);
     }
 
-    public List<ProblemEntity> getProblemsByIds(Integer[] ids) {
-        Query query = new Query(Criteria.where("id").in((Object[])ids));
+    public List<ProblemEntity> getProblemsByIds(List<Integer> ids) {
+        Query query = new Query(Criteria.where("id").in((Object[])ids.toArray()));
         query.fields().include(projectionFields);
         List<ProblemEntity> problemEntities = mongoTemplate.find(query, ProblemEntity.class);
         return problemEntities;

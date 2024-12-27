@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ExceptionMessage> resourceNotFound(NoSuchElementException e){
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(FailedSubmissionException.class)
@@ -83,7 +83,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UsernameNotFoundException.class)
     public ResponseEntity<ExceptionMessage> handleUsernameNotFoundException(UsernameNotFoundException e) {
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
@@ -91,10 +91,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
-    @ExceptionHandler(DuplicateKeyException.class)
-    public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
-    }
+    // @ExceptionHandler(DuplicateKeyException.class)
+    // public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {
+    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+    // }
 }
     
 
