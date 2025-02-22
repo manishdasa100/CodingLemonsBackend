@@ -3,9 +3,9 @@ package com.codinglemonsbackend.Exceptions;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class ResourceAlreadyExistsException extends Exception{
+public class DuplicateResourceException extends Exception{
     
-    public ResourceAlreadyExistsException(String message){
+    public DuplicateResourceException(String message){
         super(message);
     }
 }

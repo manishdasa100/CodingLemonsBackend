@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.apache.coyote.Response;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -56,8 +54,8 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<ExceptionMessage> handleResourceAlreadyExistsException(ResourceAlreadyExistsException e){
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ExceptionMessage> handleResourceAlreadyExistsException(DuplicateResourceException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     
     }

@@ -5,10 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -23,6 +21,8 @@ public class CustomCacheConfig {
     public static final String ALL_PROBLEMS_CACHE = "ALL PROBLEMS";
 
     public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
+
+    public static final String PROBLEM_LIKES_CACHE = "PROBLEM LIKES";
     
     @Bean
     public CacheManager customCacheManager(RedisConnectionFactory redisConnectionFactory){

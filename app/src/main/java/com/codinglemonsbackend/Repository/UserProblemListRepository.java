@@ -33,9 +33,8 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public class UserProblemListRepository {
@@ -127,11 +126,11 @@ public class UserProblemListRepository {
         return problemListEntities;      
     }
 
-    public void saveProblemList(ProblemListEntity problemList) throws ResourceAlreadyExistsException{
+    public void saveProblemList(ProblemListEntity problemList) throws DuplicateResourceException{
         try{
             mongoTemplate.save(problemList);
         } catch(DuplicateKeyException e) {
-            throw new ResourceAlreadyExistsException("Problem list with same name already exists");
+            throw new DuplicateResourceException("Problem list with same name already exists");
         } catch(Exception e) {
             throw e;
         }

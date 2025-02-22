@@ -101,6 +101,9 @@ public class ProblemRepositoryService {
         problemsRepository.addProblem(entity, executionDetails);
     }
 
+    public Boolean problemExists(Integer problemId) {
+        return problemsRepository.problemExists(problemId);
+    }
     // Caching does not fit here as it is very less probable that a same problem will be accessed multiple times by multiple users
     public ProblemDto getProblem(Integer id) {
         

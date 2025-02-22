@@ -1,7 +1,6 @@
 package com.codinglemonsbackend;
 
 import org.modelmapper.ModelMapper;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -9,9 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.codinglemonsbackend.Properties.S3Buckets;
-import com.codinglemonsbackend.Service.S3Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.slugify.Slugify;
 
 @SpringBootApplication
@@ -35,7 +33,9 @@ public class App {
 
     @Bean
     public ObjectMapper getObjectMapper(){
-        return new ObjectMapper();    
+        ObjectMapper objectMapper =  new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());  
+        return objectMapper;  
     }
 
     @Bean

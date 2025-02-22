@@ -23,8 +23,9 @@ import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
-import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.AddProblemToListRequest;
+import com.codinglemonsbackend.Payloads.LikeRequest;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
@@ -60,13 +61,13 @@ public class MainController {
         return ResponseEntity.ok().body(problemDto);
     }
 
-    @PostMapping("/like/{id}")
-    public void likeProblem(@PathVariable Integer problemId) {
-
-    }
+    @PostMapping("/like")
+    public void likeProblem(@RequestBody LikeRequest likeRequest) throws DuplicateResourceException {
+       mainService.likeProblem(likeRequest); 
+    } 
 
     @PostMapping("/list/create")
-    public ResponseEntity<String> addProblemList(@Valid @RequestBody ProblemListDto payload) throws ResourceAlreadyExistsException{
+    public ResponseEntity<String> addProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException{
         mainService.addProblemList(payload);
         return ResponseEntity.ok().body("List added");
     }

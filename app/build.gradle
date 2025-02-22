@@ -79,6 +79,9 @@ dependencies {
 	//Cache
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
 
+	// Jackson JSR310 for LocalDateTime serialization
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
+
 	//AWS dependencies
 	implementation platform('software.amazon.awssdk:bom:2.21.1')
 	implementation 'software.amazon.awssdk:s3'

@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -16,13 +15,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Dto.ProblemDtoWithStatus;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
-import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
@@ -30,15 +28,13 @@ import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
-import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
-import com.codinglemonsbackend.Payloads.ProblemSetResponsePayload;
-import com.codinglemonsbackend.Payloads.ProblemUpdateRequestPayload;
+import com.codinglemonsbackend.Payloads.LikeRequest;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
-import com.codinglemonsbackend.Payloads.UserUpdateRequestPayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +49,9 @@ public class MainServiceImpl implements MainService{
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LikeService likeService;
 
     @Autowired
     private UserProfileService userProfileService;
@@ -162,7 +161,7 @@ public class MainServiceImpl implements MainService{
     
 
     @Override
-    public void addProblemList(ProblemListDto problemListDto) throws ResourceAlreadyExistsException {
+    public void addProblemList(ProblemListDto problemListDto) throws DuplicateResourceException {
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
         ProblemListEntity enitityToSave = modelMapper.map(problemListDto, ProblemListEntity.class);
         enitityToSave.setCreator(currentSignedInUserEntity.getUsername());
@@ -201,8 +200,29 @@ public class MainServiceImpl implements MainService{
     }
 
     public ProblemListDto getUserProblemList(String username, String name) {
-        
         return userProblemListRepositoryService.getUserProblemList(username, name);
+    }
+
+    public void likeProblem(LikeRequest request) throws DuplicateResourceException {
+        Integer problemId = request.getProblemId();
+        
+        // Check if the problemId exists
+
+        Boolean problemExist = redisService.hashKeyExists(CustomCacheConfig.PROBLEM_LIKES_CACHE, Integer.toString(problemId)) || problemRepositoryService.problemExists(problemId);
+        
+        if (!problemExist) {
+            throw new NoSuchElementException("Problem with id " + problemId + " not found");
+        }
+        
+        System.out.println("Problem id exists");
+        String username = getCurrentlySignedInUser().getUsername();
+        Boolean isLike = request.getIsLike();
+        if (isLike) {
+            likeService.likeProblem(username, problemId);
+        } else {
+            likeService.dislikeProblem(username, problemId);
+        }
+         
     }
 
     @Override

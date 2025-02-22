@@ -23,7 +23,7 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Exceptions.ResourceAlreadyExistsException;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.ResourceNotFoundException;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Repository.UserProblemListRepository;
@@ -80,12 +80,12 @@ public class UserProblemListRepositoryService {
         try {
             saveProblemList(solvedProblemList);
             saveProblemList(attemptedProblemList);
-        } catch (ResourceAlreadyExistsException e) {
+        } catch (DuplicateResourceException e) {
             e.printStackTrace();
         }
     }
     
-    public void saveProblemList(ProblemListEntity newProblemList) throws ResourceAlreadyExistsException{
+    public void saveProblemList(ProblemListEntity newProblemList) throws DuplicateResourceException{
         userProblemListRepository.saveProblemList(newProblemList);
     }
 

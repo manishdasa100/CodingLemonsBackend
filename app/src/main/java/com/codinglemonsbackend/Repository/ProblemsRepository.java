@@ -99,6 +99,11 @@ public class ProblemsRepository {
         return problemEntities;
     }
 
+    public Boolean problemExists(Integer problemId) {
+        Query query = new Query(Criteria.where("id").is(problemId));
+        return mongoTemplate.exists(query, ProblemEntity.class);
+    }
+
     public Optional<ProblemExecutionDetails> getExecutionDetails(Integer id) {
         ProblemExecutionDetails executionDetails =  mongoTemplate.findById(id, ProblemExecutionDetails.class, "ProblemExecutionDetails");
         return Optional.ofNullable(executionDetails);

@@ -124,7 +124,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         submissionMetadata.setSubmissionJobId(submissionJobId);
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.ROUTING_KEY, createSubmissionJob(submissionMetadata));
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.PENDING_SUBMISSIONS_QUEUE, createSubmissionJob(submissionMetadata));
         
         return submissionJobId;
     }
