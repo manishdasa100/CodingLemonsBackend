@@ -23,6 +23,10 @@ public class CustomCacheConfig {
     public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
 
     public static final String PROBLEM_LIKES_CACHE = "PROBLEM LIKES";
+
+    public static final String USER_LIKES_CACHE_PREFIX = "USER_LIKES:";
+
+    public static final String USER_DISLIKES_CACHE_PREFIX = "USER_DISLIKES:";
     
     @Bean
     public CacheManager customCacheManager(RedisConnectionFactory redisConnectionFactory){

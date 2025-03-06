@@ -18,32 +18,33 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Configuration
 public class RabbitMQConfig {
 
-    public static final String PENDING_SUBMISSIONS_QUEUE = "Pending_submissions";
+    public static final String PENDING_SUBMISSIONS = "Queue:Pending_Submissions";
 
-    public static final String LIKE_EVENTS_QUEUE = "Like_events";
+    public static final String LIKE_EVENTS = "Queue:Like_Events";
 
-    public static final String EXCHANGE = "CLExchange";
+    public static final String MAINEXCHANGE = "Exchange:Main";
 
     @Bean
     public Queue pendingSubmssionsQueue(){
-        return new Queue(PENDING_SUBMISSIONS_QUEUE);
+        return new Queue(PENDING_SUBMISSIONS);
     }
 
     @Bean
     public Queue likeEventsQueue(){
-        return new Queue(LIKE_EVENTS_QUEUE);
+        return new Queue(LIKE_EVENTS);
     }
 
     @Bean
-    public DirectExchange exchange(){
-        return new DirectExchange(EXCHANGE);
+    public DirectExchange mainExchange(){
+        return new DirectExchange(MAINEXCHANGE);
     }
+
 
     @Bean
     public Binding pendingSubmissionsBinding(DirectExchange exchange){
         return BindingBuilder.bind(pendingSubmssionsQueue()).to(exchange).with(pendingSubmssionsQueue().getName());
-    
     }
+
     @Bean
     public Binding likeEventsBinding(DirectExchange exchange){
         return BindingBuilder.bind(likeEventsQueue()).to(exchange).with(likeEventsQueue().getName());

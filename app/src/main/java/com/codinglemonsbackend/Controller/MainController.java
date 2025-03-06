@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
+import com.codinglemonsbackend.Dto.ProblemMetadata;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -59,6 +60,10 @@ public class MainController {
     public ResponseEntity<ProblemDto> getProblem(@PathVariable Integer id) {
         ProblemDto problemDto = mainService.getProblem(id);
         return ResponseEntity.ok().body(problemDto);
+    }
+
+    public ResponseEntity<ProblemMetadata> getProblemMetadata(@PathVariable Integer id) {
+        return null;
     }
 
     @PostMapping("/like")
