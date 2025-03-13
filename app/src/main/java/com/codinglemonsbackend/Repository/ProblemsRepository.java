@@ -34,7 +34,7 @@ public class ProblemsRepository {
     @Autowired
     private ModelMapper modelMapper;
 
-    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount"};
+    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "likes"};
 
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);

@@ -15,7 +15,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
@@ -32,6 +31,7 @@ import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Payloads.LikeRequest;
+import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
@@ -156,9 +156,37 @@ public class MainServiceImpl implements MainService{
 
         problemDto.setStatus(status);
 
+        redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
+
         return problemDto;
     }
     
+    public LikesData getProblemLikesData(Integer id) {
+        // Get the problem like count from redis db. 
+        // If not present then get it from mongodb database and store it in redis db
+        // Convert the count integer to string. If like count is in thousands then divide it by 1000/ if in millions then divide it by 1000000
+        Integer likeCount = null;
+
+        if (redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id))) {
+            likeCount = Integer.parseInt(redisService.getValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id)));
+        } else {
+            likeCount = getProblem(id).getLikes();
+            redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id), Integer.toString(likeCount), 300);
+        }
+        
+        String formattedLikeCount = formatLikeCount(likeCount);
+        
+        // Get the problem like status for the currently signed in user
+        
+        
+        return null;
+    }
+        
+    private String formatLikeCount(Integer likeCount) {
+        if (likeCount < 1000) return Integer.toString(likeCount);
+        if (likeCount < 1000000) return Integer.toString(likeCount/1000) + "K";
+        return Integer.toString(likeCount/1000000) + "M";
+    }
 
     @Override
     public void addProblemList(ProblemListDto problemListDto) throws DuplicateResourceException {
@@ -208,7 +236,7 @@ public class MainServiceImpl implements MainService{
         
         // Check if the problemId exists
 
-        Boolean problemExist = redisService.hashKeyExists(CustomCacheConfig.PROBLEM_LIKES_CACHE, Integer.toString(problemId)) || problemRepositoryService.problemExists(problemId);
+        Boolean problemExist = redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(problemId)) || problemRepositoryService.problemExists(problemId);
         
         if (!problemExist) {
             throw new NoSuchElementException("Problem with id " + problemId + " not found");

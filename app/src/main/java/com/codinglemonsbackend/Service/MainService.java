@@ -14,6 +14,7 @@ import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.LikeRequest;
+import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
@@ -24,6 +25,8 @@ public interface MainService {
     public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companiesStr, Integer page, Integer size);
 
     public ProblemDto getProblem(Integer id);
+    
+    public LikesData getProblemLikesData(Integer id);
 
     public void addProblemList(ProblemListDto problemListDto) throws DuplicateResourceException;
 

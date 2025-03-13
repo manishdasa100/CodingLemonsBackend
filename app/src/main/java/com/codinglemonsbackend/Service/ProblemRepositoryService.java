@@ -35,7 +35,7 @@ import com.codinglemonsbackend.Repository.TopicRepository;
 import com.mongodb.client.result.DeleteResult;
 
 @Service
-@CacheConfig(cacheNames = CustomCacheConfig.DEFAULT_CACHE)
+@CacheConfig(cacheNames = RedisService.DEFAULT_CACHE)
 public class ProblemRepositoryService {
 
     @Autowired
@@ -50,7 +50,7 @@ public class ProblemRepositoryService {
     @Autowired
     private CompanyRepository companyRepository;
 
-    @Cacheable(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
+    @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public ProblemSet getAllProblems(Integer page, Integer size) {
         System.out.println("CACHE MISS");
         return problemsRepository.findAll(page, size);
@@ -90,7 +90,7 @@ public class ProblemRepositoryService {
         return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size);
     }
 
-    @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
+    @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public void addProblem(ProblemDto problemDto, ProblemExecutionDetails executionDetails) throws Exception {
         System.out.println("---------------------------------------------");
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
@@ -128,7 +128,7 @@ public class ProblemRepositoryService {
         return executionDetails.get();
     }
 
-    @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
+    @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public long updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
 
         ProblemDto problemDto = getProblem(problemId);
@@ -210,7 +210,7 @@ public class ProblemRepositoryService {
         return updatedDocumentsCount;
     }
 
-    @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
+    @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public void deleteProblemById(Integer problemId){
 
         DeleteResult result = problemsRepository.removeProblemById(problemId);
@@ -218,7 +218,7 @@ public class ProblemRepositoryService {
         if (result.getDeletedCount()<1) throw new NoSuchElementException("Problem Id "+ problemId + " not present");
     }
 
-    @CacheEvict(cacheNames = CustomCacheConfig.ALL_PROBLEMS_CACHE)
+    @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public void removeAllProblems() {
         problemsRepository.removeAllProblems();
     }

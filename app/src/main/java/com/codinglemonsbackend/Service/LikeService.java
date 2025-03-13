@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Config.RabbitMQConfig;
 import com.codinglemonsbackend.Dto.LikeEvent;
-import com.codinglemonsbackend.Entities.UserLike;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Repository.LikeRepository;
@@ -59,9 +58,9 @@ public class LikeService {
             true
         );
 
-        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
-        
         rabbitTemplate.convertAndSend(RabbitMQConfig.MAINEXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
+        
+        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
     
     /*
@@ -86,28 +85,53 @@ public class LikeService {
             false
         );
 
-        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
-        
         rabbitTemplate.convertAndSend(RabbitMQConfig.MAINEXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
+
+        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
 
     private Boolean problemAlreadyLiked(String username, Integer problemId) {
-        return redisService.isSetMember(CustomCacheConfig.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId)) ||
+
+        /*Conditions under which a user cannot like a problem
+        1. The problem id should not be in the disliked set for the user
+        2. User has already liked the problem(i.e the problem id is in the liked set for the user)
+        3. User has liked the problem before
+        */
+        String redisLikesKey = RedisService.USER_LIKES_CACHE_PREFIX+username;
+        String redisDislikesKey = RedisService.USER_DISLIKES_CACHE_PREFIX+username;
+
+        if (redisService.isSetMember(redisDislikesKey, Integer.toString(problemId))) {
+            return false;
+        }
+        return redisService.isSetMember(redisLikesKey, Integer.toString(problemId)) ||
         likeRepository.findByUsernameAndProblemId(username, problemId).isPresent();
     }
 
     private Boolean problemAlreadyDisliked(String username, Integer problemId) {
-        return redisService.isSetMember(CustomCacheConfig.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId)) || 
-        !problemAlreadyLiked(username, problemId);
+
+        /*Conditions under which a user cannot dislike a problem
+        1. The problem id should not be in the liked set for the user
+        2. User has already disliked the problem(i.e. the problem id is in the disliked set for the user)
+        3. User has not liked the problem before
+        */
+        String redisLikesKey = RedisService.USER_LIKES_CACHE_PREFIX+username;
+        String redisDislikesKey = RedisService.USER_DISLIKES_CACHE_PREFIX+username;
+
+        if (redisService.isSetMember(redisLikesKey, Integer.toString(problemId))) {
+            return false;
+        }
+
+        return redisService.isSetMember(redisDislikesKey, Integer.toString(problemId)) || 
+        !likeRepository.findByUsernameAndProblemId(username, problemId).isPresent();
     }
 
     private void addProblemToRedisSet(String username, Integer problemId, Boolean isLike) {
         if (isLike) {
-            redisService.addToSet(CustomCacheConfig.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
-            redisService.removeFromSet(CustomCacheConfig.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.addToSet(RedisService.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.removeFromSet(RedisService.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
         } else {
-            redisService.addToSet(CustomCacheConfig.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
-            redisService.removeFromSet(CustomCacheConfig.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.addToSet(RedisService.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.removeFromSet(RedisService.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
         }
     }
 }

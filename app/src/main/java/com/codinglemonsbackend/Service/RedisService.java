@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Service;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -10,6 +11,18 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RedisService {
+
+    public static final String DEFAULT_CACHE = "DEFAULT";
+
+    public static final String ALL_PROBLEMS_CACHE = "ALL PROBLEMS";
+
+    public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
+
+    public static final String PROBLEM_LIKES_COUNT_PREFIX = "LIKES_COUNT:";
+
+    public static final String USER_LIKES_CACHE_PREFIX = "USER_LIKES:";
+
+    public static final String USER_DISLIKES_CACHE_PREFIX = "USER_DISLIKES:";
 
     private RedisTemplate<String, String> redisTemplate;
     
@@ -50,13 +63,9 @@ public class RedisService {
         return hashOperations.hasKey(key, hashKey);
     }
 
-    public void storeValue(String key, String value) {
+    public void storeValue(String key, String value, long timeout) {
         stringOperations.set(key, value);
-    }
-
-    public void storeValue(String key, String value, Date expiry) {
-        stringOperations.set(key, value);
-        redisTemplate.expireAt(key, expiry);
+        redisTemplate.expire(key, timeout, TimeUnit.SECONDS);
     }
 
     public String getValue(String key) {

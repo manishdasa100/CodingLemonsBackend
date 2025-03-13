@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
-import com.codinglemonsbackend.Dto.ProblemMetadata;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -62,9 +61,9 @@ public class MainController {
         return ResponseEntity.ok().body(problemDto);
     }
 
-    public ResponseEntity<ProblemMetadata> getProblemMetadata(@PathVariable Integer id) {
-        return null;
-    }
+    // public ResponseEntity<ProblemMetadata> getProblemMetadata(@PathVariable Integer id) {
+        
+    // }
 
     @PostMapping("/like")
     public void likeProblem(@RequestBody LikeRequest likeRequest) throws DuplicateResourceException {

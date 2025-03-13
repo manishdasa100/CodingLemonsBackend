@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @EnableScheduling
-@CacheConfig(cacheNames = CustomCacheConfig.DEFAULT_CACHE)
+@CacheConfig(cacheNames = RedisService.DEFAULT_CACHE)
 @Slf4j
 public class ProblemOfTheDayService {
 
@@ -35,7 +35,7 @@ public class ProblemOfTheDayService {
     @Autowired
     private ProblemOfTheDayRepository problemOfTheDayRepository;
     
-    @Cacheable(cacheNames = CustomCacheConfig.PROBLEM_OF_THE_DAY_CACHE)
+    @Cacheable(cacheNames = RedisService.PROBLEM_OF_THE_DAY_CACHE)
     public ProblemDto getProblemOfTheDay(){
 
         System.out.println("CACHE MISS");
@@ -52,7 +52,7 @@ public class ProblemOfTheDayService {
     }
 
     @Scheduled(cron = "0 0 0 * * *")
-    @CacheEvict(cacheNames = CustomCacheConfig.PROBLEM_OF_THE_DAY_CACHE)
+    @CacheEvict(cacheNames = RedisService.PROBLEM_OF_THE_DAY_CACHE)
     public void setProblenOftheDay(){
 
         Integer randomProblemId = getRandomProblemId();
