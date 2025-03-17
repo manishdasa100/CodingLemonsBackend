@@ -7,7 +7,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Config.RabbitMQConfig;
 import com.codinglemonsbackend.Dto.LikeEvent;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;

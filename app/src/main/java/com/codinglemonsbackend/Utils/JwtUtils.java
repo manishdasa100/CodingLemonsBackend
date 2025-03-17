@@ -49,7 +49,9 @@ public class JwtUtils {
     }
 
     public Boolean isTokenExpired(String token, Date passowrdIssuedDate){
-        return extractExpiration(token).before(new Date()) || extractIssuedAt(token).before(passowrdIssuedDate);
+        Date tokenExpiryDate = extractExpiration(token);
+        Date tokenIssuedDate = extractIssuedAt(token);
+        return tokenIssuedDate.before(passowrdIssuedDate) || tokenExpiryDate.before(new Date());
     }
 
     public String generateToken(UserDetails userDetails){
