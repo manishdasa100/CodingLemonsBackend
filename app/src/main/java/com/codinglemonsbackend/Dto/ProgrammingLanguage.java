@@ -31,16 +31,4 @@ public enum ProgrammingLanguage {
         return languageVersion;
     }
 
-    // JAVA,
-    // PYTHON,
-    // C,
-    // CPP,
-    // CSHARP,
-    // JAVASCRIPT,
-    // GO,
-    // RUBY,
-    // SWIFT,
-    // KOTLIN,
-    // PHP,
-    // TYPESCRIPT;
 }

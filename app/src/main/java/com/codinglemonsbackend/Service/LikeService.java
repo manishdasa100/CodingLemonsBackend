@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Config.RabbitMQConfig;
 import com.codinglemonsbackend.Dto.LikeEvent;
+import com.codinglemonsbackend.Entities.UserLike;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Repository.LikeRepository;
@@ -24,16 +26,6 @@ public class LikeService {
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
-
-    /*
-     * This function should return the total likes and whether the current user has liked the problem.
-        * 1. Check if the problem id is in cache, if not then bring the total like count into cache.
-        * 2. Get the user like status for the problem.
-        * 3. Return the total likes and user like status. 
-     */
-    public LikesData getLikesData(Integer problemId) {
-        return null;
-    }
 
     /*
      * When this function is called
@@ -96,8 +88,8 @@ public class LikeService {
         2. User has already liked the problem(i.e the problem id is in the liked set for the user)
         3. User has liked the problem before
         */
-        String redisLikesKey = RedisService.USER_LIKES_CACHE_PREFIX+username;
-        String redisDislikesKey = RedisService.USER_DISLIKES_CACHE_PREFIX+username;
+        String redisLikesKey = RedisService.USER_PENDING_LIKES_PREFIX+username;
+        String redisDislikesKey = RedisService.USER_PENDING_DISLIKES_PREFIX+username;
 
         if (redisService.isSetMember(redisDislikesKey, Integer.toString(problemId))) {
             return false;
@@ -113,8 +105,8 @@ public class LikeService {
         2. User has already disliked the problem(i.e. the problem id is in the disliked set for the user)
         3. User has not liked the problem before
         */
-        String redisLikesKey = RedisService.USER_LIKES_CACHE_PREFIX+username;
-        String redisDislikesKey = RedisService.USER_DISLIKES_CACHE_PREFIX+username;
+        String redisLikesKey = RedisService.USER_PENDING_LIKES_PREFIX+username;
+        String redisDislikesKey = RedisService.USER_PENDING_DISLIKES_PREFIX+username;
 
         if (redisService.isSetMember(redisLikesKey, Integer.toString(problemId))) {
             return false;
@@ -126,11 +118,16 @@ public class LikeService {
 
     private void addProblemToRedisSet(String username, Integer problemId, Boolean isLike) {
         if (isLike) {
-            redisService.addToSet(RedisService.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
-            redisService.removeFromSet(RedisService.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.addToSet(RedisService.USER_PENDING_LIKES_PREFIX+username, Integer.toString(problemId));
+            redisService.removeFromSet(RedisService.USER_PENDING_DISLIKES_PREFIX+username, Integer.toString(problemId));
         } else {
-            redisService.addToSet(RedisService.USER_DISLIKES_CACHE_PREFIX+username, Integer.toString(problemId));
-            redisService.removeFromSet(RedisService.USER_LIKES_CACHE_PREFIX+username, Integer.toString(problemId));
+            redisService.removeFromSet(RedisService.USER_PENDING_LIKES_PREFIX+username, Integer.toString(problemId));
+            redisService.addToSet(RedisService.USER_PENDING_DISLIKES_PREFIX+username, Integer.toString(problemId));
         }
+    }
+
+    public Boolean getLikeStatus(String username, Integer id) {
+        Optional<UserLike> userLike = likeRepository.findByUsernameAndProblemId(username, id);
+        return userLike.isPresent();
     }
 }

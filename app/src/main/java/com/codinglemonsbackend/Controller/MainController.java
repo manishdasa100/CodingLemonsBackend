@@ -26,6 +26,7 @@ import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.AddProblemToListRequest;
 import com.codinglemonsbackend.Payloads.LikeRequest;
+import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
@@ -61,9 +62,11 @@ public class MainController {
         return ResponseEntity.ok().body(problemDto);
     }
 
-    // public ResponseEntity<ProblemMetadata> getProblemMetadata(@PathVariable Integer id) {
-        
-    // }
+    @GetMapping("/problem/{id}/metadata")
+    public ResponseEntity<LikesData> getProblemLikesData(@PathVariable Integer id) {
+        LikesData likeData = mainService.getProblemLikesData(id);
+        return ResponseEntity.ok().body(likeData);
+    }
 
     @PostMapping("/like")
     public void likeProblem(@RequestBody LikeRequest likeRequest) throws DuplicateResourceException {

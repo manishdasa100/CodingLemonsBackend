@@ -156,7 +156,7 @@ public class MainServiceImpl implements MainService{
 
         problemDto.setStatus(status);
 
-        redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
+        redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
 
         return problemDto;
     }
@@ -165,21 +165,29 @@ public class MainServiceImpl implements MainService{
         // Get the problem like count from redis db. 
         // If not present then get it from mongodb database and store it in redis db
         // Convert the count integer to string. If like count is in thousands then divide it by 1000/ if in millions then divide it by 1000000
-        Integer likeCount = null;
+        String problemLikes = null;
 
-        if (redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id))) {
-            likeCount = Integer.parseInt(redisService.getValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id)));
+        if (redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id))) {
+            problemLikes = redisService.getValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id));
         } else {
-            likeCount = getProblem(id).getLikes();
-            redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(id), Integer.toString(likeCount), 300);
+            Integer likesCount = getProblem(id).getLikes();
+            problemLikes = formatLikeCount(likesCount);
+            redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), problemLikes, 300);
         }
         
-        String formattedLikeCount = formatLikeCount(likeCount);
+        // Get the problem like status for the currently signed in user and cache the result in redis
+        String username = getCurrentlySignedInUser().getUsername();
+        Boolean likeStatus = null;
+        String redisLikeStatusKey = RedisService.USER_LIKE_STATUS_CACHE_PREFIX+username;
+
+        if (redisService.hashKeyExists(redisLikeStatusKey, Integer.toString(id))) {
+            likeStatus = Boolean.parseBoolean(redisService.getHashValue(redisLikeStatusKey, Integer.toString(id)));
+        } else {
+            likeStatus = likeService.getLikeStatus(username, id);
+            redisService.storeHash(redisLikeStatusKey, Integer.toString(id), likeStatus.toString(), 300);
+        }
         
-        // Get the problem like status for the currently signed in user
-        
-        
-        return null;
+        return new LikesData(problemLikes, likeStatus);
     }
         
     private String formatLikeCount(Integer likeCount) {
@@ -236,7 +244,7 @@ public class MainServiceImpl implements MainService{
         
         // Check if the problemId exists
 
-        Boolean problemExist = redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_PREFIX+Integer.toString(problemId)) || problemRepositoryService.problemExists(problemId);
+        Boolean problemExist = redisService.keyExist(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(problemId)) || problemRepositoryService.problemExists(problemId);
         
         if (!problemExist) {
             throw new NoSuchElementException("Problem with id " + problemId + " not found");
@@ -269,7 +277,7 @@ public class MainServiceImpl implements MainService{
         
         String submissionToken = submissionService.submitCode(submissionMetadata);
 
-        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString());
+        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString(), -1);
 
         return submissionToken;
 

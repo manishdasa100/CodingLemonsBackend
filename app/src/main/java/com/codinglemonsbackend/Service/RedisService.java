@@ -18,11 +18,13 @@ public class RedisService {
 
     public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
 
-    public static final String PROBLEM_LIKES_COUNT_PREFIX = "LIKES_COUNT:";
+    public static final String PROBLEM_LIKES_COUNT_CACHE_PREFIX = "PROBLEM_LIKES_COUNT:";
 
-    public static final String USER_LIKES_CACHE_PREFIX = "USER_LIKES:";
+    public static final String USER_PENDING_LIKES_PREFIX = "PENDING_LIKES:";
 
-    public static final String USER_DISLIKES_CACHE_PREFIX = "USER_DISLIKES:";
+    public static final String USER_PENDING_DISLIKES_PREFIX = "PENDING_DISLIKES:";
+
+    public static final String USER_LIKE_STATUS_CACHE_PREFIX = "LIKE_STATUS_CACHE:";
 
     private RedisTemplate<String, String> redisTemplate;
     
@@ -39,8 +41,9 @@ public class RedisService {
         this.setOperations = redisTemplate.opsForSet();
     }
 
-    public void storeHash(String key, String hashKey, String value) {
+    public void storeHash(String key, String hashKey, String value, long timeout) {
         hashOperations.put(key, hashKey, value);
+        redisTemplate.expire(key, timeout, TimeUnit.SECONDS);
     }
     
     public void incrementHashValue(String key, String hashKey, long value) {
@@ -79,7 +82,7 @@ public class RedisService {
     public void addToSet(String key, String... values) {
         setOperations.add(key, values);
     }
-
+    
     public void removeFromSet(String key, String... values) {
         setOperations.remove(key, values);
     }
