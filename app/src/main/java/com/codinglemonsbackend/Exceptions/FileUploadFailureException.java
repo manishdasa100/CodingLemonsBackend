@@ -3,9 +3,9 @@ package com.codinglemonsbackend.Exceptions;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public class ProfilePictureUploadFailureException extends Exception{
+public class FileUploadFailureException extends Exception{
 
-    public ProfilePictureUploadFailureException(String message) {
+    public FileUploadFailureException(String message) {
         super(message);
     }
     

@@ -1,21 +1,32 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
+import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
+import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.UserRank;
+import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Payloads.CreateProblemRequestPayload;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
+import com.codinglemonsbackend.Utils.ImageUtils;
 import com.github.slugify.Slugify;
+
+import jakarta.validation.Valid;
 
 @Service
 public class AdminServiceImpl {
@@ -30,9 +41,12 @@ public class AdminServiceImpl {
     private TopicRepository topicRepository;
 
     @Autowired
+    private UserRankService userRankService;
+
+    @Autowired
     private Slugify slugify;
     
-    public void addProblem(CreateProblemRequestPayload payload) throws Exception {
+    public ProblemEntity addProblem(CreateProblemRequestPayload payload) throws Exception {
         System.out.println("--------PROBLEM PAYLOAD--------------");
         System.out.println(payload);
 
@@ -65,7 +79,9 @@ public class AdminServiceImpl {
                                                     .driverCodes(payload.getDriverCodes())
                                                     .build();
         
-        problemRepositoryService.addProblem(problemDto, executionDetails);
+        ProblemEntity savedEntity =  problemRepositoryService.addProblem(problemDto, executionDetails);
+
+        return savedEntity;
     }
 
     public long updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
@@ -92,5 +108,17 @@ public class AdminServiceImpl {
         String slug = slugify.slugify(topicName);
         topicTag.setSlug(slug);
         topicRepository.addTopicTag(topicTag);
+    }
+
+    public String createUserRank(UserRankDto newRankDetails, MultipartFile rankIconImageFile) throws IOException, FileUploadFailureException{
+        
+        String rankNameCapitalized = newRankDetails.getRankName().toUpperCase();
+        newRankDetails.setRankName(rankNameCapitalized);
+
+        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile); 
+        
+        UserRank savedRank = userRankService.createUserRank(newRankDetails, resizedImageBytes);
+        
+        return savedRank.getRankName();
     }
 }

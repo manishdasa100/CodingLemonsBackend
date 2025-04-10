@@ -17,8 +17,11 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.codinglemonsbackend.Payloads.ExceptionMessage;
 
+import lombok.extern.slf4j.Slf4j;
+
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     
     @ExceptionHandler(UserAlreadyExistException.class)
@@ -69,8 +72,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FAILED_DEPENDENCY);
     }
 
-    @ExceptionHandler(ProfilePictureUploadFailureException.class)
-    public ResponseEntity<ExceptionMessage> handleProfilePictureUploadFailureException(ProfilePictureUploadFailureException e){
+    @ExceptionHandler(FileUploadFailureException.class)
+    public ResponseEntity<ExceptionMessage> handleProfilePictureUploadFailureException(FileUploadFailureException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
@@ -88,6 +91,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionMessage> handleMaxUploadSizeLimitExceedException(MaxUploadSizeExceededException e) {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
     }
+
+    // @ExceptionHandler(RedisConnectionFailureException.class)
+    // public ResponseEntity<ExceptionMessage> handleRedisConnectionFailureException(RedisConnectionFailureException e) {
+    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+    // }
 
     // @ExceptionHandler(DuplicateKeyException.class)
     // public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {

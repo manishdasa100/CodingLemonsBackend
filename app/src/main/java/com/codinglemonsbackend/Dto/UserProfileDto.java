@@ -44,7 +44,7 @@ public class UserProfileDto {
     private Integer score;
 
     @JsonProperty(access = Access.READ_ONLY)
-    private Integer ranking;
+    private String ranking;
 
     @JsonIgnore
     private String profilePictureId;

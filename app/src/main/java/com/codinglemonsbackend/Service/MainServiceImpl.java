@@ -29,7 +29,7 @@ import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
-import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
+import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Payloads.LikeRequest;
 import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
@@ -353,7 +353,7 @@ public class MainServiceImpl implements MainService{
     } 
 
     @Override
-    public void uploadUserProfilePicture(MultipartFile file) throws ProfilePictureUploadFailureException {
+    public void uploadUserProfilePicture(MultipartFile file) throws FileUploadFailureException {
 
         UserEntity user = getCurrentlySignedInUser();
 

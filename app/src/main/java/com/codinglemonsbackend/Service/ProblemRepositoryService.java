@@ -91,14 +91,16 @@ public class ProblemRepositoryService {
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
-    public void addProblem(ProblemDto problemDto, ProblemExecutionDetails executionDetails) throws Exception {
+    public ProblemEntity addProblem(ProblemDto problemDto, ProblemExecutionDetails executionDetails) throws Exception {
         System.out.println("---------------------------------------------");
         System.out.println("Problem entity from Repo service: " + problemDto.toString());
         System.out.println("---------------------------------------------");
 
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
 
-        problemsRepository.addProblem(entity, executionDetails);
+        ProblemEntity savedEntity = problemsRepository.addProblem(entity, executionDetails);
+
+        return savedEntity;
     }
 
     public Boolean problemExists(Integer problemId) {

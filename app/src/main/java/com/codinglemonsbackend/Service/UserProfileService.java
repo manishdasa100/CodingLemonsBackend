@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
-import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
+import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Buckets;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
 
@@ -34,6 +34,9 @@ public class UserProfileService {
     @Autowired
     private S3Buckets s3Buckets;
 
+    @Autowired
+    private UserRankService userRankService;
+
     public UserProfileDto getUserProfile(String username) {
         Optional<UserProfileEntity> userProfileEntity = userProfileRepository.getUserProfile(username);
         if (userProfileEntity.isEmpty()) throw new UsernameNotFoundException("User profile not found");
@@ -47,6 +50,7 @@ public class UserProfileService {
                                         .lastName(user.getLastName())
                                         .email(user.getEmail())
                                         .score(0)
+                                        .ranking(userRankService.getInitialRank().getRankName())
                                         .build();
         UserProfileEntity userProfileEntity = mapper.map(userProfileDto, UserProfileEntity.class);
         userProfileRepository.saveUserProfile(userProfileEntity);
@@ -116,7 +120,7 @@ public class UserProfileService {
         return profileUpdateStatus;
     }
 
-    public void uploadUserProfilePicture(String username, MultipartFile file) throws ProfilePictureUploadFailureException{
+    public void uploadUserProfilePicture(String username, MultipartFile file) throws FileUploadFailureException{
 
         String profilePictureId = UUID.randomUUID().toString();
 
@@ -127,10 +131,10 @@ public class UserProfileService {
                 file.getBytes()
             );
         } catch (Exception e) {
-            throw new ProfilePictureUploadFailureException("Profile picture upload failed");
+            throw new FileUploadFailureException("Profile picture upload failed");
         }
 
-        userProfileRepository.updateUserProfilePictureId(username, profilePictureId);
+        userProfileRepository.updateUserProfile(username, Map.of("profilePictureId", profilePictureId));
     }
 
     public byte[] getUserProfilePicture(UserProfileDto userProfile) {

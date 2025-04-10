@@ -29,25 +29,25 @@ public class UserProfileRepository {
         System.out.println("User profile saved");
     }
 
-    public void updateUserProfilePictureId(String username, String profilePictureId) {
+    // public void updateUserProfilePictureId(String username, String profilePictureId) {
 
-        Query query = new Query(Criteria.where("username").is(username));
+    //     Query query = new Query(Criteria.where("username").is(username));
 
-        Update update = new Update();
+    //     Update update = new Update();
 
-        if (profilePictureId != null) { 
-            System.out.println("UPDATING PROFILE PICTURE ID");
-            update.set("profilePictureId", profilePictureId);
-            mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
-        } else {
-            throw new IllegalArgumentException("profilePictureId cannot be null");
-        }
+    //     if (profilePictureId != null) { 
+    //         System.out.println("UPDATING PROFILE PICTURE ID");
+    //         update.set("profilePictureId", profilePictureId);
+    //         mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
+    //     } else {
+    //         throw new IllegalArgumentException("profilePictureId cannot be null");
+    //     }
 
-        // if (!update.getUpdateObject().isEmpty()) {
-        //     System.out.println("UPDATING PROFILE PICTURE ID");
-        //     mongoTemplate.updateFirst(query, update, UserEntity.class);
-        // }
-    }
+    //     // if (!update.getUpdateObject().isEmpty()) {
+    //     //     System.out.println("UPDATING PROFILE PICTURE ID");
+    //     //     mongoTemplate.updateFirst(query, update, UserEntity.class);
+    //     // }
+    // }
 
     public boolean updateUserProfile(String username, Map<String, Object> updatePropertiesMap) {
        

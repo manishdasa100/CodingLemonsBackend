@@ -22,7 +22,7 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
-import com.codinglemonsbackend.Exceptions.ProfilePictureUploadFailureException;
+import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.AddProblemToListRequest;
 import com.codinglemonsbackend.Payloads.LikeRequest;
@@ -156,8 +156,7 @@ public class MainController {
     }
 
     @PostMapping(value = "/user/uploadProfilePic", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadUserProfilePicture(@RequestBody MultipartFile file) throws ProfilePictureUploadFailureException {
-
+    public void uploadUserProfilePicture(@RequestBody MultipartFile file) throws FileUploadFailureException {
         mainService.uploadUserProfilePicture(file);
     }
 

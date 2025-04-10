@@ -28,9 +28,6 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
     @Autowired
     private ProblemsRepository problemsRepository;
 
-    @Autowired
-    private AdminServiceImpl adminService;
-
     public ProblemEntityEventListener(SequenceService sequenceGeneratorService){
         this.sequenceService = sequenceGeneratorService;
     }

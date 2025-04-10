@@ -36,7 +36,9 @@ public class UserProfileEntity {
 
     private Integer score;
 
-    private Integer ranking;
+    // private Integer ranking;
+
+    private String rank;
 
     private String avatarUrl;
 

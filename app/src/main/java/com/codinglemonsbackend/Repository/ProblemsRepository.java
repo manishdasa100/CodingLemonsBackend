@@ -118,10 +118,11 @@ public class ProblemsRepository {
     }
 
     @Transactional
-    public void addProblem(ProblemEntity problemEntity, ProblemExecutionDetails executionDetails) {
+    public ProblemEntity addProblem(ProblemEntity problemEntity, ProblemExecutionDetails executionDetails) {
         ProblemEntity savedEntity = mongoTemplate.save(problemEntity);
         executionDetails.setId(savedEntity.getId());
         mongoTemplate.save(executionDetails);
+        return savedEntity;
     }
 
 
