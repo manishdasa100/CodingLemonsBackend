@@ -9,7 +9,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
@@ -18,16 +17,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
-import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
-import com.codinglemonsbackend.Exceptions.ResourceNotFoundException;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Repository.UserProblemListRepository;
-import com.mongodb.DuplicateKeyException;
 
 
 @Service
