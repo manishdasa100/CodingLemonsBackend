@@ -12,11 +12,8 @@ import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeDeleteEvent;
 import org.springframework.stereotype.Component;
 
-import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
-import com.codinglemonsbackend.Service.AdminServiceImpl;
-import com.codinglemonsbackend.Service.MainService;
 import com.codinglemonsbackend.Service.SequenceService;
 
 @Component

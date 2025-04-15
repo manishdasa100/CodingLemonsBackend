@@ -10,7 +10,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
@@ -19,7 +18,10 @@ import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Buckets;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class UserProfileService {
 
     @Autowired
@@ -120,21 +122,35 @@ public class UserProfileService {
         return profileUpdateStatus;
     }
 
-    public void uploadUserProfilePicture(String username, MultipartFile file) throws FileUploadFailureException{
+    public void uploadUserProfilePicture(String username, byte[] imageFileBytes) throws FileUploadFailureException{
 
         String profilePictureId = UUID.randomUUID().toString();
-
+        Boolean s3Uploaded = false;
         try {
             s3Service.putObject(
                 s3Buckets.getImages(), 
                 "profile-picture/%s/%s".formatted(username, profilePictureId), 
-                file.getBytes()
+                imageFileBytes
             );
+            s3Uploaded = true;
+            userProfileRepository.updateUserProfile(username, Map.of("profilePictureId", profilePictureId));
         } catch (Exception e) {
-            throw new FileUploadFailureException("Profile picture upload failed");
+            if (s3Uploaded) {
+                // Rollback S3
+                try {
+                    s3Service.deleteObject(s3Buckets.getImages(), "profile-picture/%s/%s".formatted(username, profilePictureId));
+                } catch (Exception deleteException) {
+                    log.error("Failed to delete orphaned profile picture with id {} from S3 with message", profilePictureId, deleteException);
+                }
+
+                log.error("Failed to update profilePictureId for user:{} in database", username, e);
+                throw e;
+            } else {
+                log.error("Failed to upload profile picture to S3 for user:{}",username, e);
+                throw new FileUploadFailureException("Profile picture upload to S3 failed with message: " + e.getMessage());
+            }
         }
 
-        userProfileRepository.updateUserProfile(username, Map.of("profilePictureId", profilePictureId));
     }
 
     public byte[] getUserProfilePicture(UserProfileDto userProfile) {

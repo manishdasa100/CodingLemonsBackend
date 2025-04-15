@@ -1,8 +1,10 @@
 package com.codinglemonsbackend.Controller;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,7 +33,8 @@ import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeResponsePayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
-import com.codinglemonsbackend.Service.MainService;
+import com.codinglemonsbackend.Service.MainServiceImpl;
+import com.codinglemonsbackend.Utils.ImageUtils;
 
 import jakarta.validation.Valid;
 
@@ -40,7 +43,7 @@ import jakarta.validation.Valid;
 public class MainController {
 
     @Autowired
-    private MainService mainService;
+    private MainServiceImpl mainService;
 
     @Autowired
     private ModelMapper modelMapper;
@@ -156,8 +159,15 @@ public class MainController {
     }
 
     @PostMapping(value = "/user/uploadProfilePic", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadUserProfilePicture(@RequestBody MultipartFile file) throws FileUploadFailureException {
-        mainService.uploadUserProfilePicture(file);
+    public ResponseEntity<String> uploadUserProfilePicture(@RequestBody MultipartFile profilePictureImageFile) throws FileUploadFailureException, IOException {
+        List<String> validImageExtensions = ImageUtils.validImageExtensions;
+        String fileExtension = FilenameUtils.getExtension(profilePictureImageFile.getOriginalFilename());
+
+        if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
+            throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
+        }
+        mainService.uploadUserProfilePicture(profilePictureImageFile);
+        return ResponseEntity.ok().body("Profile picture uploaded successfully");
     }
 
     @GetMapping("/user/profileImage")

@@ -25,7 +25,7 @@ public class UserProfileRepository {
     }
 
     public void saveUserProfile(UserProfileEntity userProfileEntity) {
-        mongoTemplate.save(userProfileEntity, "UserProfiles");
+        mongoTemplate.save(userProfileEntity, "UserProfile");
         System.out.println("User profile saved");
     }
 

@@ -28,9 +28,8 @@ public class UserRankRepository {
     }
     
     public UserRank saveUserRank(UserRank newUserRank) {
-        throw new RuntimeException("UserRank save to db failed");
-        //UserRank savedUserRank = mongoTemplate.save(newUserRank);
-        //return savedUserRank;
+        UserRank savedUserRank = mongoTemplate.save(newUserRank);
+        return savedUserRank;
     }
 
     public void updateUserRank(String rankID) {
@@ -41,6 +40,5 @@ public class UserRankRepository {
         Query query = new Query(Criteria.where("id").is(rankId));
         return mongoTemplate.remove(query, UserRank.class).getDeletedCount();
     }
-
 
 }

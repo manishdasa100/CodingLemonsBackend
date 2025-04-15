@@ -22,8 +22,8 @@ public class S3Service {
                                 .bucket(bucketName)
                                 .key(key)
                                 .build();
-        // throw new RuntimeException("Exception occured while uploading file to S3 bucket");
-        s3.putObject(objectRequest, RequestBody.fromBytes(data));
+        throw new RuntimeException("S3 upload failure");
+        //s3.putObject(objectRequest, RequestBody.fromBytes(data));
     }
 
     public byte[] getObject(String bucketName, String key){

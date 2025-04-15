@@ -24,6 +24,7 @@ import com.codinglemonsbackend.Payloads.CreateProblemRequestPayload;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Utils.ImageUtils;
+import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.github.slugify.Slugify;
 
 import jakarta.validation.Valid;
@@ -115,7 +116,7 @@ public class AdminServiceImpl {
         String rankNameCapitalized = newRankDetails.getRankName().toUpperCase();
         newRankDetails.setRankName(rankNameCapitalized);
 
-        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile); 
+        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE); 
         
         UserRank savedRank = userRankService.createUserRank(newRankDetails, resizedImageBytes);
         

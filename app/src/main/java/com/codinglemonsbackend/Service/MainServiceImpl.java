@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,8 @@ import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
+import com.codinglemonsbackend.Utils.ImageUtils;
+import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class MainServiceImpl implements MainService{
+public class MainServiceImpl{
 
     private static final Integer MAX_PROBLEMSET_SIZE = 100;
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
@@ -137,7 +140,6 @@ public class MainServiceImpl implements MainService{
         return problemSet;
     }
 
-    @Override
     public ProblemDto getProblem(Integer id) {
         
         ProblemDto problemDto = problemRepositoryService.getProblem(id);
@@ -196,7 +198,6 @@ public class MainServiceImpl implements MainService{
         return Integer.toString(likeCount/1000000) + "M";
     }
 
-    @Override
     public void addProblemList(ProblemListDto problemListDto) throws DuplicateResourceException {
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
         ProblemListEntity enitityToSave = modelMapper.map(problemListDto, ProblemListEntity.class);
@@ -221,7 +222,6 @@ public class MainServiceImpl implements MainService{
         return userProblemListRepositoryService.updateProblemList(listId, newListDetails);
     }
 
-    @Override
     public List<ProblemListDto> getUserFavorites(String username) {
         List<ProblemListDto> userProblemListDtos =  userProblemListRepositoryService.getUserProblemLists(username)
                 .stream()
@@ -260,8 +260,6 @@ public class MainServiceImpl implements MainService{
         }
          
     }
-
-    @Override
     public String submitCode(SubmitCodeRequestPayload payload) {
 
         ProblemExecutionDetails executionDetails = problemRepositoryService.getExecutionDetails(payload.getProblemId());
@@ -283,7 +281,6 @@ public class MainServiceImpl implements MainService{
 
     }
 
-    @Override
     public SubmissionResponsePayload<?> getSubmission(String submissionId) throws FailedSubmissionException {
 
         // First check if the submission is present in redis hash, if yes then return the status as pending
@@ -316,8 +313,6 @@ public class MainServiceImpl implements MainService{
         return new SubmissionResponsePayload<SubmissionDto>("Completed", submissionDto);
     }
 
-
-    @Override
     public ProblemDto getProblemOfTheDay() {
         
         ProblemDto problemOfTheDay = problemOfTheDayService.getProblemOfTheDay();
@@ -327,7 +322,6 @@ public class MainServiceImpl implements MainService{
         return problemOfTheDay;
     }
 
-    @Override
     public boolean updateUserProfile(UserProfileDto newUserProfile) {
 
         System.out.println("UPDATING USER PROFILE");
@@ -352,15 +346,12 @@ public class MainServiceImpl implements MainService{
         return updateStatus;
     } 
 
-    @Override
-    public void uploadUserProfilePicture(MultipartFile file) throws FileUploadFailureException {
-
+    public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
         UserEntity user = getCurrentlySignedInUser();
-
-        userProfileService.uploadUserProfilePicture(user.getUsername(), file);
+        byte[] resizedImageBytes = ImageUtils.resizeImage(file, ImageDimension.SQUARE);
+        userProfileService.uploadUserProfilePicture(user.getUsername(), resizedImageBytes);
     }
 
-    @Override
     public byte[] getUserProfilePicture() {
 
         UserEntity user = getCurrentlySignedInUser();
@@ -372,8 +363,6 @@ public class MainServiceImpl implements MainService{
         return profilePicture;
     
     }
-
-    @Override
     public UserProfileDto getUserProfile(String username) {
 
         UserProfileDto userProfileDto = userProfileService.getUserProfile(username);

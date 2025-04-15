@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "UserProfiles")
+@Document(collection = "UserProfile")
 public class UserProfileEntity {
     
     @Id

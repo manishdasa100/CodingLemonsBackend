@@ -89,11 +89,11 @@ public class UserRankService {
                 try {
                     s3Service.deleteObject(s3Buckets.getImages(), s3Key);
                 } catch (Exception deleteException) {
-                    log.error("Failed to delete orphaned rank badge from S3 with message", deleteException);
+                    log.error("Failed to delete orphaned rank badge with id {} from S3 with message", rankBadgeId, deleteException);
                 }
 
             
-                log.error("Failed to save rank entity to database", exception);
+                log.error("Failed to save rank entity {} to database with message:", newUserRank.getRankName(), exception);
                 throw exception;
             } else {
                 log.error("Failed to upload rank badge to S3", exception);

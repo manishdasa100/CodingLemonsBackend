@@ -2,7 +2,6 @@ package com.codinglemonsbackend.Utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,20 +13,37 @@ public class ImageUtils {
 
     public static final List<String> validImageExtensions = Arrays.asList("jpg", "jpeg", "png");
 
-    public record CustomImageDimensions(int width, int height) {}
+    public enum ImageDimension {
+        SQUARE(200, 200),
+        PORTRAIT(200, 300),
+        LANDSCAPE(300, 200);
 
-    private static final CustomImageDimensions DEFAULT_DIMENSIONS = new CustomImageDimensions(200, 200);
+        private int width;
+        private int height;
 
-    public static byte[] resizeImage(MultipartFile imageFile) throws IOException {
-        return resizeImage(imageFile, DEFAULT_DIMENSIONS);
+        ImageDimension(int width, int height) {
+            this.width = width;
+            this.height = height;
+        }
+
+        public int getWidth() {
+            return width;
+        }
+        public int getHeight() {
+            return height;
+        }
     }
 
-    public static byte[] resizeImage(MultipartFile imageFile, CustomImageDimensions dimensions) throws IOException {
+    public static byte[] resizeImage(MultipartFile imageFile, ImageDimension imageDimension) throws IOException {
+        return resizeImage(imageFile, imageDimension.getWidth(), imageDimension.getHeight());
+    }
+
+    public static byte[] resizeImage(MultipartFile imageFile, int width, int height) throws IOException {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         Thumbnails.of(imageFile.getInputStream())
-            .size(dimensions.width, dimensions.height)
+            .size(width, height)
             .outputFormat("jpg")
             .outputQuality(0.8f)
             .toOutputStream(outputStream);
