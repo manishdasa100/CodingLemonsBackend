@@ -352,21 +352,8 @@ public class MainServiceImpl{
         userProfileService.uploadUserProfilePicture(user.getUsername(), resizedImageBytes);
     }
 
-    public byte[] getUserProfilePicture() {
-
-        UserEntity user = getCurrentlySignedInUser();
-
-        UserProfileDto userProfileDto = userProfileService.getUserProfile(user.getUsername());
-
-        byte[] profilePicture = userProfileService.getUserProfilePicture(userProfileDto);
-
-        return profilePicture;
-    
-    }
     public UserProfileDto getUserProfile(String username) {
-
         UserProfileDto userProfileDto = userProfileService.getUserProfile(username);
-
         return userProfileDto;
     }
  

@@ -114,47 +114,35 @@ public class MainController {
 
     @PostMapping("/submission/submit")
     public ResponseEntity<?> submit(@Valid @RequestBody SubmitCodeRequestPayload payload){
-
         String submissionId = mainService.submitCode(payload);
-
         SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);
-
         return ResponseEntity.accepted().body(responsePayload);
     }
 
     @GetMapping("/submission/get/{submissionId}")
     public ResponseEntity<SubmissionResponsePayload<?>> getSubmission(@PathVariable String submissionId) throws FailedSubmissionException{
-
         SubmissionResponsePayload<?> payload = mainService.getSubmission(submissionId);
-
         return ResponseEntity.ok().body(payload);
     }
 
     @GetMapping("/problem/today")
     public ResponseEntity<ProblemDto> getProblemOfTheDay(){
-
         ProblemDto problemOfTheDay = mainService.getProblemOfTheDay();
-
         return ResponseEntity.ok().body(problemOfTheDay);
     }
 
     @GetMapping("/profile/{username}")
     public ResponseEntity<UserProfileDto> getUserProfile(@PathVariable String username) {
-
         UserProfileDto userProfile = mainService.getUserProfile(username);
-
         return ResponseEntity.ok().body(userProfile);
     }
 
     @PutMapping("/user/update")
     public ResponseEntity<String> updateUserProfile(@Valid @RequestBody UserProfileDto newUserProfile) {
-        
         boolean updated = mainService.updateUserProfile(newUserProfile);
-
         if (updated) {
             return ResponseEntity.ok().body("Updated");
         }
-
         return ResponseEntity.ok().body("No updates done");
     }
 
@@ -168,11 +156,6 @@ public class MainController {
         }
         mainService.uploadUserProfilePicture(profilePictureImageFile);
         return ResponseEntity.ok().body("Profile picture uploaded successfully");
-    }
-
-    @GetMapping("/user/profileImage")
-    public byte[] getUserProfilePicture(){
-        return mainService.getUserProfilePicture();
     }
 
 }

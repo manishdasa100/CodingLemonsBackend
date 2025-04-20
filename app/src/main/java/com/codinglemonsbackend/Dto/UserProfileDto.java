@@ -46,8 +46,8 @@ public class UserProfileDto {
     @JsonProperty(access = Access.READ_ONLY)
     private String ranking;
 
-    @JsonIgnore
-    private String profilePictureId;
+    @JsonProperty(access = Access.READ_ONLY)
+    private String profilePictureUrl;
 
     @Size(min = 5, max = 500)
     private String about;

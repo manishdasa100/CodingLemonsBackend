@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -39,10 +40,17 @@ public class UserProfileService {
     @Autowired
     private UserRankService userRankService;
 
+    @Value("${app.assets.domain}")
+    private String assetsDomain;
+
     public UserProfileDto getUserProfile(String username) {
-        Optional<UserProfileEntity> userProfileEntity = userProfileRepository.getUserProfile(username);
-        if (userProfileEntity.isEmpty()) throw new UsernameNotFoundException("User profile not found");
-        return mapper.map(userProfileEntity.get(), UserProfileDto.class); 
+        Optional<UserProfileEntity> userProfileEntityOptional = userProfileRepository.getUserProfile(username);
+        if (userProfileEntityOptional.isEmpty()) throw new UsernameNotFoundException("User profile not found");
+        UserProfileEntity userProfileEntity = userProfileEntityOptional.get();
+        String profilePictureUrl = "%s/%s/%s.jpg".formatted(assetsDomain, userProfileEntity.getUsername(), userProfileEntity.getProfilePictureId());
+        UserProfileDto userProfile = mapper.map(userProfileEntity, UserProfileDto.class); 
+        userProfile.setProfilePictureUrl(profilePictureUrl);
+        return userProfile;
     }
 
     public void createAndSaveUserProfile(UserEntity user) {
@@ -129,7 +137,7 @@ public class UserProfileService {
         try {
             s3Service.putObject(
                 s3Buckets.getImages(), 
-                "profile-picture/%s/%s".formatted(username, profilePictureId), 
+                "%s/%s.jpg".formatted(username, profilePictureId), 
                 imageFileBytes
             );
             s3Uploaded = true;
@@ -153,15 +161,4 @@ public class UserProfileService {
 
     }
 
-    public byte[] getUserProfilePicture(UserProfileDto userProfile) {
-
-        String profilePictureId = userProfile.getProfilePictureId();
-
-        byte[] userProfilePicture = s3Service.getObject(
-            s3Buckets.getImages(), 
-            "profile-picture/%s/%s".formatted(userProfile.getUsername(), profilePictureId)
-        );
-
-        return userProfilePicture;
-    }
 }

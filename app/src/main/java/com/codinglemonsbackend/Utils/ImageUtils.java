@@ -13,10 +13,12 @@ public class ImageUtils {
 
     public static final List<String> validImageExtensions = Arrays.asList("jpg", "jpeg", "png");
 
+    public static final float DEFAULT_IMAGE_QUALITY = 0.9f;
+
     public enum ImageDimension {
-        SQUARE(200, 200),
-        PORTRAIT(200, 300),
-        LANDSCAPE(300, 200);
+        SQUARE(300, 300),
+        PORTRAIT(300, 450),
+        LANDSCAPE(450, 300);
 
         private int width;
         private int height;
@@ -45,7 +47,7 @@ public class ImageUtils {
         Thumbnails.of(imageFile.getInputStream())
             .size(width, height)
             .outputFormat("jpg")
-            .outputQuality(0.8f)
+            .outputQuality(DEFAULT_IMAGE_QUALITY)
             .toOutputStream(outputStream);
 
         return outputStream.toByteArray();
