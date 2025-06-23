@@ -1,7 +1,5 @@
 package com.codinglemonsbackend.Dto;
 
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,13 +26,7 @@ public class ProblemUpdateDto {
 
     private Set<Example> examples;
 
-    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
-
-    private List<String> testCaseOutputs;
-
     private Map<ProgrammingLanguage, String> codeSnippets;
-
-    private Map<ProgrammingLanguage, String> driverCodes;
 
     private Difficulty difficulty;
 

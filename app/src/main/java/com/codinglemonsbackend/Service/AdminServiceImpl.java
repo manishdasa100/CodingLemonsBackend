@@ -1,39 +1,40 @@
 package com.codinglemonsbackend.Service;
 
 import java.io.IOException;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
+import com.codinglemonsbackend.Dto.RegistryOperationResponse;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.TopicTag;
 import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Payloads.CreateProblemRequestPayload;
 import com.codinglemonsbackend.Repository.CompanyRepository;
+import com.codinglemonsbackend.Repository.IRegistryService;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.github.slugify.Slugify;
 
-import jakarta.validation.Valid;
 
 @Service
 public class AdminServiceImpl {
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
+
+    @Autowired
+    private RegistryServiceDispatcher registryServiceDispatcher;
 
     @Autowired
     private CompanyRepository companyRepository;
@@ -47,40 +48,23 @@ public class AdminServiceImpl {
     @Autowired
     private Slugify slugify;
     
-    public ProblemEntity addProblem(CreateProblemRequestPayload payload) throws Exception {
+    public ProblemEntity addProblem(ProblemDto payload) throws Exception {
         System.out.println("--------PROBLEM PAYLOAD--------------");
         System.out.println(payload);
 
-        Set<String> topicSlugs = payload.getTopics();
-        Set<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
-        if(validTopics.isEmpty()) throw new Exception("No matching topics were found. Please provide valid topics.");
+        Set<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toSet());
+        List<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
+        if(validTopics.isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
+        
+        payload.setTopics(new HashSet<>(validTopics));
 
-        Set<CompanyTag> validCompanies = null;
         if (payload.getCompanies() != null) {
-            Set<String> companySlugs = payload.getCompanies();
-            validCompanies = companyRepository.getValidTags(companySlugs);
+            Set<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toSet());
+            List<CompanyTag>validCompanies = companyRepository.getValidTags(companySlugs);
+            payload.setCompanies(new HashSet<>(validCompanies));
         }
 
-        ProblemDto problemDto = ProblemDto.builder()
-                                    .title(payload.getTitle())
-                                    .description(payload.getDescription())
-                                    .constraints(payload.getConstraints())
-                                    .examples(payload.getExamples())
-                                    .difficulty(payload.getDifficulty())
-                                    .codeSnippets(payload.getCodeSnippets())
-                                    .topics(validTopics)
-                                    .companies(validCompanies)
-                                    .build();
-
-        ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
-                                                    .cpuTimeLimit(payload.getCpuTimeLimit())
-                                                    .memoryLimit(payload.getMemoryLimit())
-                                                    .stackLimit(payload.getStackLimit())
-                                                    .testCasesWithExpectedOutputs(payload.getTestCasesWithExpectedOutputs())
-                                                    .driverCodes(payload.getDriverCodes())
-                                                    .build();
-        
-        ProblemEntity savedEntity =  problemRepositoryService.addProblem(problemDto, executionDetails);
+        ProblemEntity savedEntity =  problemRepositoryService.addProblem(payload);
 
         return savedEntity;
     }
@@ -95,6 +79,10 @@ public class AdminServiceImpl {
 
     public void clearAllProblems() {
         problemRepositoryService.removeAllProblems();
+    }
+
+    public void publishProblem(Integer problemId) {
+        // TODO: implement publish problem
     }
 
     public void createCompanyTag(CompanyTag companyTag){
@@ -116,10 +104,29 @@ public class AdminServiceImpl {
         String rankNameCapitalized = newRankDetails.getRankName().toUpperCase();
         newRankDetails.setRankName(rankNameCapitalized);
 
-        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE); 
+        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE_SMALL); 
         
         UserRank savedRank = userRankService.createUserRank(newRankDetails, resizedImageBytes);
         
         return savedRank.getRankName();
+    }
+    
+    public RegistryOperationResponse addItemsInRegistry(Integer problemId, Object data, String registryType) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        return registryService.addItemsInRegistry(problemId, data);
+    }
+    
+    public RegistryOperationResponse updateRegistry(String registryId, Object data, String registryType) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        return registryService.updateItemsInRegistry(registryId, data);
+    }
+
+    public void deleteRegistry(String registryType, String registryId) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        registryService.deleteRegistry(registryId);
+    }
+
+    public List<String> getSupportedRegistryTypes() {
+        return registryServiceDispatcher.getSupportedRegistryTypes();
     }
 }

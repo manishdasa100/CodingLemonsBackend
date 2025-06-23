@@ -1,7 +1,5 @@
 package com.codinglemonsbackend.Dto;
 
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

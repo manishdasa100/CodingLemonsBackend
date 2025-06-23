@@ -18,10 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.DatabaseSequence;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 
@@ -118,11 +118,13 @@ public class ProblemsRepository {
     }
 
     @Transactional
-    public ProblemEntity addProblem(ProblemEntity problemEntity, ProblemExecutionDetails executionDetails) {
+    public ProblemEntity addProblem(ProblemEntity problemEntity) {
         ProblemEntity savedEntity = mongoTemplate.save(problemEntity);
-        executionDetails.setId(savedEntity.getId());
-        mongoTemplate.save(executionDetails);
         return savedEntity;
+
+        // TODO: MOVE THIS TO A SEPARATE REPOSITORY SERVICE
+        // executionDetails.setId(savedEntity.getId());
+        // mongoTemplate.save(executionDetails);
     }
 
 
@@ -137,8 +139,6 @@ public class ProblemsRepository {
         
         Query query = new Query(Criteria.where("id").is(ProblemEntity.SEQUENCE_NAME));
         mongoTemplate.remove(query, DatabaseSequence.class);
-
-        mongoTemplate.dropCollection(ProblemExecutionDetails.ENTITY_COLLECTION_NAME);
     }
 
 

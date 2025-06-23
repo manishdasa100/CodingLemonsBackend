@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import net.coobird.thumbnailator.Thumbnails;
@@ -15,10 +16,16 @@ public class ImageUtils {
 
     public static final float DEFAULT_IMAGE_QUALITY = 0.9f;
 
+    @Value("${assets.domain}")
+    public static String assetsDomain;
+
     public enum ImageDimension {
         SQUARE(300, 300),
+        SQUARE_SMALL(200, 200),
         PORTRAIT(300, 450),
-        LANDSCAPE(450, 300);
+        PORTRAIT_SMALL(200, 300),
+        LANDSCAPE(450, 300),
+        LANDSCAPE_SMALL(300, 200),;
 
         private int width;
         private int height;
@@ -51,6 +58,10 @@ public class ImageUtils {
             .toOutputStream(outputStream);
 
         return outputStream.toByteArray();
+    }
+
+    public static String getAssetUrl(String assetId) {
+        return null;
     }
     
 }

@@ -27,13 +27,13 @@ public class CompanyRepository {
         return mongoTemplate.findAll(CompanyTag.class);
     }
 
-    public Set<CompanyTag> getValidTags(Set<String> companySlugs) {
+    public List<CompanyTag> getValidTags(Set<String> companySlugs) {
         
         // Return the matching tags
 
         Query query = new Query(Criteria.where("slug").in(companySlugs));
         List<CompanyTag> matchingTags = mongoTemplate.find(query, CompanyTag.class);
-        return new HashSet<CompanyTag>(matchingTags);
+        return matchingTags;
     }
 
     public void removeCompanyTag(String slug){

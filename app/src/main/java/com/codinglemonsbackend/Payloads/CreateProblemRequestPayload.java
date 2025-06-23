@@ -46,19 +46,19 @@ public class CreateProblemRequestPayload {
     @NotEmpty
     private Set<Example> examples;
 
-    @NotEmpty
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
-
     @NotNull(message = "Difficulty must be either EASY/MEDIUM/HARD")
     private Difficulty difficulty;
 
-    @NotEmpty
-    private Map<ProgrammingLanguage, String> codeSnippets;
+    // @NotEmpty
+    // @JsonProperty(access = Access.WRITE_ONLY)
+    // private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
 
-    @NotEmpty
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private Map<ProgrammingLanguage, String> driverCodes;
+    // @NotEmpty
+    // private Map<ProgrammingLanguage, String> codeSnippets;
+
+    // @NotEmpty
+    // @JsonProperty(access = Access.WRITE_ONLY)
+    // private Map<ProgrammingLanguage, String> driverCodes;
 
     @NotNull
     @JsonProperty(access = Access.WRITE_ONLY)

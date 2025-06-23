@@ -35,7 +35,7 @@ public class TopicRepository {
         mongoTemplate.remove(query, TopicTag.class);
     }
 
-    public Set<TopicTag> getValidTags(Set<String> topicSlugs) {
+    public List<TopicTag> getValidTags(Set<String> topicSlugs) {
         
         // Return the matching tags
 
@@ -43,7 +43,7 @@ public class TopicRepository {
 
         List<TopicTag> matchingTags = mongoTemplate.find(query, TopicTag.class);
 
-        return new HashSet<TopicTag>(matchingTags);
+        return matchingTags;
     }
 
     @Data

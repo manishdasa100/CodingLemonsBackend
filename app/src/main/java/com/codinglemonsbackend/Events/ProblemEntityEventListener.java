@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeDeleteEvent;
 import org.springframework.stereotype.Component;
 
+import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
 import com.codinglemonsbackend.Service.SequenceService;
@@ -25,10 +26,6 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
     @Autowired
     private ProblemsRepository problemsRepository;
 
-    public ProblemEntityEventListener(SequenceService sequenceGeneratorService){
-        this.sequenceService = sequenceGeneratorService;
-    }
-
     @Override
     public void onBeforeConvert(BeforeConvertEvent<ProblemEntity> event) {
         System.out.println("---------------------------------------------");
@@ -39,6 +36,7 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         entityToSave.setSubmissionCount(0);
         entityToSave.setAcceptedCount(0);
         entityToSave.setLikes(0);
+        entityToSave.setStatus(ProblemStatus.DRAFT);
         Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
         if (lastProblemEntity.isPresent()){
             entityToSave.setPreviousProblemId(lastProblemEntity.get().getId());

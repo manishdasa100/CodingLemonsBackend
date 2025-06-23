@@ -16,7 +16,7 @@ import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Properties.S3Buckets;
+import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -35,20 +35,20 @@ public class UserProfileService {
     private S3Service s3Service;
 
     @Autowired
-    private S3Buckets s3Buckets;
+    private S3Properties s3Properties;
 
     @Autowired
     private UserRankService userRankService;
 
-    @Value("${app.assets.domain}")
+    @Value("${assets.domain}")
     private String assetsDomain;
 
     public UserProfileDto getUserProfile(String username) {
-        Optional<UserProfileEntity> userProfileEntityOptional = userProfileRepository.getUserProfile(username);
-        if (userProfileEntityOptional.isEmpty()) throw new UsernameNotFoundException("User profile not found");
-        UserProfileEntity userProfileEntity = userProfileEntityOptional.get();
-        String profilePictureUrl = "%s/%s/%s.jpg".formatted(assetsDomain, userProfileEntity.getUsername(), userProfileEntity.getProfilePictureId());
-        UserProfileDto userProfile = mapper.map(userProfileEntity, UserProfileDto.class); 
+        Optional<UserProfileEntity> profile = userProfileRepository.getUserProfile(username);
+        if (profile.isEmpty()) throw new UsernameNotFoundException("User profile not found");
+        UserProfileEntity entity = profile.get();
+        String profilePictureUrl = "%s/%s/%s.jpg".formatted(assetsDomain, entity.getUsername(), entity.getProfilePictureId());
+        UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class); 
         userProfile.setProfilePictureUrl(profilePictureUrl);
         return userProfile;
     }
@@ -136,7 +136,7 @@ public class UserProfileService {
         Boolean s3Uploaded = false;
         try {
             s3Service.putObject(
-                s3Buckets.getImages(), 
+                s3Properties.getBucket(), 
                 "%s/%s.jpg".formatted(username, profilePictureId), 
                 imageFileBytes
             );
@@ -146,7 +146,7 @@ public class UserProfileService {
             if (s3Uploaded) {
                 // Rollback S3
                 try {
-                    s3Service.deleteObject(s3Buckets.getImages(), "profile-picture/%s/%s".formatted(username, profilePictureId));
+                    s3Service.deleteObject(s3Properties.getBucket(), "profile-picture/%s/%s".formatted(username, profilePictureId));
                 } catch (Exception deleteException) {
                     log.error("Failed to delete orphaned profile picture with id {} from S3 with message", profilePictureId, deleteException);
                 }

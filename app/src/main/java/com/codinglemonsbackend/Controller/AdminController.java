@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,8 +25,12 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
+import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.RegistryOperationResponse;
+import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.ProblemEntity;
@@ -36,6 +41,8 @@ import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 
 @RestController
 @RequestMapping(value = "/api/v1/admin")
@@ -57,15 +64,77 @@ public class AdminController {
 
     @PostMapping("/problem/add")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> addProblem(@Valid @RequestBody CreateProblemRequestPayload payload) throws Exception{
+    public ResponseEntity<String> addProblem(@Valid @RequestBody ProblemDto payload) throws Exception{
         ProblemEntity savedEntity = adminService.addProblem(payload);
-        return ResponseEntity.ok().body(String.format("Problem created with id {}", savedEntity.getId()));
+        return ResponseEntity.ok().body(String.format("Problem created with id %d", savedEntity.getId()));
+    }
+
+    // @PostMapping("/testcase/add/{problemId}")
+    // @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    // public ResponseEntity<String> addTestcase(
+    //     @PathVariable Integer problemId, 
+    //     @RequestBody TestcaseRegistryDto testcaseRegistryDto) throws Exception
+    // {
+    //     adminService.addItemsInRegistry(problemId, testcaseRegistryDto, "TESTCASE");
+    //     return ResponseEntity.ok().body(String.format("Testcase added for problem id %d", problemId));
+    // }
+
+    // @PutMapping("/testcase/update/{registryId}")
+    // @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    // public ResponseEntity<String> updateTestcase(
+    //     @PathVariable String registryId, 
+    //     @RequestBody TestcaseRegistryDto testcaseRegistryDto) 
+    // {
+    //     adminService.updateRegistry(registryId, testcaseRegistryDto, "TESTCASE");
+    //     return ResponseEntity.ok().body(String.format("Testcase updated for problem id %s", registryId));
+    // }
+
+    @GetMapping("/registry/supported")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<List<String>> getSupportedRegistryTypes() {
+        List<String> supportedRegistryTypes = adminService.getSupportedRegistryTypes();
+        return ResponseEntity.ok().body(supportedRegistryTypes);
+    }
+
+    @PostMapping("/registry/{registryType}/add/{problemId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<?> addRegistry(
+        @PathVariable String registryType,
+        @PathVariable Integer problemId, 
+        @RequestBody Object registryData) throws Exception
+    {
+        RegistryOperationResponse response = adminService.addItemsInRegistry(problemId, registryData, registryType);
+        
+        return ResponseEntity.ok().body(response);
+    }
+
+    @PutMapping("/registry/{registryType}/update/{registryId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<RegistryOperationResponse> updateRegistry(
+        @PathVariable String registryType,
+        @PathVariable String registryId, 
+        @RequestBody Object registryData) 
+    {
+        RegistryOperationResponse response = adminService.updateRegistry(registryId, registryData, registryType);
+        return ResponseEntity.ok().body(response);
+    }
+
+    @DeleteMapping("/registry/{registryType}/delete/{registryId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> deleteRegistry(
+        @PathVariable String registryType,
+        @PathVariable String registryId) {
+        adminService.deleteRegistry(registryType, registryId);
+        return ResponseEntity.ok().body(String.format("Registry with id %s deleted", registryId));    
     }
 
     @PutMapping("/problem/update/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> updateProblem(@PathVariable Integer id, @RequestBody ProblemUpdateDto updateMetadata){
-        long updatedDocumentCount = adminService.updateProblem(id, updateMetadata);
+    public ResponseEntity<String> updateProblem(
+        @PathVariable Integer problemId, 
+        @RequestBody ProblemUpdateDto updateMetadata)
+    {
+        long updatedDocumentCount = adminService.updateProblem(problemId, updateMetadata);
         return ResponseEntity.ok().body(String.format("Modified %d documents", updatedDocumentCount));
     } 
     
@@ -99,8 +168,10 @@ public class AdminController {
 
     @PostMapping(value = "/userRank/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> createUserRank(@Valid @RequestPart UserRankDto rankDetails,
-                                                 @RequestPart MultipartFile rankBadgeImageFile) throws FileUploadFailureException, IOException{
+    public ResponseEntity<String> createUserRank(
+        @Valid @RequestPart UserRankDto rankDetails,
+        @RequestPart MultipartFile rankBadgeImageFile) throws FileUploadFailureException, IOException
+    {
         // Validate the file extension
         List<String> validImageExtensions = ImageUtils.validImageExtensions;
         String fileExtension = FilenameUtils.getExtension(rankBadgeImageFile.getOriginalFilename());
@@ -108,9 +179,7 @@ public class AdminController {
         if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
             throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
         }
-        
         adminService.createUserRank(rankDetails, rankBadgeImageFile);
-        
         return ResponseEntity.ok().body("User rank created");
     }
 }

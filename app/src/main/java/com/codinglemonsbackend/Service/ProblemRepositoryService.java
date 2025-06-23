@@ -20,14 +20,13 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import com.codinglemonsbackend.Config.CustomCacheConfig;
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.TopicTag;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
@@ -91,15 +90,9 @@ public class ProblemRepositoryService {
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
-    public ProblemEntity addProblem(ProblemDto problemDto, ProblemExecutionDetails executionDetails) throws Exception {
-        System.out.println("---------------------------------------------");
-        System.out.println("Problem entity from Repo service: " + problemDto.toString());
-        System.out.println("---------------------------------------------");
-
+    public ProblemEntity addProblem(ProblemDto problemDto) throws Exception {
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
-
-        ProblemEntity savedEntity = problemsRepository.addProblem(entity, executionDetails);
-
+        ProblemEntity savedEntity = problemsRepository.addProblem(entity);
         return savedEntity;
     }
 
@@ -107,7 +100,7 @@ public class ProblemRepositoryService {
         return problemsRepository.problemExists(problemId);
     }
     // Caching does not fit here as it is very less probable that a same problem will be accessed multiple times by multiple users
-    public ProblemDto getProblem(Integer id) {
+    public ProblemDto getProblemById(Integer id) {
         
         Optional<ProblemEntity> probEntity = problemsRepository.getProblemById(id);
 
@@ -133,7 +126,7 @@ public class ProblemRepositoryService {
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public long updateProblem(Integer problemId, ProblemUpdateDto updateMetadata) {
 
-        ProblemDto problemDto = getProblem(problemId);
+        ProblemDto problemDto = getProblemById(problemId);
 
         ProblemExecutionDetails oldExecutionDetails = getExecutionDetails(problemId);
 
@@ -164,12 +157,12 @@ public class ProblemRepositoryService {
         }
 
         if (!CollectionUtils.isEmpty(updateMetadata.getTopicSlugs()) && !updateMetadata.getTopicSlugs().equals(problemDto.getTopics().stream().map(TopicTag::getSlug).collect(Collectors.toSet()))) {
-            Set<TopicTag> validTopics = topicRepository.getValidTags(updateMetadata.getTopicSlugs());
+            List<TopicTag> validTopics = topicRepository.getValidTags(updateMetadata.getTopicSlugs());
             if (!validTopics.isEmpty()) problemDetailsFieldsToUpdate.put("topics", validTopics);    
         }
 
         if (!CollectionUtils.isEmpty(updateMetadata.getCompanySlugs()) && !updateMetadata.getCompanySlugs().equals(problemDto.getCompanies().stream().map(CompanyTag::getSlug).collect(Collectors.toSet()))) {
-            Set<CompanyTag> validCompanies = companyRepository.getValidTags(updateMetadata.getCompanySlugs());
+            List<CompanyTag> validCompanies = companyRepository.getValidTags(updateMetadata.getCompanySlugs());
             if (!validCompanies.isEmpty()) problemDetailsFieldsToUpdate.put("companies", validCompanies);
         }
 
@@ -189,13 +182,13 @@ public class ProblemRepositoryService {
             executionDetailsFieldsToUpdate.put("cpuTimeLimit", updateMetadata.getCpuTimeLimit());
         }
 
-        if (!CollectionUtils.isEmpty(updateMetadata.getTestCasesWithExpectedOutputs()) && !updateMetadata.getTestCasesWithExpectedOutputs().equals(oldExecutionDetails.getTestCasesWithExpectedOutputs())){
-            executionDetailsFieldsToUpdate.put("testCasesWithExpectedOutputs", updateMetadata.getTestCasesWithExpectedOutputs());
-        }
+        // if (!CollectionUtils.isEmpty(updateMetadata.getTestCasesWithExpectedOutputs()) && !updateMetadata.getTestCasesWithExpectedOutputs().equals(oldExecutionDetails.getTestCasesWithExpectedOutputs())){
+        //     executionDetailsFieldsToUpdate.put("testCasesWithExpectedOutputs", updateMetadata.getTestCasesWithExpectedOutputs());
+        // }
 
-        if (!CollectionUtils.isEmpty(updateMetadata.getDriverCodes()) && !updateMetadata.getDriverCodes().equals(oldExecutionDetails.getDriverCodes())) {
-            executionDetailsFieldsToUpdate.put("driverCodes", updateMetadata.getDriverCodes());
-        } 
+        // if (!CollectionUtils.isEmpty(updateMetadata.getDriverCodes()) && !updateMetadata.getDriverCodes().equals(oldExecutionDetails.getDriverCodes())) {
+        //     executionDetailsFieldsToUpdate.put("driverCodes", updateMetadata.getDriverCodes());
+        // } 
 
         long updatedDocumentsCount = 0;
 

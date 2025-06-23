@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
@@ -25,8 +26,8 @@ import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
+import com.codinglemonsbackend.Dto.UserSubmissionStatus;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -118,20 +119,11 @@ public class MainServiceImpl{
         if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companiesStr)) problemSet = problemRepositoryService.getAllProblems(page, size);
         else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companiesStr, page, size);
 
-        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
-
-        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
-
-        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
-
         List<ProblemDto> problemDtos = problemSet.getProblems();
 
         List<ProblemDto> problemsWithStatus = problemDtos.stream().map((e) -> {
-            ProblemStatus status = null;
-            if (acceptedProblemIds.contains(e.getId())) status = ProblemStatus.ACC;
-            else if (attemptedProblemIds.contains(e.getId())) status = ProblemStatus.ATT;
-            else status = ProblemStatus.NATT;
-            e.setStatus(status);
+            UserSubmissionStatus status = getUserSubmissionStatus(e.getId());
+            e.setUserSubmissionStatus(status);
             return e;
         }).collect(Collectors.toList());
 
@@ -141,26 +133,24 @@ public class MainServiceImpl{
     }
 
     public ProblemDto getProblem(Integer id) {
-        
-        ProblemDto problemDto = problemRepositoryService.getProblem(id);
+        ProblemDto problemDto = problemRepositoryService.getProblemById(id);
 
-        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
-
-        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
-
-        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
-
-        ProblemStatus status = null;
-
-        if (acceptedProblemIds.contains(id)) status = ProblemStatus.ACC;
-        else if (attemptedProblemIds.contains(id)) status = ProblemStatus.ATT;
-        else status = ProblemStatus.NATT;
-
-        problemDto.setStatus(status);
+        UserSubmissionStatus status = getUserSubmissionStatus(id);
+        problemDto.setUserSubmissionStatus(status);
 
         redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
 
         return problemDto;
+    }
+
+    private UserSubmissionStatus getUserSubmissionStatus(Integer problemId) {
+        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
+        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
+        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
+
+        if (acceptedProblemIds.contains(problemId)) return UserSubmissionStatus.ACC;
+        else if (attemptedProblemIds.contains(problemId)) return UserSubmissionStatus.ATT;
+        else return UserSubmissionStatus.NATT;
     }
     
     public LikesData getProblemLikesData(Integer id) {

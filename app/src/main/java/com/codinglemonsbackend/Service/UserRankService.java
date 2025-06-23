@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Properties.S3Buckets;
+import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserRankRepository;
 
 import jakarta.annotation.PostConstruct;
@@ -27,7 +27,7 @@ public class UserRankService {
     private S3Service s3Service;
     
     @Autowired
-    private S3Buckets s3Buckets;
+    private S3Properties s3Properties;
     
     public List<UserRank> ranks;
 
@@ -68,12 +68,12 @@ public class UserRankService {
                                         .build();
         
         String rankBadgeId = UUID.randomUUID().toString();
-        String s3Key = "static/rankBadges/%s".formatted(rankBadgeId);
+        String s3Key = "static/rankBadges/%s.jpg".formatted(rankBadgeId);
         Boolean s3Uploaded = false;
         
         try {
             s3Service.putObject(
-                s3Buckets.getImages(), 
+                s3Properties.getBucket(), 
                 s3Key, 
                 badgeImageBytes
             );
@@ -87,7 +87,7 @@ public class UserRankService {
 
                 // Rollback S3
                 try {
-                    s3Service.deleteObject(s3Buckets.getImages(), s3Key);
+                    s3Service.deleteObject(s3Properties.getBucket(), s3Key);
                 } catch (Exception deleteException) {
                     log.error("Failed to delete orphaned rank badge with id {} from S3 with message", rankBadgeId, deleteException);
                 }
