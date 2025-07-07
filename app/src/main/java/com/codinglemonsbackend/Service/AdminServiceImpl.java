@@ -7,17 +7,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
-import com.codinglemonsbackend.Dto.RegistryOperationResponse;
+import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.TopicTag;
 import com.codinglemonsbackend.Entities.UserRank;
+import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.IRegistryService;
@@ -47,6 +49,9 @@ public class AdminServiceImpl {
 
     @Autowired
     private Slugify slugify;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
     
     public ProblemEntity addProblem(ProblemDto payload) throws Exception {
         System.out.println("--------PROBLEM PAYLOAD--------------");
@@ -111,19 +116,32 @@ public class AdminServiceImpl {
         return savedRank.getRankName();
     }
     
-    public RegistryOperationResponse addItemsInRegistry(Integer problemId, Object data, String registryType) {
+    public RegistryOperationResult addItemsInRegistry(Integer problemId, Object data, String registryType) {
         IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        return registryService.addItemsInRegistry(problemId, data);
+        RegistryOperationResult result = registryService.addItemsInRegistry(problemId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
     }
     
-    public RegistryOperationResponse updateRegistry(String registryId, Object data, String registryType) {
+    public RegistryOperationResult updateRegistry(String registryId, Object data, String registryType) {
         IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        return registryService.updateItemsInRegistry(registryId, data);
+        RegistryOperationResult result = registryService.updateItemsInRegistry(registryId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
     }
 
-    public void deleteRegistry(String registryType, String registryId) {
+    public RegistryOperationResult removeItemFromRegistry(String registryId, Object data, String registryType) {
         IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        registryService.deleteRegistry(registryId);
+        RegistryOperationResult result = registryService.removeItemFromRegistry(registryId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
+    }
+
+    public RegistryOperationResult deleteRegistry(String registryType, String registryId) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        RegistryOperationResult result = registryService.deleteRegistry(registryId);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
     }
 
     public List<String> getSupportedRegistryTypes() {

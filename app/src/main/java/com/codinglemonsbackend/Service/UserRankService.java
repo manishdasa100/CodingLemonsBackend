@@ -35,13 +35,13 @@ public class UserRankService {
     private void loadAllRanks() {
         ranks = userRankRepository.getAllRanks();
 
-        // Sorting ranks in descending order based on milestone points
-        ranks.sort((rank1, rank2) -> rank2.getMilestonePoints() - rank1.getMilestonePoints());
+        // Sorting ranks in ascending order based on milestone points
+        ranks.sort((rank1, rank2) -> rank1.getMilestonePoints() - rank2.getMilestonePoints());
     }
 
     public UserRank getInitialRank() {
-        // Getting the rank with the least milestone points
-        return ranks.get(ranks.size()-1);
+        // Getting the first/rank with the least milestone points
+        return ranks.get(0);
     }
     
     public Boolean checkIfRankExistByName(String name) {

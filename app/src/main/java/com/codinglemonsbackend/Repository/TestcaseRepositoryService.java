@@ -20,7 +20,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
-import com.codinglemonsbackend.Dto.RegistryOperationResponse;
+import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
 import com.codinglemonsbackend.Entities.TestcaseRegistry;
 import com.codinglemonsbackend.Exceptions.RegistryConversionException;
@@ -57,14 +57,14 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
         }
     }
 
-    private RegistryOperationResponse createRegistryOperationResponse(Collection<String> ignoredInputs) {
+    private RegistryOperationResult createRegistryOperationResponse(Integer problemId, String registryId, Collection<String> ignoredInputs) {
         String allItemsAddedMessage = "All testcases were successfully processed";
         boolean allItemsAdded = ignoredInputs.isEmpty();
         String message = allItemsAdded ? 
             allItemsAddedMessage : 
             String.format("Ignored inputs %s ", ignoredInputs);
 
-        return new RegistryOperationResponse(allItemsAdded, message);
+        return new RegistryOperationResult(problemId, registryId, allItemsAdded, message);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
 
 
     @Override
-    public RegistryOperationResponse addItemsInRegistry(Integer problemId, Object data) {
+    public RegistryOperationResult addItemsInRegistry(Integer problemId, Object data) {
         TestcaseRegistryDto testcaseRegistryDto = convertToDto(data);
         List<TestcasePair> entries = testcaseRegistryDto.getAdditions();
         
@@ -122,20 +122,20 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
             testcaseRegistry.getTestcases().addAll(newEntries);
             saveRegistry(testcaseRegistry);
 
-            RegistryOperationResponse response = createRegistryOperationResponse(duplicateInputs);
+            RegistryOperationResult response = createRegistryOperationResponse(problemId, testcaseRegistry.getId(), duplicateInputs);
             return response;
 
         } catch (NoSuchElementException e) {
             String id = UUID.randomUUID().toString();
             TestcaseRegistry newTestcaseRegistry = new TestcaseRegistry(id, problemId, new ArrayList<>(entries));
             saveRegistry(newTestcaseRegistry);
-            RegistryOperationResponse response = createRegistryOperationResponse(Collections.emptyList());
+            RegistryOperationResult response = createRegistryOperationResponse(problemId, id, Collections.emptyList());
             return response;
         }
     }
 
     @Override
-    public RegistryOperationResponse updateItemsInRegistry(String registryId, Object data) {
+    public RegistryOperationResult updateItemsInRegistry(String registryId, Object data) {
         TestcaseRegistryDto testcaseRegistryDto = convertToDto(data);
         List<TestcasePair> entries = testcaseRegistryDto.getUpdates();
         
@@ -177,7 +177,7 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
 
             saveRegistry(testcaseRegistry);
 
-            RegistryOperationResponse response = createRegistryOperationResponse(inputsNotFound);
+            RegistryOperationResult response = createRegistryOperationResponse(testcaseRegistry.getProblemId(), testcaseRegistry.getId(), inputsNotFound);
             return response;
 
         } catch (NoSuchElementException e) {
@@ -186,7 +186,7 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
     }
 
     @Override
-    public RegistryOperationResponse removeItemFromRegistry(String registryId, Object data) {
+    public RegistryOperationResult removeItemFromRegistry(String registryId, Object data) {
         TestcaseRegistryDto testcaseRegistryDto = convertToDto(data);
         Set<String> keysToRemove = testcaseRegistryDto.getDeletions();
         
@@ -210,11 +210,18 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
             inputsNotFound.removeAll(existingInputs);
             
             // Remove the testcases
-            currentTestcases.removeIf(e -> keysToRemove.contains(e.getInput()));
-            testcaseRegistry.setTestcases(currentTestcases);
-            saveRegistry(testcaseRegistry);
+            boolean removed = currentTestcases.removeIf(e -> keysToRemove.contains(e.getInput()));
 
-            RegistryOperationResponse response = createRegistryOperationResponse(inputsNotFound);
+            System.out.println("removed: " + removed);
+
+            if (currentTestcases.isEmpty()) {
+                deleteRegistry(registryId);
+            } else {
+                testcaseRegistry.setTestcases(currentTestcases);
+                saveRegistry(testcaseRegistry);
+            }
+
+            RegistryOperationResult response = createRegistryOperationResponse(testcaseRegistry.getProblemId(), testcaseRegistry.getId(), inputsNotFound);
             return response;
             
         } catch (NoSuchElementException e) {
@@ -223,8 +230,17 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
     }
 
     @Override
-    public void deleteRegistry(String registryId) {
+    public RegistryOperationResult deleteRegistry(String registryId) {
         Query query = new Query(Criteria.where("id").is(registryId));
+        TestcaseRegistry testcaseRegistry = mongoTemplate.findOne(query, TestcaseRegistry.class);
+        if (testcaseRegistry == null) {
+            throw new NoSuchElementException("No registry found for id: " + registryId);
+        }
         mongoTemplate.remove(query, TestcaseRegistry.class);
+        return new RegistryOperationResult(
+            testcaseRegistry.getProblemId(), 
+            registryId, 
+            null, 
+            "Registry deleted successfully");
     }
 }

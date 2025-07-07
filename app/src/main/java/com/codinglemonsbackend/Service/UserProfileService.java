@@ -137,7 +137,7 @@ public class UserProfileService {
         try {
             s3Service.putObject(
                 s3Properties.getBucket(), 
-                "%s/%s.jpg".formatted(username, profilePictureId), 
+                "users/%s/%s.jpg".formatted(username, profilePictureId), 
                 imageFileBytes
             );
             s3Uploaded = true;

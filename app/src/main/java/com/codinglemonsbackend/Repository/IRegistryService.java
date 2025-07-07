@@ -1,7 +1,7 @@
 package com.codinglemonsbackend.Repository;
 
 import java.util.Optional;
-import com.codinglemonsbackend.Dto.RegistryOperationResponse;
+import com.codinglemonsbackend.Dto.RegistryOperationResult;
 
 public interface IRegistryService<T> {
 
@@ -13,11 +13,11 @@ public interface IRegistryService<T> {
 
     void saveRegistry(T registry);
 
-    RegistryOperationResponse addItemsInRegistry(Integer problemId, Object data);
+    RegistryOperationResult addItemsInRegistry(Integer problemId, Object data);
 
-    RegistryOperationResponse updateItemsInRegistry(String registryId, Object data);
+    RegistryOperationResult updateItemsInRegistry(String registryId, Object data);
 
-    RegistryOperationResponse removeItemFromRegistry(String registryId, Object data);
+    RegistryOperationResult removeItemFromRegistry(String registryId, Object data);
 
-    void deleteRegistry(String registryId);
+    RegistryOperationResult deleteRegistry(String registryId);
 }

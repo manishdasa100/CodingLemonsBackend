@@ -2,14 +2,10 @@ package com.codinglemonsbackend.Controller;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,29 +16,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
-import com.codinglemonsbackend.Dto.RegistryOperationResponse;
-import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
+import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.CompanyTag;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.TopicTag;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Payloads.CreateProblemRequestPayload;
 import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 
 @RestController
 @RequestMapping(value = "/api/v1/admin")
@@ -98,34 +87,46 @@ public class AdminController {
 
     @PostMapping("/registry/{registryType}/add/{problemId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<?> addRegistry(
+    public ResponseEntity<RegistryOperationResult> addItemsInRegistry(
         @PathVariable String registryType,
         @PathVariable Integer problemId, 
         @RequestBody Object registryData) throws Exception
     {
-        RegistryOperationResponse response = adminService.addItemsInRegistry(problemId, registryData, registryType);
+        RegistryOperationResult response = adminService.addItemsInRegistry(problemId, registryData, registryType);
         
         return ResponseEntity.ok().body(response);
     }
 
     @PutMapping("/registry/{registryType}/update/{registryId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<RegistryOperationResponse> updateRegistry(
+    public ResponseEntity<RegistryOperationResult> updateItemsInRegistry(
         @PathVariable String registryType,
         @PathVariable String registryId, 
         @RequestBody Object registryData) 
     {
-        RegistryOperationResponse response = adminService.updateRegistry(registryId, registryData, registryType);
-        return ResponseEntity.ok().body(response);
+        RegistryOperationResult result = adminService.updateRegistry(registryId, registryData, registryType);
+        return ResponseEntity.ok().body(result);
+    }
+
+    @DeleteMapping("/registry/{registryType}/removeItem/{registryId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<RegistryOperationResult> removeItemFromRegistry(
+        @PathVariable String registryType,
+        @PathVariable String registryId, 
+        @RequestBody Object registryData) 
+    {
+        RegistryOperationResult result = adminService.removeItemFromRegistry(registryId, registryData, registryType);
+        return ResponseEntity.ok().body(result);
     }
 
     @DeleteMapping("/registry/{registryType}/delete/{registryId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> deleteRegistry(
+    public ResponseEntity<RegistryOperationResult> deleteRegistry(
         @PathVariable String registryType,
-        @PathVariable String registryId) {
-        adminService.deleteRegistry(registryType, registryId);
-        return ResponseEntity.ok().body(String.format("Registry with id %s deleted", registryId));    
+        @PathVariable String registryId) 
+    {
+        RegistryOperationResult result = adminService.deleteRegistry(registryType, registryId);
+        return ResponseEntity.ok().body(result);    
     }
 
     @PutMapping("/problem/update/{id}")
