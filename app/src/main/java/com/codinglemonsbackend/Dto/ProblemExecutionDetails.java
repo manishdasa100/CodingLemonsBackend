@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class ProblemExecutionDetails {
     
     private Integer id;
-    private float cpuTimeLimit;
-    private float memoryLimit;
+    private Float cpuTimeLimit;
+    private Float memoryLimit;
     private Integer stackLimit;
 }

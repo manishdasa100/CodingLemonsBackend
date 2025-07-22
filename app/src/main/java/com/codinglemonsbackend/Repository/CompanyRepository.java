@@ -11,7 +11,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import com.codinglemonsbackend.Entities.CompanyTag;
+import com.codinglemonsbackend.Entities.Company;
+
+import jakarta.annotation.PostConstruct;
 
 @Repository
 public class CompanyRepository {
@@ -19,25 +21,33 @@ public class CompanyRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public void addCompanyTag(CompanyTag companyTag) {
+    private List<Company> companyTags;
+
+    @PostConstruct
+    private void fetchCompanyTags() {
+        this.companyTags = mongoTemplate.findAll(Company.class);
+    }
+
+    public void addCompanyTag(Company companyTag) {
         mongoTemplate.save(companyTag);
     }
 
-    public List<CompanyTag> getAllCompanyTags() {
-        return mongoTemplate.findAll(CompanyTag.class);
+    public List<Company> getAllCompanyTags() {
+        return this.companyTags;
     }
 
-    public List<CompanyTag> getValidTags(Set<String> companySlugs) {
+    public Set<Company> getValidTags(List<String> companySlugs) {
         
         // Return the matching tags
-
-        Query query = new Query(Criteria.where("slug").in(companySlugs));
-        List<CompanyTag> matchingTags = mongoTemplate.find(query, CompanyTag.class);
+        Set<Company> matchingTags = this.companyTags.stream()
+            .filter(companyTag -> companySlugs.contains(companyTag.getSlug()))
+            .collect(Collectors.toSet());
         return matchingTags;
     }
 
     public void removeCompanyTag(String slug){
         Query query = new Query(Criteria.where("slug").is(slug));
-        mongoTemplate.remove(query, CompanyTag.class);
+        mongoTemplate.remove(query, Company.class);
+        this.companyTags.removeIf(companyTag -> companyTag.getSlug().equals(slug));
     }
 }

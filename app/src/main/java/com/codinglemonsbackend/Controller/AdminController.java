@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +23,9 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.UserRankDto;
-import com.codinglemonsbackend.Entities.CompanyTag;
+import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
@@ -36,9 +35,6 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping(value = "/api/v1/admin")
 public class AdminController {
-
-    @Autowired
-    private ModelMapper modelMapper;
 
     @Autowired
     private AdminServiceImpl adminService;
@@ -58,25 +54,36 @@ public class AdminController {
         return ResponseEntity.ok().body(String.format("Problem created with id %d", savedEntity.getId()));
     }
 
-    // @PostMapping("/testcase/add/{problemId}")
-    // @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    // public ResponseEntity<String> addTestcase(
-    //     @PathVariable Integer problemId, 
-    //     @RequestBody TestcaseRegistryDto testcaseRegistryDto) throws Exception
-    // {
-    //     adminService.addItemsInRegistry(problemId, testcaseRegistryDto, "TESTCASE");
-    //     return ResponseEntity.ok().body(String.format("Testcase added for problem id %d", problemId));
-    // }
+    @PutMapping("/problem/update/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> updateProblem(
+        @PathVariable Integer id, 
+        @Valid @RequestBody ProblemUpdateDto updateMetadata)
+    {
+        long updatedDocumentCount = adminService.updateProblem(id, updateMetadata);
+        return ResponseEntity.ok().body(String.format("Modified %d documents", updatedDocumentCount));
+    } 
+    
+    @DeleteMapping("/problem/delete/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> deleteProblemById(@PathVariable Integer id){
+        adminService.deleteProblemById(id);
+        return ResponseEntity.ok().body(String.format("Problem with id {} deleted", id));
+    }
 
-    // @PutMapping("/testcase/update/{registryId}")
-    // @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    // public ResponseEntity<String> updateTestcase(
-    //     @PathVariable String registryId, 
-    //     @RequestBody TestcaseRegistryDto testcaseRegistryDto) 
-    // {
-    //     adminService.updateRegistry(registryId, testcaseRegistryDto, "TESTCASE");
-    //     return ResponseEntity.ok().body(String.format("Testcase updated for problem id %s", registryId));
-    // }
+    @DeleteMapping("/problem/delete/all")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> clearAllProblems(){
+        adminService.clearAllProblems();
+        return ResponseEntity.ok().body("All problems deleted");
+    }
+
+    @PutMapping("/problem/publish/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> publishProblem(@PathVariable Integer id){
+        String result = adminService.publishProblem(id);
+        return ResponseEntity.ok().body(result);
+    }
 
     @GetMapping("/registry/supported")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
@@ -129,40 +136,17 @@ public class AdminController {
         return ResponseEntity.ok().body(result);    
     }
 
-    @PutMapping("/problem/update/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> updateProblem(
-        @PathVariable Integer problemId, 
-        @RequestBody ProblemUpdateDto updateMetadata)
-    {
-        long updatedDocumentCount = adminService.updateProblem(problemId, updateMetadata);
-        return ResponseEntity.ok().body(String.format("Modified %d documents", updatedDocumentCount));
-    } 
-    
-    @DeleteMapping("/problem/delete/{id}")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> deleteProblemById(@PathVariable Integer id){
-        adminService.deleteProblemById(id);
-        return ResponseEntity.ok().body(String.format("Problem with id {} deleted", id));
-    }
-
-    @DeleteMapping("/problem/delete/all")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> clearAllProblems(){
-        adminService.clearAllProblems();
-        return ResponseEntity.ok().body("All problems deleted");
-    }
 
     @PostMapping("/companyTag/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> addCompanyTag(@Valid @RequestBody CompanyTag companyTag){
+    public ResponseEntity<String> addCompanyTag(@Valid @RequestBody Company companyTag){
         adminService.createCompanyTag(companyTag);
         return ResponseEntity.ok().body("Company tag created");
     }
 
     @PostMapping("/topicTag/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> addTopicTag(@Valid @RequestBody TopicTag topicTag){
+    public ResponseEntity<String> addTopicTag(@Valid @RequestBody Topic topicTag){
         adminService.createTopicTag(topicTag);
         return ResponseEntity.ok().body("Topic tag created");
     }

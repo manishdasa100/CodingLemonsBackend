@@ -1,11 +1,12 @@
 package com.codinglemonsbackend.Dto;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.codinglemonsbackend.Entities.CompanyTag;
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Company;
+import com.codinglemonsbackend.Entities.Topic;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -41,13 +42,13 @@ public class ProblemDto implements Serializable {
     private String description;
 
     @NotEmpty
-    private Set<String> constraints;
+    private List<String> constraints;
 
     @NotNull(message = "Difficulty must be either EASY/MEDIUM/HARD")
     private Difficulty difficulty;
 
     @NotEmpty
-    private Set<Example> examples;
+    private List<Example> examples;
 
     @NotEmpty
     private Map<ProgrammingLanguage, String> codeSnippets;
@@ -65,9 +66,9 @@ public class ProblemDto implements Serializable {
     private Integer stackLimit;
     
     @NotEmpty
-    private Set<TopicTag> topics;
+    private Set<Topic> topics;
 
-    private Set<CompanyTag> companies;
+    private Set<Company> companies;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer likes;

@@ -252,7 +252,16 @@ public class MainServiceImpl{
     }
     public String submitCode(SubmitCodeRequestPayload payload) {
 
-        ProblemExecutionDetails executionDetails = problemRepositoryService.getExecutionDetails(payload.getProblemId());
+        ProblemDto problemDto = getProblem(payload.getProblemId());
+
+        if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
+            return "Problem is not ready";
+        }
+
+        ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
+                                                .cpuTimeLimit(problemDto.getCpuTimeLimit())
+                                                .memoryLimit(problemDto.getMemoryLimit())
+                                                .build();
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemId(payload.getProblemId())

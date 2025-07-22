@@ -12,8 +12,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-@Document(collection = "topicTags")
-public class TopicTag {
+@Document(collection = "Topic")
+public class Topic {
+
+    public static final String ENTITY_COLLECTION_NAME = "Topic";
     
     @Id
     private String id;

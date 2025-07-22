@@ -36,8 +36,7 @@ public class ProblemRegistryStatusListener {
         }
         problemsRepository.updateProblemProperties(
             problemId,
-            Collections.singletonMap("status", problemStatus),
-            ProblemEntity.class
+            Collections.singletonMap("status", problemStatus)
         );
     }
 }

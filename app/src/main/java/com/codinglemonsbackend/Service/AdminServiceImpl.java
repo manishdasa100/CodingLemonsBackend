@@ -3,26 +3,30 @@ package com.codinglemonsbackend.Service;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.UserRankDto;
-import com.codinglemonsbackend.Entities.CompanyTag;
+import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.IRegistryService;
+import com.codinglemonsbackend.Repository.ProblemsRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
@@ -54,19 +58,16 @@ public class AdminServiceImpl {
     private ApplicationEventPublisher applicationEventPublisher;
     
     public ProblemEntity addProblem(ProblemDto payload) throws Exception {
-        System.out.println("--------PROBLEM PAYLOAD--------------");
-        System.out.println(payload);
-
-        Set<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toSet());
-        List<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
+        List<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toList());
+        Set<Topic> validTopics = topicRepository.getValidTags(topicSlugs);
         if(validTopics.isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
         
-        payload.setTopics(new HashSet<>(validTopics));
+        payload.setTopics(validTopics);
 
         if (payload.getCompanies() != null) {
-            Set<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toSet());
-            List<CompanyTag>validCompanies = companyRepository.getValidTags(companySlugs);
-            payload.setCompanies(new HashSet<>(validCompanies));
+            List<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toList());
+            Set<Company>validCompanies = companyRepository.getValidTags(companySlugs);
+            payload.setCompanies(validCompanies);
         }
 
         ProblemEntity savedEntity =  problemRepositoryService.addProblem(payload);
@@ -86,18 +87,20 @@ public class AdminServiceImpl {
         problemRepositoryService.removeAllProblems();
     }
 
-    public void publishProblem(Integer problemId) {
-        // TODO: implement publish problem
+    public String publishProblem(Integer problemId) {
+        long updatedDocumentCount = problemRepositoryService.updateProblem(problemId, 
+        new ProblemUpdateDto(Map.of("status", ProblemStatus.PUBLISHED.name())));
+        return updatedDocumentCount > 0 ? "Problem published successfully" : "Problem is already published";
     }
 
-    public void createCompanyTag(CompanyTag companyTag){
+    public void createCompanyTag(Company companyTag){
         String companyName = companyTag.getName();
         String slug = slugify.slugify(companyName);
         companyTag.setSlug(slug);
         companyRepository.addCompanyTag(companyTag);
     }
 
-    public void createTopicTag(TopicTag topicTag) {
+    public void createTopicTag(Topic topicTag) {
         String topicName = topicTag.getName();
         String slug = slugify.slugify(topicName);
         topicTag.setSlug(slug);

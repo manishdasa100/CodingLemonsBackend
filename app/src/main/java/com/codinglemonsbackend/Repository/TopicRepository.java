@@ -1,8 +1,8 @@
 package com.codinglemonsbackend.Repository;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -10,11 +10,9 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Topic;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.annotation.PostConstruct;
 
 @Repository
 public class TopicRepository {
@@ -22,34 +20,34 @@ public class TopicRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public void addTopicTag(TopicTag topicTag) {
+    private List<Topic> topicTags;
+
+    @PostConstruct
+    public void fetchTopicTags() {
+        this.topicTags = mongoTemplate.findAll(Topic.class);
+    }
+
+    public void addTopicTag(Topic topicTag) {
         mongoTemplate.save(topicTag);
     }
 
-    public List<TopicTag> getAllTopicTags() {
-        return mongoTemplate.findAll(TopicTag.class);
+    public List<Topic> getAllTopicTags() {
+        return this.topicTags;
     }
 
     public void removeTopicTag(String slug){
         Query query = new Query(Criteria.where("slug").is(slug));
-        mongoTemplate.remove(query, TopicTag.class);
+        mongoTemplate.remove(query, Topic.class);
+        this.topicTags.removeIf(topicTag -> topicTag.getSlug().equals(slug));
     }
 
-    public List<TopicTag> getValidTags(Set<String> topicSlugs) {
+    public Set<Topic> getValidTags(List<String> topicSlugs) {
         
-        // Return the matching tags
-
-        Query query = new Query(Criteria.where("slug").in(topicSlugs));
-
-        List<TopicTag> matchingTags = mongoTemplate.find(query, TopicTag.class);
+        Set<Topic> matchingTags = this.topicTags.stream()
+            .filter(topicTag -> topicSlugs.contains(topicTag.getSlug()))
+            .collect(Collectors.toSet());
 
         return matchingTags;
     }
 
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    static class CountResult {
-        private int count;
-    }
 }

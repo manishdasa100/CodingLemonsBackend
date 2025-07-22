@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -35,12 +36,15 @@ public class ProblemEntity {
     private Integer id;
     private String title;
     private String description;
-    private Set<String> constraints;
-    private Set<Example> examples;
+    private List<String> constraints;
+    private List<Example> examples;
     private Difficulty difficulty;
     private Map<ProgrammingLanguage, String> codeSnippets;
-    private Set<String> toppicSlugs;
+    private Set<String> topicSlugs;
     private Set<String> companySlugs;
+    private Float cpuTimeLimit;
+    private Float memoryLimit;
+    private Integer stackLimit;
     private Integer likes;
     private Integer previousProblemId;
     private Integer nextProblemId;
