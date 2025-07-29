@@ -158,7 +158,7 @@ public class AdminController {
         @RequestPart MultipartFile rankBadgeImageFile) throws FileUploadFailureException, IOException
     {
         // Validate the file extension
-        List<String> validImageExtensions = ImageUtils.validImageExtensions;
+        List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
         String fileExtension = FilenameUtils.getExtension(rankBadgeImageFile.getOriginalFilename());
 
         if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {

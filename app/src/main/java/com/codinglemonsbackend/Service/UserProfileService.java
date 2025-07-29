@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class UserProfileService {
         return profileUpdateStatus;
     }
 
-    public void uploadUserProfilePicture(String username, byte[] imageFileBytes) throws FileUploadFailureException{
+    public void uploadUserProfilePicture(String username, byte[] imageFile) throws FileUploadFailureException{
 
         String profilePictureId = UUID.randomUUID().toString();
         Boolean s3Uploaded = false;
@@ -138,7 +139,7 @@ public class UserProfileService {
             s3Service.putObject(
                 s3Properties.getBucket(), 
                 "users/%s/%s.jpg".formatted(username, profilePictureId), 
-                imageFileBytes
+                imageFile
             );
             s3Uploaded = true;
             userProfileRepository.updateUserProfile(username, Map.of("profilePictureId", profilePictureId));

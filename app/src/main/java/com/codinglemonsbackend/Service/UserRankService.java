@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.File;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,7 +53,7 @@ public class UserRankService {
         return ranks.stream().anyMatch(rank -> rank.getMilestonePoints().equals(points));
     }
 
-    public UserRank createUserRank(UserRankDto newRankDetails, byte[] badgeImageBytes) throws FileUploadFailureException  {
+    public UserRank createUserRank(UserRankDto newRankDetails, byte[] badgeImageFile) throws FileUploadFailureException  {
 
         if (checkIfRankExistByName(newRankDetails.getRankName())) {
             throw new IllegalArgumentException("Rank with same name already exists");
@@ -75,7 +76,7 @@ public class UserRankService {
             s3Service.putObject(
                 s3Properties.getBucket(), 
                 s3Key, 
-                badgeImageBytes
+                badgeImageFile
             );
 
             s3Uploaded = true;

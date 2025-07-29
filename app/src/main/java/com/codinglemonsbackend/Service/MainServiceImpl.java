@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -347,8 +348,8 @@ public class MainServiceImpl{
 
     public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
         UserEntity user = getCurrentlySignedInUser();
-        byte[] resizedImageBytes = ImageUtils.resizeImage(file, ImageDimension.SQUARE);
-        userProfileService.uploadUserProfilePicture(user.getUsername(), resizedImageBytes);
+        byte[] resizedImage = ImageUtils.resizeImage(file, ImageDimension.SQUARE);
+        userProfileService.uploadUserProfilePicture(user.getUsername(), resizedImage);
     }
 
     public UserProfileDto getUserProfile(String username) {
