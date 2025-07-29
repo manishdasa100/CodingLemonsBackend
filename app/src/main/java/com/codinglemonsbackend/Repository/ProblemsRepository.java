@@ -6,10 +6,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.bson.Document;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.LookupOperation;
+import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.aggregation.VariableOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -19,9 +25,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
+import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.DatabaseSequence;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
+import com.codinglemonsbackend.Entities.Topic;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 
@@ -86,10 +93,30 @@ public class ProblemsRepository {
 
     }
     
-    public Optional<ProblemEntity> getProblemById(Integer id) {
-        Query query = new Query(Criteria.where("id").is(id));
-        ProblemEntity problemEntity = mongoTemplate.findOne(query, ProblemEntity.class);
-        return Optional.ofNullable(problemEntity);
+    public Optional<ProblemDto> getProblemById(Integer id) {
+        Criteria criteria = Criteria.where("_id").is(id);
+
+        MatchOperation matchOperation = Aggregation.match(criteria);
+
+        LookupOperation lookupOperation1 = LookupOperation.newLookup()
+                .from(Company.ENTITY_COLLECTION_NAME)                            
+                .localField("companySlugs")                    
+                .foreignField("slug")                          
+                .as("companies"); 
+    
+        LookupOperation lookupOperation2 = LookupOperation.newLookup()
+                .from(Topic.ENTITY_COLLECTION_NAME)                            
+                .localField("topicSlugs")                    
+                .foreignField("slug")                          
+                .as("topics"); 
+
+        Aggregation aggregation = Aggregation.newAggregation(
+            matchOperation,
+            lookupOperation1,
+            lookupOperation2
+        );
+
+        return Optional.ofNullable(mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getUniqueMappedResult());    
     }
 
     public List<ProblemEntity> getProblemsByIds(List<Integer> ids) {
@@ -104,27 +131,18 @@ public class ProblemsRepository {
         return mongoTemplate.exists(query, ProblemEntity.class);
     }
 
-    public Optional<ProblemExecutionDetails> getExecutionDetails(Integer id) {
-        ProblemExecutionDetails executionDetails =  mongoTemplate.findById(id, ProblemExecutionDetails.class, "ProblemExecutionDetails");
-        return Optional.ofNullable(executionDetails);
-    }
-
-    public long updateProblemProperties(Integer id, Map<String, Object> updatePropertiesMap, Class<?> entityClass) {
+    public long updateProblemProperties(Integer id, Map<String, Object> updatePropertiesMap) {
         Query query = new Query(Criteria.where("id").is(id));
         Update update = new Update();
         updatePropertiesMap.entrySet().stream().forEach(e -> update.set(e.getKey(), e.getValue()));
-        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, entityClass);
+        UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ProblemEntity.class);
         return updateResult.getModifiedCount();
     }
 
-    @Transactional
-    public ProblemEntity addProblem(ProblemEntity problemEntity, ProblemExecutionDetails executionDetails) {
+    public ProblemEntity addProblem(ProblemEntity problemEntity) {
         ProblemEntity savedEntity = mongoTemplate.save(problemEntity);
-        executionDetails.setId(savedEntity.getId());
-        mongoTemplate.save(executionDetails);
         return savedEntity;
     }
-
 
     public DeleteResult removeProblemById(Integer id) {
         Query query = new Query(Criteria.where("id").is(id));
@@ -137,8 +155,6 @@ public class ProblemsRepository {
         
         Query query = new Query(Criteria.where("id").is(ProblemEntity.SEQUENCE_NAME));
         mongoTemplate.remove(query, DatabaseSequence.class);
-
-        mongoTemplate.dropCollection(ProblemExecutionDetails.ENTITY_COLLECTION_NAME);
     }
 
 

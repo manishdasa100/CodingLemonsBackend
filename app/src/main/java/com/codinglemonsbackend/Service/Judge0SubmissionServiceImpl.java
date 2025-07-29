@@ -15,12 +15,15 @@ import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Config.RabbitMQConfig;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
 import com.codinglemonsbackend.Entities.Submission;
+import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
+import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
+import com.codinglemonsbackend.Repository.TestcaseRepositoryService;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +41,12 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private DriverCodeRepositoryService driverCodeRepositoryService;
+
+    @Autowired
+    private TestcaseRepositoryService testcaseRepositoryService;
 
     private final Integer runCodeTestCaseCount = 2;
 
@@ -133,6 +142,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         System.out.println("RECEIVED SUBMISSION FROM " + submissionMetadata.getUsername());
 
+        Integer problemId = submissionMetadata.getProblemId();
+
         Boolean isRunCode = submissionMetadata.getIsRunCode();
 
         String submissionJobId = submissionMetadata.getSubmissionJobId();
@@ -144,9 +155,16 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
         // ProblemDto problemDto = submissionMetadata.getProblemDto();
         ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
 
-        Map<String, String> testCases = executionDetails.getTestCasesWithExpectedOutputs();
+        // Map<String, String> testCases = executionDetails.getTestCasesWithExpectedOutputs();
 
-        String driverCode = executionDetails.getDriverCodes().get(programmingLanguage);
+        // String driverCode = executionDetails.getDriverCodes().get(programmingLanguage);
+
+        String driverCode = driverCodeRepositoryService.getRegistry(problemId)
+                            .get().getDriverCodes().get(programmingLanguage);
+
+        List<TestcasePair> testCases = testcaseRepositoryService.getRegistry(problemId)
+                                        .get().getTestcases();
+
         // Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
 
         // String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
@@ -176,13 +194,13 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         List<Judge0SubmissionRequestPayload> submissions = new ArrayList<Judge0SubmissionRequestPayload>();
 
-        testCases.entrySet().stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
-            System.out.println("test case : "+ entry.getKey());
+        testCases.stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
+            System.out.println("test case : "+ entry.getInput());
             Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
             .source_code(encodedSourceCode)
             .language_id(languageId)
-            .stdin(entry.getKey())
-            .expected_output(entry.getValue())
+            .stdin(entry.getInput())
+            .expected_output(entry.getOutput())
             .cpu_time_limit(cpuTimeLimit)
             .memory_limit(memoryLimit)
             .stack_limit(stackLimit)

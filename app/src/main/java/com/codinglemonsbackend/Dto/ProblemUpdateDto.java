@@ -1,13 +1,10 @@
 package com.codinglemonsbackend.Dto;
 
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,38 +16,35 @@ import lombok.NoArgsConstructor;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProblemUpdateDto {
+
+    @NotNull(message = "Updates cannot be null")
+    private Map<String, Object> updates;
     
-    private String title;
+    // private String title;
 
-    private String description;
+    // private String description;
 
-    private Set<String> constraints;
+    // private Set<String> constraints;
 
-    private Set<Example> examples;
+    // private Set<Example> examples;
 
-    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
+    // private Map<ProgrammingLanguage, String> codeSnippets;
 
-    private List<String> testCaseOutputs;
+    // private Difficulty difficulty;
 
-    private Map<ProgrammingLanguage, String> codeSnippets;
+    // private Float cpuTimeLimit;
 
-    private Map<ProgrammingLanguage, String> driverCodes;
+    // private Float memoryLimit;
 
-    private Difficulty difficulty;
+    // private Integer stackLimit;
 
-    private Float cpuTimeLimit;
+    // private Set<String> topicSlugs;
 
-    private Float memoryLimit;
+    // private Set<String> companySlugs;
 
-    private Integer stackLimit;
+    // @JsonIgnore
+    // private Integer previousProblemId;
 
-    private Set<String> topicSlugs;
-
-    private Set<String> companySlugs;
-
-    @JsonIgnore
-    private Integer previousProblemId;
-
-    @JsonIgnore
-    private Integer nextProblemId;
+    // @JsonIgnore
+    // private Integer nextProblemId;
 }

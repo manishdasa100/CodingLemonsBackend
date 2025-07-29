@@ -46,7 +46,7 @@ public class ProblemOfTheDayService {
             throw new NoSuchElementException("Problem of the day not set");
         }
         
-        ProblemDto problemOfTheDay = problemRepositoryService.getProblem(problemMetadata.getProblemId());
+        ProblemDto problemOfTheDay = problemRepositoryService.getProblemById(problemMetadata.getProblemId());
 
         return problemOfTheDay;
     }

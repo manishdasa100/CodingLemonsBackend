@@ -1,39 +1,47 @@
 package com.codinglemonsbackend.Service;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
+import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.UserRankDto;
-import com.codinglemonsbackend.Entities.CompanyTag;
+import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Entities.ProblemExecutionDetails;
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
+import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Payloads.CreateProblemRequestPayload;
 import com.codinglemonsbackend.Repository.CompanyRepository;
+import com.codinglemonsbackend.Repository.IRegistryService;
+import com.codinglemonsbackend.Repository.ProblemsRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.github.slugify.Slugify;
 
-import jakarta.validation.Valid;
 
 @Service
 public class AdminServiceImpl {
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
+
+    @Autowired
+    private RegistryServiceDispatcher registryServiceDispatcher;
 
     @Autowired
     private CompanyRepository companyRepository;
@@ -46,41 +54,24 @@ public class AdminServiceImpl {
 
     @Autowired
     private Slugify slugify;
+
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
     
-    public ProblemEntity addProblem(CreateProblemRequestPayload payload) throws Exception {
-        System.out.println("--------PROBLEM PAYLOAD--------------");
-        System.out.println(payload);
+    public ProblemEntity addProblem(ProblemDto payload) throws Exception {
+        List<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toList());
+        Set<Topic> validTopics = topicRepository.getValidTags(topicSlugs);
+        if(validTopics.isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
+        
+        payload.setTopics(validTopics);
 
-        Set<String> topicSlugs = payload.getTopics();
-        Set<TopicTag> validTopics = topicRepository.getValidTags(topicSlugs);
-        if(validTopics.isEmpty()) throw new Exception("No matching topics were found. Please provide valid topics.");
-
-        Set<CompanyTag> validCompanies = null;
         if (payload.getCompanies() != null) {
-            Set<String> companySlugs = payload.getCompanies();
-            validCompanies = companyRepository.getValidTags(companySlugs);
+            List<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toList());
+            Set<Company>validCompanies = companyRepository.getValidTags(companySlugs);
+            payload.setCompanies(validCompanies);
         }
 
-        ProblemDto problemDto = ProblemDto.builder()
-                                    .title(payload.getTitle())
-                                    .description(payload.getDescription())
-                                    .constraints(payload.getConstraints())
-                                    .examples(payload.getExamples())
-                                    .difficulty(payload.getDifficulty())
-                                    .codeSnippets(payload.getCodeSnippets())
-                                    .topics(validTopics)
-                                    .companies(validCompanies)
-                                    .build();
-
-        ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
-                                                    .cpuTimeLimit(payload.getCpuTimeLimit())
-                                                    .memoryLimit(payload.getMemoryLimit())
-                                                    .stackLimit(payload.getStackLimit())
-                                                    .testCasesWithExpectedOutputs(payload.getTestCasesWithExpectedOutputs())
-                                                    .driverCodes(payload.getDriverCodes())
-                                                    .build();
-        
-        ProblemEntity savedEntity =  problemRepositoryService.addProblem(problemDto, executionDetails);
+        ProblemEntity savedEntity =  problemRepositoryService.addProblem(payload);
 
         return savedEntity;
     }
@@ -97,14 +88,20 @@ public class AdminServiceImpl {
         problemRepositoryService.removeAllProblems();
     }
 
-    public void createCompanyTag(CompanyTag companyTag){
+    public String publishProblem(Integer problemId) {
+        long updatedDocumentCount = problemRepositoryService.updateProblem(problemId, 
+        new ProblemUpdateDto(Map.of("status", ProblemStatus.PUBLISHED.name())));
+        return updatedDocumentCount > 0 ? "Problem published successfully" : "Problem is already published";
+    }
+
+    public void createCompanyTag(Company companyTag){
         String companyName = companyTag.getName();
         String slug = slugify.slugify(companyName);
         companyTag.setSlug(slug);
         companyRepository.addCompanyTag(companyTag);
     }
 
-    public void createTopicTag(TopicTag topicTag) {
+    public void createTopicTag(Topic topicTag) {
         String topicName = topicTag.getName();
         String slug = slugify.slugify(topicName);
         topicTag.setSlug(slug);
@@ -116,10 +113,42 @@ public class AdminServiceImpl {
         String rankNameCapitalized = newRankDetails.getRankName().toUpperCase();
         newRankDetails.setRankName(rankNameCapitalized);
 
-        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE); 
+        byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE_SMALL); 
         
         UserRank savedRank = userRankService.createUserRank(newRankDetails, resizedImageBytes);
         
         return savedRank.getRankName();
+    }
+    
+    public RegistryOperationResult addItemsInRegistry(Integer problemId, Object data, String registryType) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        RegistryOperationResult result = registryService.addItemsInRegistry(problemId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
+    }
+    
+    public RegistryOperationResult updateRegistry(String registryId, Object data, String registryType) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        RegistryOperationResult result = registryService.updateItemsInRegistry(registryId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
+    }
+
+    public RegistryOperationResult removeItemFromRegistry(String registryId, Object data, String registryType) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        RegistryOperationResult result = registryService.removeItemFromRegistry(registryId, data);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
+    }
+
+    public RegistryOperationResult deleteRegistry(String registryType, String registryId) {
+        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
+        RegistryOperationResult result = registryService.deleteRegistry(registryId);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+        return result;
+    }
+
+    public List<String> getSupportedRegistryTypes() {
+        return registryServiceDispatcher.getSupportedRegistryTypes();
     }
 }

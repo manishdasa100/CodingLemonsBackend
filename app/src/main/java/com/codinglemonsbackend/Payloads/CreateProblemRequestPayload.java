@@ -8,8 +8,8 @@ import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
-import com.codinglemonsbackend.Entities.CompanyTag;
-import com.codinglemonsbackend.Entities.TopicTag;
+import com.codinglemonsbackend.Entities.Company;
+import com.codinglemonsbackend.Entities.Topic;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -46,19 +46,19 @@ public class CreateProblemRequestPayload {
     @NotEmpty
     private Set<Example> examples;
 
-    @NotEmpty
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
-
     @NotNull(message = "Difficulty must be either EASY/MEDIUM/HARD")
     private Difficulty difficulty;
 
-    @NotEmpty
-    private Map<ProgrammingLanguage, String> codeSnippets;
+    // @NotEmpty
+    // @JsonProperty(access = Access.WRITE_ONLY)
+    // private LinkedHashMap<String, String> testCasesWithExpectedOutputs;
 
-    @NotEmpty
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private Map<ProgrammingLanguage, String> driverCodes;
+    // @NotEmpty
+    // private Map<ProgrammingLanguage, String> codeSnippets;
+
+    // @NotEmpty
+    // @JsonProperty(access = Access.WRITE_ONLY)
+    // private Map<ProgrammingLanguage, String> driverCodes;
 
     @NotNull
     @JsonProperty(access = Access.WRITE_ONLY)

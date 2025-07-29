@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 
 import org.springframework.data.annotation.Id;
@@ -34,15 +36,19 @@ public class ProblemEntity {
     private Integer id;
     private String title;
     private String description;
-    private Set<String> constraints;
-    private Set<Example> examples;
+    private List<String> constraints;
+    private List<Example> examples;
     private Difficulty difficulty;
     private Map<ProgrammingLanguage, String> codeSnippets;
-    private Set<TopicTag> topics;
-    private Set<CompanyTag> companies;
+    private Set<String> topicSlugs;
+    private Set<String> companySlugs;
+    private Float cpuTimeLimit;
+    private Float memoryLimit;
+    private Integer stackLimit;
     private Integer likes;
     private Integer previousProblemId;
     private Integer nextProblemId;
     private Integer acceptedCount;
     private Integer submissionCount;
+    private ProblemStatus status;
 }

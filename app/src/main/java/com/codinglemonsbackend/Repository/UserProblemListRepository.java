@@ -66,10 +66,10 @@ public class UserProblemListRepository {
             MatchOperation matchOperation = Aggregation.match(criteria);
     
             LookupOperation lookupOperation = LookupOperation.newLookup()
-                    .from(ProblemEntity.ENTITY_COLLECTION_NAME)                            
-                    .localField("problemIds")                    
-                    .foreignField("_id")                          
-                    .as("problemsData");                           
+                .from(ProblemEntity.ENTITY_COLLECTION_NAME)                            
+                .localField("problemIds")                    
+                .foreignField("_id")                          
+                .as("problemsData");                           
     
     
             ProjectionOperation projectFields = Aggregation.project()
@@ -84,9 +84,9 @@ public class UserProblemListRepository {
     
     
             Aggregation aggregation = Aggregation.newAggregation(
-                    matchOperation,
-                    lookupOperation,
-                    projectFields
+                matchOperation,
+                lookupOperation,
+                projectFields
             );
     
             List<ProblemListDto> result = mongoTemplate.aggregate(aggregation, ProblemListEntity.ENTITY_COLLECTION_NAME, ProblemListDto.class).getMappedResults();

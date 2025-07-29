@@ -16,8 +16,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Document(collection = "CompanyTags")
-public class CompanyTag {
+@Document(collection = "Company")
+public class Company {
+
+    public static final String ENTITY_COLLECTION_NAME = "Company";
 
     @Id
     private String id;
