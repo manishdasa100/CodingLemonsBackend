@@ -22,12 +22,6 @@ public class UserService implements UserDetailsService{
     @Autowired
     private UserRepository userRepository;
 
-    // @Autowired
-    // private S3Service s3Service;
-
-    // @Autowired
-    // private S3Buckets s3Buckets;
-
     public void saveUser(UserEntity user) throws UserAlreadyExistException{
         try{
             loadUserByUsername(user.getUsername());
@@ -73,35 +67,4 @@ public class UserService implements UserDetailsService{
         return userRepository.updateUserDetails(newUserDetails.getUsername(), updatePropertiesMap);
     }
 
-    /*public void uploadUserProfilePicture(UserEntity user, MultipartFile file) throws ProfilePictureUploadFailureException{
-
-        String profilePictureId = UUID.randomUUID().toString();
-
-        try {
-            s3Service.putObject(
-                s3Buckets.getCustomer(), 
-                "profile-picture/%s/%s".formatted(user.getUsername(), profilePictureId), 
-                file.getBytes()
-            );
-        } catch (Exception e) {
-            throw new ProfilePictureUploadFailureException("Profile picture upload failed");
-        }
-
-        user.setProfilePictureId(profilePictureId);
-
-        userRepository.updateUserProfilePictureId(user.getUsername(), profilePictureId);
-    }
-
-    public byte[] getUserProfilePicture(UserEntity user) {
-
-        String profilePictureId = user.getProfilePictureId();
-
-        byte[] userProfilePicture = s3Service.getObject(
-            s3Buckets.getCustomer(), 
-            "profile-picture/%s/%s".formatted(user.getUsername(), profilePictureId)
-        );
-
-        return userProfilePicture;
-    }
-    */
 }

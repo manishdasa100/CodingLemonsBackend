@@ -1,6 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,15 +9,19 @@ import java.util.UUID;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
+import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
+import com.codinglemonsbackend.Utils.URIUtils;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,28 +45,38 @@ public class UserProfileService {
     private UserRankService userRankService;
 
     @Value("${assets.domain}")
-    private String assetsDomain;
+    private String ASSETS_DOMAIN;
+
+    private static final String ASSETS_BASE_PATH = "users";
 
     public UserProfileDto getUserProfile(String username) {
         Optional<UserProfileEntity> profile = userProfileRepository.getUserProfile(username);
         if (profile.isEmpty()) throw new UsernameNotFoundException("User profile not found");
         UserProfileEntity entity = profile.get();
-        String profilePictureUrl = "%s/%s/%s.jpg".formatted(assetsDomain, entity.getUsername(), entity.getProfilePictureId());
         UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class); 
+        String profilePictureUrl = URIUtils.createURI(ASSETS_DOMAIN, ASSETS_BASE_PATH, entity.getUsername(), entity.getProfilePictureId()).toString();
         userProfile.setProfilePictureUrl(profilePictureUrl);
+        userProfile.setRank(userRankService.getRankByName(entity.getRank()).get());
         return userProfile;
     }
 
-    public void createAndSaveUserProfile(UserEntity user) {
-        UserProfileDto userProfileDto = UserProfileDto.builder()
-                                        .username(user.getUsername())
-                                        .firstName(user.getFirstName())
-                                        .lastName(user.getLastName())
-                                        .email(user.getEmail())
-                                        .score(0)
-                                        .ranking(userRankService.getInitialRank().getRankName())
-                                        .build();
-        UserProfileEntity userProfileEntity = mapper.map(userProfileDto, UserProfileEntity.class);
+    @Async
+    @EventListener
+    public void createUserProfile(UserAccountCreationEvent event) {
+        System.out.println("Received user account creation event");
+        UserEntity newUser = event.getUser();
+        createUserProfile(newUser);
+    }
+
+    public void createUserProfile(UserEntity user) {
+        UserProfileEntity userProfileEntity = UserProfileEntity.builder()
+                                                .username(user.getUsername())
+                                                .firstName(user.getFirstName())
+                                                .lastName(user.getLastName())
+                                                .email(user.getEmail())
+                                                .score(0)
+                                                .rank(userRankService.getInitialRank().getRankName())
+                                                .build();
         userProfileRepository.saveUserProfile(userProfileEntity);
     }
 
@@ -138,7 +151,7 @@ public class UserProfileService {
         try {
             s3Service.putObject(
                 s3Properties.getBucket(), 
-                "users/%s/%s.jpg".formatted(username, profilePictureId), 
+                ASSETS_BASE_PATH + "/" + username + "/" + profilePictureId, 
                 imageFile
             );
             s3Uploaded = true;

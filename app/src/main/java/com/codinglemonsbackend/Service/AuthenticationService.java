@@ -6,6 +6,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import com.codinglemonsbackend.Dto.Role;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;
 import com.codinglemonsbackend.Utils.JwtUtils;
@@ -28,19 +30,16 @@ public class AuthenticationService {
     private UserService userService;
 
     @Autowired
-    private UserProfileService userProfileService;
-
-    @Autowired
     private JwtUtils jwtUtils; 
-
-    @Autowired
-    private RedisService redisService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
     
     public String registerUser(UserDto userDto, Boolean isAdmin) throws UserAlreadyExistException{
         
@@ -56,10 +55,11 @@ public class AuthenticationService {
 
         userService.saveUser(user);
 
-        // Think about creating a asyc task for creating a new user profile
-        userProfileService.createAndSaveUserProfile(user);
-
         String jwtToken = jwtUtils.generateToken(user);
+
+        UserAccountCreationEvent event = new UserAccountCreationEvent(this, user);
+
+        eventPublisher.publishEvent(event);
 
         return jwtToken;
     }

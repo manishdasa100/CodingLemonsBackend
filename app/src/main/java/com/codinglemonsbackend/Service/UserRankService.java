@@ -1,10 +1,13 @@
 package com.codinglemonsbackend.Service;
 
-import java.io.File;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.UserRankDto;
@@ -12,8 +15,8 @@ import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserRankRepository;
+import com.codinglemonsbackend.Utils.URIUtils;
 
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -22,44 +25,54 @@ public class UserRankService {
 
     @Autowired
     private UserRankRepository userRankRepository;
-
-    
+  
     @Autowired
     private S3Service s3Service;
     
     @Autowired
     private S3Properties s3Properties;
+
+    @Value("${assets.domain}")
+    private String ASSETS_DOMAIN;
+
+    private static final String ASSET_BASE_PATH = "static/rankBadges";
     
-    public List<UserRank> ranks;
+    private List<UserRankDto> ranks = null;
 
-    @PostConstruct
     private void loadAllRanks() {
-        ranks = userRankRepository.getAllRanks();
-
-        // Sorting ranks in ascending order based on milestone points
-        ranks.sort((rank1, rank2) -> rank1.getMilestonePoints() - rank2.getMilestonePoints());
+        ranks = userRankRepository.getAllRanks().stream().map(rank -> new UserRankDto(
+            rank.getRankName(),
+            rank.getMilestonePoints(),
+            URIUtils.createURI(ASSETS_DOMAIN, ASSET_BASE_PATH, rank.getRankBadgeId()).toString()
+        )).sorted(Comparator.comparing(UserRankDto::getMilestonePoints))
+        .collect(Collectors.toList());
     }
 
-    public UserRank getInitialRank() {
+    public UserRankDto getInitialRank() {
         // Getting the first/rank with the least milestone points
+        // Lazy loading of ranks
+        if (ranks == null) loadAllRanks();
+        if (ranks.isEmpty()) throw new RuntimeException("No ranks found. Check database for rank availability"); 
         return ranks.get(0);
     }
     
-    public Boolean checkIfRankExistByName(String name) {
-        return ranks.stream().anyMatch(rank -> rank.getRankName().equals(name));
+    public Optional<UserRankDto> getRankByName(String name) {
+        if (ranks == null) loadAllRanks();
+        return ranks.stream().filter(rank -> rank.getRankName().equals(name)).findFirst();
     }
 
-    public Boolean checkIfRankExistByMilestonePoints(Integer points) {
-        return ranks.stream().anyMatch(rank -> rank.getMilestonePoints().equals(points));
+    public Optional<UserRankDto> getRankByMilestonePoints(Integer points) {
+        if (ranks == null) loadAllRanks();
+        return ranks.stream().filter(rank -> rank.getMilestonePoints().equals(points)).findFirst();
     }
 
     public UserRank createUserRank(UserRankDto newRankDetails, byte[] badgeImageFile) throws FileUploadFailureException  {
 
-        if (checkIfRankExistByName(newRankDetails.getRankName())) {
+        if (getRankByName(newRankDetails.getRankName()).isPresent()) {
             throw new IllegalArgumentException("Rank with same name already exists");
         }
 
-        if (checkIfRankExistByMilestonePoints(newRankDetails.getMilestonePoints())) {
+        if (getRankByMilestonePoints(newRankDetails.getMilestonePoints()).isPresent()) {
             throw new IllegalArgumentException("Rank with same milestone points already exists");
         }
 
@@ -69,7 +82,7 @@ public class UserRankService {
                                         .build();
         
         String rankBadgeId = UUID.randomUUID().toString();
-        String s3Key = "static/rankBadges/%s.jpg".formatted(rankBadgeId);
+        String s3Key = ASSET_BASE_PATH + "/" + rankBadgeId;
         Boolean s3Uploaded = false;
         
         try {
@@ -104,13 +117,13 @@ public class UserRankService {
 
     }
 
-    public UserRank getUserRank(Integer points) {
-        for (UserRank rank : ranks) {
+    public String getUserRank(Integer points) {
+        if (ranks == null) loadAllRanks();
+        for (UserRankDto rank : ranks) {
             if (rank.getMilestonePoints() <= points) {
-                return rank;
+                return rank.getRankName();
             }
         }
-
         return null;
     }
 

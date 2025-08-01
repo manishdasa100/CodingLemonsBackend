@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Dto;
 
 import com.codinglemonsbackend.Entities.SkillTags;
+import com.codinglemonsbackend.Entities.UserRank;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,12 +14,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
+@ToString
 public class UserProfileDto {
     
     @JsonProperty(access = Access.READ_ONLY)
@@ -44,7 +47,7 @@ public class UserProfileDto {
     private Integer score;
 
     @JsonProperty(access = Access.READ_ONLY)
-    private String ranking;
+    private UserRankDto rank;
 
     @JsonProperty(access = Access.READ_ONLY)
     private String profilePictureUrl;

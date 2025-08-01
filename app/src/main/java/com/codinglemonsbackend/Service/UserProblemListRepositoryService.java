@@ -1,6 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,6 +12,8 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Repository.UserProblemListRepository;
@@ -52,7 +54,11 @@ public class UserProblemListRepositoryService {
         return problemListDto.get();
     }
 
-    public void createDefaultProblemList(String username) {
+    @Async
+    @EventListener
+    public void createDefaultProblemList(UserAccountCreationEvent event) {
+
+        String username = event.getUser().getUsername();
         
         ProblemListEntity solvedProblemList = ProblemListEntity.builder()
                                                 .name(SOLVED_PROBLEM_LIST)

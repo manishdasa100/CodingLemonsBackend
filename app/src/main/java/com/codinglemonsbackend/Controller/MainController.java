@@ -148,7 +148,7 @@ public class MainController {
 
     @PostMapping(value = "/user/uploadProfilePic", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadUserProfilePicture(@RequestBody MultipartFile profilePictureImageFile) throws FileUploadFailureException, IOException {
-        List<String> validImageExtensions = ImageUtils.validImageExtensions;
+        List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
         String fileExtension = FilenameUtils.getExtension(profilePictureImageFile.getOriginalFilename());
 
         if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
