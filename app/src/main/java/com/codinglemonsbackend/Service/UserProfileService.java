@@ -53,8 +53,18 @@ public class UserProfileService {
         Optional<UserProfileEntity> profile = userProfileRepository.getUserProfile(username);
         if (profile.isEmpty()) throw new UsernameNotFoundException("User profile not found");
         UserProfileEntity entity = profile.get();
-        UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class); 
-        String profilePictureUrl = URIUtils.createURI(ASSETS_DOMAIN, ASSETS_BASE_PATH, entity.getUsername(), entity.getProfilePictureId()).toString();
+        UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class);
+        String path = "default";
+        String profilePictureId = "default_user_dp.jpg";
+        if (entity.getProfilePictureId() != null) {
+            path = entity.getUsername();
+            profilePictureId = entity.getProfilePictureId();
+        }
+        String profilePictureUrl = URIUtils.createURI(
+            ASSETS_DOMAIN, 
+            ASSETS_BASE_PATH, 
+            path, 
+            profilePictureId).toString();
         userProfile.setProfilePictureUrl(profilePictureUrl);
         userProfile.setRank(userRankService.getRankByName(entity.getRank()).get());
         return userProfile;

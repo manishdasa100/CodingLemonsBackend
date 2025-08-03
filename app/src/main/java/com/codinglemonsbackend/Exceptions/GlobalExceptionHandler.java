@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import com.codinglemonsbackend.Payloads.ExceptionMessage;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,10 +46,10 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
-    // @ExceptionHandler(Exception.class)
-    // public ResponseEntity<ExceptionMessage> handleException(Exception e){
-    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
-    // }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ExceptionMessage> handleException(Exception e){
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ExceptionMessage> handleIllegalArgumentException(IllegalArgumentException e) {
@@ -69,6 +68,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     
     }
+
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ExceptionMessage> resourceNotFound(NoSuchElementException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.NOT_FOUND);
