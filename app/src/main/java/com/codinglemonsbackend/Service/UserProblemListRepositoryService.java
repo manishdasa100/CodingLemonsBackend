@@ -54,7 +54,7 @@ public class UserProblemListRepositoryService {
         return problemListDto.get();
     }
 
-    @Async
+    @Async("applicationAsyncExecutor")
     @EventListener
     public void createDefaultProblemList(UserAccountCreationEvent event) {
 

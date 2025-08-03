@@ -70,7 +70,7 @@ public class UserProfileService {
         return userProfile;
     }
 
-    @Async
+    @Async("applicationAsyncExecutor")
     @EventListener
     public void createUserProfile(UserAccountCreationEvent event) {
         System.out.println("Received user account creation event");
