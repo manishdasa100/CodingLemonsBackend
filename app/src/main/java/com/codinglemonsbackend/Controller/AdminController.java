@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
@@ -137,10 +138,24 @@ public class AdminController {
     }
 
 
-    @PostMapping("/companyTag/create")
+    @PostMapping(value = "/company/create" , consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> addCompanyTag(@Valid @RequestBody Company companyTag){
-        adminService.createCompanyTag(companyTag);
+    public ResponseEntity<String> addCompany(
+        @Valid @RequestPart CompanyDto company,
+        @RequestPart(value = "companyLogo", required = false) MultipartFile companyLogoImageFile
+    ) throws FileUploadFailureException, IOException
+    {
+        // List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
+        // String fileExtension = FilenameUtils.getExtension(companyLogoImageFile.getOriginalFilename());
+
+        // if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
+        //     throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
+        // }
+
+        if (companyLogoImageFile != null && !isValidImageFile(companyLogoImageFile.getOriginalFilename())) {
+            throw new IllegalArgumentException(String.format("Unsupported file extension for file %s. Please upload one of %s", companyLogoImageFile.getOriginalFilename(), "jpg, png, jpeg"));
+        }
+        adminService.createCompanyTag(company, companyLogoImageFile);
         return ResponseEntity.ok().body("Company tag created");
     }
 
@@ -158,13 +173,32 @@ public class AdminController {
         @RequestPart MultipartFile rankBadgeImageFile) throws FileUploadFailureException, IOException
     {
         // Validate the file extension
-        List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
-        String fileExtension = FilenameUtils.getExtension(rankBadgeImageFile.getOriginalFilename());
+        // List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
+        // String fileExtension = FilenameUtils.getExtension(rankBadgeImageFile.getOriginalFilename());
 
-        if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
-            throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
+        // if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
+        //     throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
+        // }
+
+        if (!isValidImageFile(rankBadgeImageFile.getOriginalFilename())) {
+            throw new IllegalArgumentException(String.format("Unsupported file extension for file %s. Please upload one of %s", rankBadgeImageFile.getOriginalFilename(), "jpg, png, jpeg"));
         }
         adminService.createUserRank(rankDetails, rankBadgeImageFile);
         return ResponseEntity.ok().body("User rank created");
+    }
+
+    private Boolean isValidImageFile(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            throw new IllegalArgumentException("Filename cannot be empty!!");
+        }
+        List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
+        String fileExtension = FilenameUtils.getExtension(filename);
+        if (fileExtension == null) {
+            return false;
+        }
+        if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
+            return false;
+        }
+        return true;
     }
 }

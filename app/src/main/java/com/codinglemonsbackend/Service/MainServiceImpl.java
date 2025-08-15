@@ -255,13 +255,16 @@ public class MainServiceImpl{
 
         ProblemDto problemDto = getProblem(payload.getProblemId());
 
+        System.out.println("Problem status: " + problemDto.getStatus());
+
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
-            return "Problem is not ready";
+            return "Problem is not published";
         }
 
         ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
                                                 .cpuTimeLimit(problemDto.getCpuTimeLimit())
                                                 .memoryLimit(problemDto.getMemoryLimit())
+                                                .stackLimit(problemDto.getStackLimit())
                                                 .build();
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
@@ -273,11 +276,11 @@ public class MainServiceImpl{
                                                 .isRunCode(payload.getIsRunCode())
                                                 .build();
         
-        String submissionToken = submissionService.submitCode(submissionMetadata);
+        String submissionJobId = submissionService.submitCode(submissionMetadata);
 
-        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString(), -1);
+        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionJobId, PendingOrdersStatus.QUEUED.toString(), -1);
 
-        return submissionToken;
+        return submissionJobId;
 
     }
 

@@ -19,6 +19,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
@@ -49,7 +50,7 @@ public class ProblemRepositoryService {
     private TopicRepository topicRepository;
 
     @Autowired
-    private CompanyRepository companyRepository;
+    private CompanyService companyService;
 
     @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public ProblemSet getAllProblems(Integer page, Integer size) {
@@ -94,6 +95,10 @@ public class ProblemRepositoryService {
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public ProblemEntity addProblem(ProblemDto problemDto) throws Exception {
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
+        Set<String> topicSlugs = problemDto.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toSet());
+        Set<String> companySlugs = problemDto.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toSet());
+        entity.setTopicSlugs(topicSlugs);
+        entity.setCompanySlugs(companySlugs);
         ProblemEntity savedEntity = problemsRepository.addProblem(entity);
         return savedEntity;
     }
@@ -265,11 +270,11 @@ public class ProblemRepositoryService {
                 if (!companiesList.isEmpty() && companiesList.stream().allMatch(item -> item instanceof String)) {
                     @SuppressWarnings("unchecked")
                     List<String> newCompanies = (List<String>) companiesList;
-                    Set<Company> newValidCompanyTags = companyRepository.getValidTags(newCompanies);
+                    Set<CompanyDto> newValidCompanyTags = companyService.getValidTags(newCompanies);
                     if (newValidCompanyTags.size() != newCompanies.size()) {
                         throw new IllegalArgumentException("Invalid company slugs. Some companies do not exist");
                     }
-                    validUpdates.put("companySlugs", newValidCompanyTags.stream().map(Company::getSlug).collect(Collectors.toSet()));
+                    validUpdates.put("companySlugs", newValidCompanyTags.stream().map(CompanyDto::getSlug).collect(Collectors.toSet()));
                 } else {
                     throw new IllegalArgumentException("Companies must be a non-empty set of strings");
                 }

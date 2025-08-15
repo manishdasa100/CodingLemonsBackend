@@ -6,11 +6,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
@@ -40,7 +42,7 @@ public class AdminServiceImpl {
     private RegistryServiceDispatcher registryServiceDispatcher;
 
     @Autowired
-    private CompanyRepository companyRepository;
+    private CompanyService companyService;
 
     @Autowired
     private TopicRepository topicRepository;
@@ -53,6 +55,9 @@ public class AdminServiceImpl {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private ModelMapper moddModelMapper;
     
     public ProblemEntity addProblem(ProblemDto payload) throws Exception {
         List<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toList());
@@ -63,7 +68,7 @@ public class AdminServiceImpl {
 
         if (payload.getCompanies() != null) {
             List<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toList());
-            Set<Company>validCompanies = companyRepository.getValidTags(companySlugs);
+            Set<CompanyDto> validCompanies = companyService.getValidTags(companySlugs);
             payload.setCompanies(validCompanies);
         }
 
@@ -90,11 +95,19 @@ public class AdminServiceImpl {
         return updatedDocumentCount > 0 ? "Problem published successfully" : "Problem is already published";
     }
 
-    public void createCompanyTag(Company companyTag){
-        String companyName = companyTag.getName();
-        String slug = slugify.slugify(companyName);
-        companyTag.setSlug(slug);
-        companyRepository.addCompanyTag(companyTag);
+    public void createCompanyTag(CompanyDto companyDto, MultipartFile companyLogoImageFile) throws FileUploadFailureException, IOException{
+        Company company = moddModelMapper.map(companyDto, Company.class);
+        if (companyLogoImageFile == null) {
+            companyService.addCompany(company);
+            return;
+        }
+
+        if (companyLogoImageFile.isEmpty()) {
+            throw new IllegalArgumentException("Provided image file is empty");
+        }
+        
+        byte[] resizedImageBytes = ImageUtils.resizeImage(companyLogoImageFile, ImageDimension.SQUARE_SMALL);
+        companyService.addCompany(company, resizedImageBytes);
     }
 
     public void createTopicTag(Topic topicTag) {
@@ -105,14 +118,10 @@ public class AdminServiceImpl {
     }
 
     public String createUserRank(UserRankDto newRankDetails, MultipartFile rankIconImageFile) throws IOException, FileUploadFailureException{
-        
         String rankNameCapitalized = newRankDetails.getRankName().toUpperCase();
         newRankDetails.setRankName(rankNameCapitalized);
-
         byte[] resizedImageBytes = ImageUtils.resizeImage(rankIconImageFile, ImageDimension.SQUARE_SMALL); 
-        
         UserRank savedRank = userRankService.createUserRank(newRankDetails, resizedImageBytes);
-        
         return savedRank.getRankName();
     }
     

@@ -22,7 +22,7 @@ public class RabbitMQConfig {
 
     public static final String LIKE_EVENTS = "Queue:Like_Events";
 
-    public static final String MAINEXCHANGE = "Exchange:Main";
+    public static final String EXCHANGE = "Exchange:Main";
 
     @Bean
     public Queue pendingSubmssionsQueue(){
@@ -36,9 +36,8 @@ public class RabbitMQConfig {
 
     @Bean
     public DirectExchange mainExchange(){
-        return new DirectExchange(MAINEXCHANGE);
+        return new DirectExchange(EXCHANGE);
     }
-
 
     @Bean
     public Binding pendingSubmissionsBinding(DirectExchange exchange){

@@ -49,7 +49,7 @@ public class LikeService {
             true
         );
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.MAINEXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
         
         addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
@@ -76,7 +76,7 @@ public class LikeService {
             false
         );
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.MAINEXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
 
         addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
