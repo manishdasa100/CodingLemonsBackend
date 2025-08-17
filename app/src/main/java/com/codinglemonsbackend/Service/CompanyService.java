@@ -57,14 +57,19 @@ public class CompanyService {
         }
     }
 
-    public CompanyDto getCompanyDetails(String name) {
+    public CompanyDto getCompanyDetailsBySlug(String slug) {
         if (this.allCompanies == null) loadAllCompanies(); 
         try{
-            CompanyDto company = allCompanies.stream().filter(e -> e.getName().equals(name)).findFirst().get();
+            CompanyDto company = allCompanies.stream().filter(e -> e.getSlug().equals(slug)).findFirst().get();
             return company;
         } catch(NoSuchElementException e) {
-            throw new NoSuchElementException("No company found with name {}".formatted(name));
+            throw new NoSuchElementException("No company found with name {}".formatted(slug));
         }
+    }
+
+    public Boolean isValidCompany(String companySlug) {
+        if (this.allCompanies == null) loadAllCompanies();
+        return this.allCompanies.stream().anyMatch(company -> company.getSlug().equals(companySlug));
     }
 
     public Set<CompanyDto> getValidTags(List<String> companySlugs) {

@@ -45,7 +45,7 @@ public class UserRepository {
         return updateResult;
     }
 
-    public boolean updateUserDetails(String username, Map<String, Object> updatePropertiesMap) {
+    public void updateUserDetails(String username, Map<String, Object> updatePropertiesMap) {
         
         Query query = new Query(Criteria.where("username").is(username));
 
@@ -80,10 +80,6 @@ public class UserRepository {
         });
 
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, UserEntity.class);
-
-        if (updateResult.getModifiedCount() > 0) return true;
-
-        return false;
     }
 
     /*public void updateUserProfilePictureId(String username, String profilePictureId) {

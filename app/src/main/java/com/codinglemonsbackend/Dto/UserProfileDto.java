@@ -1,13 +1,14 @@
 package com.codinglemonsbackend.Dto;
 
 import com.codinglemonsbackend.Entities.SkillTags;
-import com.codinglemonsbackend.Entities.UserRank;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.codinglemonsbackend.Validation.CrossFieldValidation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -22,7 +23,27 @@ import lombok.ToString;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 @ToString
+@CrossFieldValidation(
+    rules = {
+        @CrossFieldValidation.FieldRule(
+            field = "companySlug",
+            dependsOn = "jobTitle", 
+            type = CrossFieldValidation.ValidationType.BOTH_OR_NEITHER,
+            message = "Company slug and job title must be provided together"
+        )
+    }
+)
 public class UserProfileDto {
+
+    public static record Location(
+        @NotBlank(message = "City cannot be blank")
+        @Size(min = 2, message = "City name must have at least two characters")
+        String city,
+        
+        @NotBlank(message = "Country cannot be blank")
+        @Size(min = 4, message = "Country name must have at least four characters")
+        String country
+    ) {}
     
     @JsonProperty(access = Access.READ_ONLY)
     private String username;
@@ -31,16 +52,16 @@ public class UserProfileDto {
 
     private String lastName;
 
-    @Pattern(regexp = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$", message = "Not a valid email address")
+    @Email(message = "Email must be a valid email address")
     private String email;
 
-    @Pattern(regexp = "^https:\\/\\/(www\\.)?github\\.com\\/[a-zA-Z0-9_-]+\\/?$", message = "Github url not valid")
+    @Pattern(regexp = "^https:\\/\\/(www\\.)?github\\.com\\/[a-zA-Z0-9_-]+\\/?$", message = "Github profile url not valid")
     private String githubUrl;
 
-    @Pattern(regexp = "^https:\\/\\/(www\\.)?x\\.com\\/[a-zA-Z0-9_-]+\\/?$", message = "Twitter url not valid")
+    @Pattern(regexp = "^https:\\/\\/(www\\.)?(x|twitter)\\.com\\/[a-zA-Z0-9_-]+\\/?$", message = "Twitter profile url not valid")
     private String twitterUrl;
 
-    @Pattern(regexp = "^https:\\/\\/www\\.linkedin\\.com\\/(?:in|pub|public-profile\\/in|public-profile\\/pub)\\/(?:[\\w]+-[\\w]+-[\\w]+)\\/?", message = "LinkedIn url not vlaid")
+    @Pattern(regexp = "^https:\\/\\/www\\.linkedin\\.com\\/(in|pub)\\/[a-zA-Z0-9_-]+\\/?$", message = "LinkedIn profile url not vlaid")
     private String linkedinUrl;
 
     @JsonProperty(access = Access.READ_ONLY)
@@ -52,18 +73,18 @@ public class UserProfileDto {
     @JsonProperty(access = Access.READ_ONLY)
     private String profilePictureUrl;
 
-    @Size(min = 5, max = 500)
+    @Size(min = 20, max = 500, 
+    message = "About section must be between 20 and 500 characters")
     private String about;
 
-    @Size(min = 10, max = 100)
     private String school;
 
     @Valid
     private Location location;
 
-    private String company;
+    private String companySlug;
 
-    @Size(min = 4, max = 40)
+    @Size(min = 5, max = 40)
     private String jobTitle;
 
     private SkillTags[] skillTags;

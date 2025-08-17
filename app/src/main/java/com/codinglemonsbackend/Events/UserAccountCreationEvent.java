@@ -6,6 +6,9 @@ import com.codinglemonsbackend.Entities.UserEntity;
 
 public class UserAccountCreationEvent extends ApplicationEvent{
 
+    // Some kind of id to identify this event
+    // For example, serialID
+
     private UserEntity user;
 
     // Add time here of account creation to be used later
