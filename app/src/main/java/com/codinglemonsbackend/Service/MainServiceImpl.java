@@ -13,11 +13,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemListDto;
@@ -29,6 +31,7 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
 import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -53,9 +56,6 @@ public class MainServiceImpl{
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private LikeService likeService;
 
     @Autowired
@@ -74,7 +74,13 @@ public class MainServiceImpl{
     private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired
+    private CompanyService companyService;
+
+    @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -255,13 +261,16 @@ public class MainServiceImpl{
 
         ProblemDto problemDto = getProblem(payload.getProblemId());
 
+        System.out.println("Problem status: " + problemDto.getStatus());
+
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
-            return "Problem is not ready";
+            return "Problem is not published";
         }
 
         ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
                                                 .cpuTimeLimit(problemDto.getCpuTimeLimit())
                                                 .memoryLimit(problemDto.getMemoryLimit())
+                                                .stackLimit(problemDto.getStackLimit())
                                                 .build();
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
@@ -273,11 +282,11 @@ public class MainServiceImpl{
                                                 .isRunCode(payload.getIsRunCode())
                                                 .build();
         
-        String submissionToken = submissionService.submitCode(submissionMetadata);
+        String submissionJobId = submissionService.submitCode(submissionMetadata);
 
-        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionToken, PendingOrdersStatus.QUEUED.toString(), -1);
+        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionJobId, PendingOrdersStatus.QUEUED.toString(), -1);
 
-        return submissionToken;
+        return submissionJobId;
 
     }
 
@@ -322,28 +331,36 @@ public class MainServiceImpl{
         return problemOfTheDay;
     }
 
-    public boolean updateUserProfile(UserProfileDto newUserProfile) {
+    public Boolean updateUserProfile(UserProfileDto newUserProfile) {
 
         System.out.println("UPDATING USER PROFILE");
 
         UserEntity user = (UserEntity)getCurrentlySignedInUser();
 
-        UserProfileDto userProfile = userProfileService.getUserProfile(user.getUsername());
+        System.out.println("Received user profile: " + newUserProfile.toString());
 
-        Boolean updateStatus = userProfileService.updateUserProfile(userProfile, newUserProfile);
+        Boolean profileUpdated = userProfileService.updateUserProfile(user.getUsername(), newUserProfile);
 
-        if (newUserProfile.getFirstName() != null || newUserProfile.getLastName() != null || newUserProfile.getEmail() != null) {
-            System.out.println("UPDATING USER DETAILS");
-            userService.updateUserDetails(UserDto.builder()
-                                            .username(user.getUsername())
-                                            .firstName(newUserProfile.getFirstName())
-                                            .lastName(newUserProfile.getLastName())
-                                            .email(newUserProfile.getEmail())
-                                            .build(),
-                                            modelMapper.map(user, UserDto.class));
-        }
+        UserProfileUpdateEvent profileUpdateEvent = new UserProfileUpdateEvent(this, user.getUsername(), newUserProfile);
 
-        return updateStatus;
+        eventPublisher.publishEvent(profileUpdateEvent);
+
+        return profileUpdated;
+
+        // UserProfileDto userProfile = userProfileService.getUserProfile(user.getUsername());
+
+        // Boolean updateStatus = userProfileService.updateUserProfile(userProfile, newUserProfile);
+
+        // if (newUserProfile.getFirstName() != null || newUserProfile.getLastName() != null || newUserProfile.getEmail() != null) {
+        //     System.out.println("UPDATING USER DETAILS");
+        //     userService.updateUserDetails(UserDto.builder()
+        //                                     .username(user.getUsername())
+        //                                     .firstName(newUserProfile.getFirstName())
+        //                                     .lastName(newUserProfile.getLastName())
+        //                                     .email(newUserProfile.getEmail())
+        //                                     .build(),
+        //                                     modelMapper.map(user, UserDto.class));
+        // }
     } 
 
     public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
@@ -354,7 +371,17 @@ public class MainServiceImpl{
 
     public UserProfileDto getUserProfile(String username) {
         UserProfileDto userProfileDto = userProfileService.getUserProfile(username);
+        UserEntity currentlySignInUser = getCurrentlySignedInUser();
+        if (!currentlySignInUser.getUsername().equals(username)) {
+            userProfileDto.setProfileOwner(false);
+        } else {
+            userProfileDto.setProfileOwner(true);
+        }
         return userProfileDto;
+    }
+
+    public CompanyDto getCompanyDetails(String companySlug) {
+        return companyService.getCompanyDetailsBySlug(companySlug);
     }
  
 }

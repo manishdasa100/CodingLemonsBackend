@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
@@ -139,11 +140,8 @@ public class MainController {
 
     @PutMapping("/user/update")
     public ResponseEntity<String> updateUserProfile(@Valid @RequestBody UserProfileDto newUserProfile) {
-        boolean updated = mainService.updateUserProfile(newUserProfile);
-        if (updated) {
-            return ResponseEntity.ok().body("Updated");
-        }
-        return ResponseEntity.ok().body("No updates done");
+        Boolean updated = mainService.updateUserProfile(newUserProfile);
+        return ResponseEntity.ok().body("Update status: " + updated);
     }
 
     @PostMapping(value = "/user/uploadProfilePic", consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -158,4 +156,13 @@ public class MainController {
         return ResponseEntity.ok().body("Profile picture uploaded successfully");
     }
 
+    @GetMapping("/company/{companySlug}")
+    public ResponseEntity<CompanyDto> getCompanyDetails(@PathVariable String companySlug) {
+        if (companySlug == null || companySlug.isBlank()) {
+            throw new IllegalArgumentException("Company slug cannot be blank");
+        }
+        CompanyDto companyDetails = mainService.getCompanyDetails(companySlug);
+        return ResponseEntity.ok().body(companyDetails);
+    }
+ 
 }

@@ -133,41 +133,39 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         submissionMetadata.setSubmissionJobId(submissionJobId);
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.MAINEXCHANGE, RabbitMQConfig.PENDING_SUBMISSIONS, createSubmissionJob(submissionMetadata));
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, 
+            RabbitMQConfig.PENDING_SUBMISSIONS, 
+            createSubmissionJob(submissionMetadata)
+        );
         
         return submissionJobId;
     }
 
     private SubmissionJob createSubmissionJob(SubmissionMetadata submissionMetadata) {
-
-        System.out.println("RECEIVED SUBMISSION FROM " + submissionMetadata.getUsername());
+        
+        String submissionJobId = submissionMetadata.getSubmissionJobId();
 
         Integer problemId = submissionMetadata.getProblemId();
 
         Boolean isRunCode = submissionMetadata.getIsRunCode();
 
-        String submissionJobId = submissionMetadata.getSubmissionJobId();
-
         ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
 
         Integer languageId = programmingLanguage.getLanguagId();
 
-        // ProblemDto problemDto = submissionMetadata.getProblemDto();
         ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
-
-        // Map<String, String> testCases = executionDetails.getTestCasesWithExpectedOutputs();
-
-        // String driverCode = executionDetails.getDriverCodes().get(programmingLanguage);
 
         String driverCode = driverCodeRepositoryService.getRegistry(problemId)
                             .get().getDriverCodes().get(programmingLanguage);
 
+        // Driver code for the given programming language may not be present or null
+
+        System.out.println("Driver code: " + driverCode);
+
         List<TestcasePair> testCases = testcaseRepositoryService.getRegistry(problemId)
                                         .get().getTestcases();
 
-        // Map<String, String> testCases = problemDto.getTestCasesWithExpectedOutputs();
-
-        // String driverCode = problemDto.getDriverCodes().get(programmingLanguage);
+        testCases.stream().forEach(e -> System.out.println("Input:" + e.getInput() + " , " + "output: "+ e.getOutput()));
 
         String userCode = submissionMetadata.getUserCode();
 
@@ -178,14 +176,12 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         String encodedSourceCode = Base64.getEncoder().encodeToString(sourceCode.getBytes());
 
-        // System.out.println("Source code");
-        // System.out.println(encodedSourceCode);
-
         Float cpuTimeLimit = executionDetails.getCpuTimeLimit();
 
         Float memoryLimit = executionDetails.getMemoryLimit();
 
         Integer stackLimit = executionDetails.getStackLimit();
+
         // Float cpuTimeLimit = problemDto.getCpuTimeLimit();
 
         // Float memoryLimit = problemDto.getMemoryLimit();

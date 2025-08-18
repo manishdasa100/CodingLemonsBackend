@@ -18,6 +18,7 @@ import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
+import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
@@ -44,6 +45,9 @@ public class UserProfileService {
     @Autowired
     private UserRankService userRankService;
 
+    @Autowired
+    private CompanyService companyService;
+
     @Value("${assets.domain}")
     private String ASSETS_DOMAIN;
 
@@ -54,6 +58,7 @@ public class UserProfileService {
         if (profile.isEmpty()) throw new UsernameNotFoundException("User profile not found");
         UserProfileEntity entity = profile.get();
         UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class);
+        System.out.println("USER PROFILE: " + userProfile);
         String path = "default";
         String profilePictureId = "default_user_dp.jpg";
         if (entity.getProfilePictureId() != null) {
@@ -89,69 +94,126 @@ public class UserProfileService {
                                                 .build();
         userProfileRepository.saveUserProfile(userProfileEntity);
     }
+    public Boolean updateUserProfile(String username, UserProfileDto newProfile) {
 
-    public boolean updateUserProfile(UserProfileDto currentProfile, UserProfileDto newProfile) {
+        System.out.println("Received user profile update event");
 
-        String username = currentProfile.getUsername();
+        UserProfileDto currentProfile = getUserProfile(username);
         
         Map<String, Object> updatePropertiesMap = new HashMap<>();
 
         if (newProfile.getFirstName() != null && !newProfile.getFirstName().equals(currentProfile.getFirstName())) {
             System.out.println("FIRST NAME");
-            updatePropertiesMap.put("firstName", newProfile.getFirstName());
+            String newFirstName = newProfile.getFirstName().trim();
+            if (newFirstName.isEmpty()) {
+                throw new IllegalArgumentException("First name cannot be empty");
+            }
+            updatePropertiesMap.put("firstName", newFirstName);
         }
+
         if (newProfile.getLastName() != null && !newProfile.getLastName().equals(currentProfile.getLastName())) {
             System.out.println("LAST NAME");
-            updatePropertiesMap.put("lastName", newProfile.getLastName());
+            String newLastName = newProfile.getLastName().trim();
+            if (newLastName.isEmpty()) {
+                newLastName = null; // Allow last name to be set to null
+            }
+            updatePropertiesMap.put("lastName", newLastName);
         }
+
         if (newProfile.getEmail() != null && !newProfile.getEmail().equals(currentProfile.getEmail())) {
             System.out.println("EMAIL");
-            updatePropertiesMap.put("email", newProfile.getEmail());
+            String newEmail = newProfile.getEmail().trim();
+            if (newEmail.isEmpty()) {
+                newEmail = null; // Allow email to be set to null
+            }
+            updatePropertiesMap.put("email", newEmail);
         }
+
         if (newProfile.getGithubUrl() != null && !newProfile.getGithubUrl().equals(currentProfile.getGithubUrl())) {
             System.out.println("GUTHUB URL");
-            updatePropertiesMap.put("githubUrl", newProfile.getGithubUrl());
+            String newGithubUrl = newProfile.getGithubUrl().trim();
+            if (newGithubUrl.isEmpty()) {
+                newGithubUrl = null; // Allow GitHub URL to be set to null
+            }
+            updatePropertiesMap.put("githubUrl", newGithubUrl);
         }
+
         if (newProfile.getTwitterUrl() != null && !newProfile.getTwitterUrl().equals(currentProfile.getTwitterUrl())) {
             System.out.println("TWITTER URL");
-            updatePropertiesMap.put("twitterUrl", newProfile.getTwitterUrl());
+            String newTwitterUrl = newProfile.getTwitterUrl().trim();
+            if (newTwitterUrl.isEmpty()) {
+                newTwitterUrl = null; // Allow Twitter URL to be set to null
+            }
+            updatePropertiesMap.put("twitterUrl", newTwitterUrl);
         }
+
         if (newProfile.getLinkedinUrl() != null && !newProfile.getLinkedinUrl().equals(currentProfile.getLinkedinUrl())) {
             System.out.println("LINKEDIN URL");
-            updatePropertiesMap.put("linkedinUrl", newProfile.getLinkedinUrl());
+            String newLinkedinUrl = newProfile.getLinkedinUrl().trim();
+            if (newLinkedinUrl.isEmpty()) {
+                newLinkedinUrl = null; // Allow LinkedIn URL to be set to null
+            }
+            updatePropertiesMap.put("linkedinUrl", newLinkedinUrl);
         }
+
         if (newProfile.getAbout() != null && !newProfile.getAbout().equals(currentProfile.getAbout())) {
             System.out.println("ABOUT ME");
-            updatePropertiesMap.put("about", newProfile.getAbout());
+            String newAbout = newProfile.getAbout().trim();
+            if (newAbout.isEmpty()) {
+                newAbout = null; // Allow about section to be set to null
+            }
+            updatePropertiesMap.put("about", newAbout);
         }
+
         if (newProfile.getSchool() != null && !newProfile.getSchool().equals(currentProfile.getSchool())) {
             System.out.println("SCHOOL");
-            updatePropertiesMap.put("school", newProfile.getSchool());
+            String newSchool = newProfile.getSchool().trim();
+            if (newSchool.isEmpty()) {
+                newSchool = null; // Allow school to be set to null
+            }
+            updatePropertiesMap.put("school", newSchool);
         }
-        if (newProfile.getLocation() != null && !newProfile.getLocation().equals(currentProfile.getLocation())) {
-            System.out.println("LOCATION");
-            updatePropertiesMap.put("location", newProfile.getLocation());
+
+        if (newProfile.getCity()!= null && !newProfile.getCity().equals(currentProfile.getCity())) {
+            System.out.println("CITY");
+            updatePropertiesMap.put("city", newProfile.getCity());
         }
-        if (newProfile.getCompany() != null && !newProfile.getCompany().equals(currentProfile.getCompany())) {
+
+        if (newProfile.getCountry()!= null && !newProfile.getCountry().equals(currentProfile.getCountry())) {
+            System.out.println("COUNTRY");
+            updatePropertiesMap.put("country", newProfile.getCountry());
+        }
+
+        if (newProfile.getCompanySlug() != null && !newProfile.getCompanySlug().equals(currentProfile.getCompanySlug())) {
             System.out.println("COMPANY");
-            updatePropertiesMap.put("company", newProfile.getCompany());
+            String companySlug = newProfile.getCompanySlug().trim();
+            if (companySlug.isEmpty()) {
+                companySlug = null; 
+            }else if (!companyService.isValidCompany(companySlug)) {
+                throw new IllegalArgumentException("Invalid company slug: " + companySlug);
+            }
+            updatePropertiesMap.put("companySlug", companySlug);
         }
+
         if (newProfile.getJobTitle() != null && !newProfile.getJobTitle().equals(currentProfile.getJobTitle())) {
             System.out.println("JOB TITLE");
+            String newJobTitle = newProfile.getJobTitle().trim();
+            if (newJobTitle.isEmpty()) {
+                newJobTitle = null;
+            }
             updatePropertiesMap.put("jobTitle", newProfile.getJobTitle());
         }
+
         if (newProfile.getSkillTags() != null && !Arrays.equals(newProfile.getSkillTags(), currentProfile.getSkillTags())) {
             System.out.println("SKILL TAGS");
             updatePropertiesMap.put("skillTags", newProfile.getSkillTags());
         }
-
-        Boolean profileUpdateStatus = false;
         
-        if (!updatePropertiesMap.isEmpty()){
-            profileUpdateStatus = userProfileRepository.updateUserProfile(username, updatePropertiesMap);
+        if (updatePropertiesMap.isEmpty()){
+            return false; // No updates to apply
         }
 
-        return profileUpdateStatus;
+        return userProfileRepository.updateUserProfile(username, updatePropertiesMap);
     }
 
     public void uploadUserProfilePicture(String username, byte[] imageFile) throws FileUploadFailureException{

@@ -40,17 +40,20 @@ public class UserRankService {
     private List<UserRankDto> ranks = null;
 
     private void loadAllRanks() {
-        ranks = userRankRepository.getAllRanks().stream().map(rank -> new UserRankDto(
-            rank.getRankName(),
-            rank.getMilestonePoints(),
-            URIUtils.createURI(ASSETS_DOMAIN, ASSET_BASE_PATH, rank.getRankBadgeId()).toString()
-        )).sorted(Comparator.comparing(UserRankDto::getMilestonePoints))
-        .collect(Collectors.toList());
+        if (ranks == null) {
+            ranks = userRankRepository.getAllRanks().stream().map(rank -> new UserRankDto(
+                rank.getRankName(),
+                rank.getMilestonePoints(),
+                URIUtils.createURI(ASSETS_DOMAIN, ASSET_BASE_PATH, rank.getRankBadgeId()).toString()
+            )).sorted(Comparator.comparing(UserRankDto::getMilestonePoints))
+            .collect(Collectors.toList());
+        }
     }
 
     public UserRankDto getInitialRank() {
         // Getting the first/rank with the least milestone points
         // Lazy loading of ranks
+        // CHECK WHAT WILL HAPPEN IF NO RANKS ARE THERE IN DB
         if (ranks == null) loadAllRanks();
         if (ranks.isEmpty()) throw new RuntimeException("No ranks found. Check database for rank availability"); 
         return ranks.get(0);

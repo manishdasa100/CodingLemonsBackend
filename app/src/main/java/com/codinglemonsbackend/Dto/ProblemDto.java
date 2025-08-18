@@ -68,7 +68,7 @@ public class ProblemDto implements Serializable {
     @NotEmpty
     private Set<Topic> topics;
 
-    private Set<Company> companies;
+    private Set<CompanyDto> companies;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer likes;

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
@@ -20,6 +21,7 @@ import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
+import com.codinglemonsbackend.Service.CompanyService;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -33,7 +35,7 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
     private TopicRepository topicRepository;
 
 
-    private CompanyRepository companyRepository;
+    private CompanyService companyService;
 
     @Override
     public ProblemDto deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
@@ -173,7 +175,7 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
         return topicRepository.getValidTags(topicSlugList);
     }
 
-    public Set<Company> extractCompanies(JsonNode node) {
+    public Set<CompanyDto> extractCompanies(JsonNode node) {
         if (!node.has("companySlugs") || !node.get("companySlugs").isArray()) {
             throw new IllegalArgumentException("Companies must be an array");
         }
@@ -187,7 +189,7 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
                 throw new IllegalArgumentException("Company slug not present");
             }
         }
-        return companyRepository.getValidTags(companySlugList);
+        return companyService.getValidTags(companySlugList);
     }
 
     public Map<ProgrammingLanguage, String> extractCodeSnippets(JsonNode node) {
