@@ -371,6 +371,12 @@ public class MainServiceImpl{
 
     public UserProfileDto getUserProfile(String username) {
         UserProfileDto userProfileDto = userProfileService.getUserProfile(username);
+        UserEntity currentlySignInUser = getCurrentlySignedInUser();
+        if (!currentlySignInUser.getUsername().equals(username)) {
+            userProfileDto.setProfileOwner(false);
+        } else {
+            userProfileDto.setProfileOwner(true);
+        }
         return userProfileDto;
     }
 

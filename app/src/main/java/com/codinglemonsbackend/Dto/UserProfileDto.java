@@ -30,20 +30,26 @@ import lombok.ToString;
             dependsOn = "jobTitle", 
             type = CrossFieldValidation.ValidationType.BOTH_OR_NEITHER,
             message = "Company slug and job title must be provided together"
+        ),
+        @CrossFieldValidation.FieldRule(
+            field = "country",
+            dependsOn = "city",
+            type = CrossFieldValidation.ValidationType.REQUIRED_IF_NOT_EMPTY,
+            message = "Country must be provided if city is specified"
         )
     }
 )
 public class UserProfileDto {
 
-    public static record Location(
-        @NotBlank(message = "City cannot be blank")
-        @Size(min = 2, message = "City name must have at least two characters")
-        String city,
+    // public static record Location(
+    //     @NotBlank(message = "City cannot be blank")
+    //     @Size(min = 2, message = "City name must have at least two characters")
+    //     String city,
         
-        @NotBlank(message = "Country cannot be blank")
-        @Size(min = 4, message = "Country name must have at least four characters")
-        String country
-    ) {}
+    //     @NotBlank(message = "Country cannot be blank")
+    //     @Size(min = 4, message = "Country name must have at least four characters")
+    //     String country
+    // ) {}
     
     @JsonProperty(access = Access.READ_ONLY)
     private String username;
@@ -79,8 +85,16 @@ public class UserProfileDto {
 
     private String school;
 
-    @Valid
-    private Location location;
+    // @Valid
+    // private Location location;
+
+    @Size(min = 2, max = 50, 
+    message = "City name must be between 2 and 50 characters")
+    private String city;
+
+    @Size(min = 4, max = 50, 
+    message = "Country name must be between 2 and 50 characters")
+    private String country;
 
     private String companySlug;
 
@@ -88,4 +102,7 @@ public class UserProfileDto {
     private String jobTitle;
 
     private SkillTags[] skillTags;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Boolean profileOwner;
 }

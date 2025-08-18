@@ -174,9 +174,14 @@ public class UserProfileService {
             updatePropertiesMap.put("school", newSchool);
         }
 
-        if (newProfile.getLocation() != null && !newProfile.getLocation().equals(currentProfile.getLocation())) {
-            System.out.println("LOCATION");
-            updatePropertiesMap.put("location", newProfile.getLocation());
+        if (newProfile.getCity()!= null && !newProfile.getCity().equals(currentProfile.getCity())) {
+            System.out.println("CITY");
+            updatePropertiesMap.put("city", newProfile.getCity());
+        }
+
+        if (newProfile.getCountry()!= null && !newProfile.getCountry().equals(currentProfile.getCountry())) {
+            System.out.println("COUNTRY");
+            updatePropertiesMap.put("country", newProfile.getCountry());
         }
 
         if (newProfile.getCompanySlug() != null && !newProfile.getCompanySlug().equals(currentProfile.getCompanySlug())) {
