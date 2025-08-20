@@ -24,6 +24,7 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
+import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -163,6 +164,12 @@ public class MainController {
         }
         CompanyDto companyDetails = mainService.getCompanyDetails(companySlug);
         return ResponseEntity.ok().body(companyDetails);
+    }
+
+    @GetMapping("/user/streak")
+    public ResponseEntity<UserStreakEntity> getUserStreak() {
+        UserStreakEntity userStreakEntity = mainService.getUserStreak();
+        return ResponseEntity.ok().body(userStreakEntity);
     }
  
 }

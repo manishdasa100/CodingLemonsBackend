@@ -34,6 +34,8 @@ public class UserStreakService {
         UserStreakEntity entity = new UserStreakEntity(
             event.getUser().getUsername(),
             0,
+            null,
+            0,
             null
         );
         repositoryService.saveUserStreak(entity);

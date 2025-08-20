@@ -31,6 +31,7 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
 import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -66,6 +67,9 @@ public class MainServiceImpl{
 
     @Autowired
     private UserProblemListRepositoryService userProblemListRepositoryService;
+
+    @Autowired
+    private UserStreakService userStreakService;
 
     @Autowired
     private SubmissionService submissionService;
@@ -382,6 +386,13 @@ public class MainServiceImpl{
 
     public CompanyDto getCompanyDetails(String companySlug) {
         return companyService.getCompanyDetailsBySlug(companySlug);
+    }
+
+    public UserStreakEntity getUserStreak() {
+        UserEntity currentSignedInUser = getCurrentlySignedInUser();
+        String username = currentSignedInUser.getUsername();
+        UserStreakEntity userStreakEntity = userStreakService.getStreak(username);
+        return userStreakEntity;
     }
  
 }
