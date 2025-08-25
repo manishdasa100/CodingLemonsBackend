@@ -22,8 +22,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.DatabaseSequence;

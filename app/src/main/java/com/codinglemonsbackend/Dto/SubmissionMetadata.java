@@ -15,7 +15,8 @@ public class SubmissionMetadata {
     
     private Integer problemId;
 
-    // private ProblemDto problemDto;
+    private Integer solutionPoints;
+
     private ProblemExecutionDetails executionDetails;
 
     private ProgrammingLanguage language;

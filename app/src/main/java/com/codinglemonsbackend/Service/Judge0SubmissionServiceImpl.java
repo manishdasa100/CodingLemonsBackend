@@ -2,7 +2,6 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
@@ -14,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Config.RabbitMQConfig;
-import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionDto;
@@ -52,13 +50,9 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
     @Override
     public SubmissionDto getSubmission(String submissionId) {
-        
         Optional<Submission> submissionEntity = submissionRepository.getSubmission(submissionId);
-
         if (submissionEntity.isEmpty()) throw new NoSuchElementException("No submission found for id "+submissionId);
-
         SubmissionDto submissionDto = modelMapper.map(submissionEntity.get(), SubmissionDto.class);
-        
         return submissionDto;
     }
 
@@ -195,8 +189,8 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
             Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
             .source_code(encodedSourceCode)
             .language_id(languageId)
-            .stdin(entry.getInput())
-            .expected_output(entry.getOutput())
+            .stdin(Base64.getEncoder().encodeToString(entry.getInput().getBytes()))
+            .expected_output(Base64.getEncoder().encodeToString(entry.getOutput().getBytes()))
             .cpu_time_limit(cpuTimeLimit)
             .memory_limit(memoryLimit)
             .stack_limit(stackLimit)
@@ -225,7 +219,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
             submissionJobId, 
             submissionMetadata.getUsername(), 
             submissionMetadata.getProblemId(), 
-            2,
+            submissionMetadata.getSolutionPoints(),
             isRunCode, 
             submissions
         );

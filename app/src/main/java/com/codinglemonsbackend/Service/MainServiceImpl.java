@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
@@ -262,15 +263,22 @@ public class MainServiceImpl{
          
     }
     public String submitCode(SubmitCodeRequestPayload payload) {
-
         ProblemDto problemDto = getProblem(payload.getProblemId());
-
         System.out.println("Problem status: " + problemDto.getStatus());
-
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
             return "Problem is not published";
         }
-
+        int solutionPoints = 1;
+        switch (problemDto.getDifficulty()) {
+            case MEDIUM:
+                solutionPoints = 2;
+                break;
+            case HARD:
+                solutionPoints = 3;
+                break;
+            default:
+                break;
+        }
         ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
                                                 .cpuTimeLimit(problemDto.getCpuTimeLimit())
                                                 .memoryLimit(problemDto.getMemoryLimit())
@@ -279,19 +287,16 @@ public class MainServiceImpl{
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemId(payload.getProblemId())
+                                                .solutionPoints(solutionPoints)
                                                 .executionDetails(executionDetails)
                                                 .language(payload.getLanguage())
                                                 .username(getCurrentlySignedInUser().getUsername())
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
                                                 .build();
-        
         String submissionJobId = submissionService.submitCode(submissionMetadata);
-
         redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionJobId, PendingOrdersStatus.QUEUED.toString(), -1);
-
         return submissionJobId;
-
     }
 
     public SubmissionResponsePayload<?> getSubmission(String submissionId) throws FailedSubmissionException {

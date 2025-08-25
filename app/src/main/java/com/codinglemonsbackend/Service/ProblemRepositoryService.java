@@ -20,9 +20,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
-import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;

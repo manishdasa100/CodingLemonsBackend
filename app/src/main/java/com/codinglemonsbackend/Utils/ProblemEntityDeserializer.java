@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
-import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Entities.Company;

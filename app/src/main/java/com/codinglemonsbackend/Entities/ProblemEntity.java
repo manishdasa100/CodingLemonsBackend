@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.codinglemonsbackend.Dto.Difficulty;
 import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 
