@@ -3,7 +3,6 @@ package com.codinglemonsbackend.Config;
 import java.io.IOException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,10 +31,6 @@ public class JwtAuthFilter extends OncePerRequestFilter{
     @Autowired
     private UserService userService;
 
-    @Autowired
-    @Qualifier("handlerExceptionResolver")
-    private HandlerExceptionResolver exceptionResolver;
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -48,20 +43,30 @@ public class JwtAuthFilter extends OncePerRequestFilter{
             jwt = authorizaitionHeader.substring(7);
             try{
                 userName = jwtUtils.extractUsername(jwt);
-                System.out.println("JWT AUTH FILTER ==> USERNAME = " + userName);
             }catch(ExpiredJwtException e){
-                // exceptionResolver.resolveException(request, response, null, e);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"JWT token has expired\",\"message\":\"Please login again\"}");
+                //publishUnauthorizedEvent(request, "JWT_EXPIRED");
+                return;
             } 
             catch (SignatureException e) {
-                // exceptionResolver.resolveException(request, response, null, e);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Invalid JWT signature\",\"message\":\"Token signature verification failed\"}");
+                //publishUnauthorizedEvent(request, "INVALID_SIGNATURE");
+                return;
             } 
             catch (Exception e) {
-                // exceptionResolver.resolveException(request, response, null, e);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"Invalid JWT token\",\"message\":\"Token processing failed\"}");
+                //publishUnauthorizedEvent(request, "JWT_PROCESSING_ERROR");
+                return;
             }
         }
 
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            System.out.println("User logging in");
             UserDetails userDetails = this.userService.loadUserByUsername(userName);
             if (jwtUtils.validateToken(jwt, userDetails, ((UserEntity)userDetails).getPasswordIssueDate())){
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
@@ -71,6 +76,12 @@ public class JwtAuthFilter extends OncePerRequestFilter{
                 );
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            } else {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\":\"JWT token has expired\",\"message\":\"Please login again\"}");
+                //OkaypublishUnauthorizedEvent(request, "TOKEN_VALIDATION_FAILED");
+                return;
             }
         }
         filterChain.doFilter(request, response);

@@ -31,6 +31,9 @@ public class SecurityConfigurer {
     private JwtAuthFilter jwtAuthFilter;
 
     @Autowired
+    private MetricsFilter metricsFilter;
+
+    @Autowired
     private JwtAuthenticationEntrypoint authenticationEntrypoint;
 
     @Bean
@@ -41,7 +44,8 @@ public class SecurityConfigurer {
             .sessionManagement((sessionManagement)-> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntrypoint))
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(metricsFilter, JwtAuthFilter.class);
         return http.build();
     }
 

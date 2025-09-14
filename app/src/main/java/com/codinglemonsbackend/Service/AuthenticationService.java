@@ -23,7 +23,12 @@ import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;
 import com.codinglemonsbackend.Utils.JwtUtils;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class AuthenticationService {
 
     @Autowired
@@ -40,6 +45,15 @@ public class AuthenticationService {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+
+    // @Autowired
+    // private MeterRegistry meterRegistry;
+
+    // @Autowired
+    // private Counter userRegistrationCounter;
+
+    // @Autowired
+    // private Counter userLoginCounter;
     
     public String registerUser(UserDto userDto, Boolean isAdmin) throws UserAlreadyExistException{
         
@@ -55,11 +69,16 @@ public class AuthenticationService {
 
         userService.saveUser(user);
 
+        // Track user registration metrics
+        // userRegistrationCounter.increment();
+        
         String jwtToken = jwtUtils.generateToken(user);
 
         UserAccountCreationEvent event = new UserAccountCreationEvent(this, user);
 
         eventPublisher.publishEvent(event);
+
+        log.info("User registered successfully: username={}, isAdmin={}", userDto.getUsername(), isAdmin);
 
         return jwtToken;
     }
@@ -71,11 +90,16 @@ public class AuthenticationService {
                 request.getPassword()
             ));
 
-        if (!authentication.isAuthenticated()) throw new BadCredentialsException("");
+        if (!authentication.isAuthenticated()) throw new BadCredentialsException("Username or password is incorrect");
 
         UserDetails user = userService.loadUserByUsername(request.getUsername());
 
+        // Track user login metrics
+        // userLoginCounter.increment();
+
         String jwtToken = jwtUtils.generateToken(user);
+
+        log.info("User logged in successfully: username={}", request.getUsername());
 
         return jwtToken;
     } 

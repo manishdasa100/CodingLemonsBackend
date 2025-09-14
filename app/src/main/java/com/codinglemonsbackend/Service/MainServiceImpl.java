@@ -49,6 +49,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 
 @Service
 @Slf4j
@@ -56,6 +58,15 @@ public class MainServiceImpl{
 
     private static final Integer MAX_PROBLEMSET_SIZE = 100;
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
+
+    @Autowired
+    private MeterRegistry meterRegistry;
+
+    @Autowired
+    private Counter codeExecutionCounter;
+
+    @Autowired
+    private Counter problemSubmissionCounter;
 
     @Autowired
     private LikeService likeService;
@@ -268,6 +279,18 @@ public class MainServiceImpl{
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
             return "Problem is not published";
         }
+        
+        // Track code execution metrics
+        if (payload.getIsRunCode()) {
+            codeExecutionCounter.increment();
+            log.info("Code execution tracked for user: {} problem: {}", 
+                    getCurrentlySignedInUser().getUsername(), payload.getProblemId());
+        } else {
+            problemSubmissionCounter.increment();
+            log.info("Problem submission tracked for user: {} problem: {}", 
+                    getCurrentlySignedInUser().getUsername(), payload.getProblemId());
+        }
+        
         int solutionPoints = 1;
         switch (problemDto.getDifficulty()) {
             case MEDIUM:

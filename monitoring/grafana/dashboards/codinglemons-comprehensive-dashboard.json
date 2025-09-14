@@ -1,0 +1,497 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CodingLemons - Comprehensive Monitoring Dashboard",
+    "tags": ["codinglemons", "metrics", "performance"],
+    "timezone": "UTC",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "User Engagement Metrics",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+        "collapsed": false
+      },
+      {
+        "id": 2,
+        "title": "User Registrations",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(user_registrations_total[5m])",
+            "legendFormat": "Registration Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "color": { "mode": "palette-classic" }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 }
+      },
+      {
+        "id": 3,
+        "title": "User Logins",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(user_logins_total[5m])",
+            "legendFormat": "Login Rate",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "color": { "mode": "palette-classic" }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 6, "y": 1 }
+      },
+      {
+        "id": 4,
+        "title": "Active Users",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "user_active_daily",
+            "legendFormat": "Daily Active Users",
+            "refId": "A"
+          },
+          {
+            "expr": "user_active_weekly",
+            "legendFormat": "Weekly Active Users",
+            "refId": "B"
+          },
+          {
+            "expr": "user_active_monthly",
+            "legendFormat": "Monthly Active Users",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 }
+      },
+      {
+        "id": 5,
+        "title": "Code Execution Volume",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(code_executions_total[5m])",
+            "legendFormat": "Code Executions/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(problem_submissions_total[5m])",
+            "legendFormat": "Problem Submissions/sec",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 9 }
+      },
+      {
+        "id": 6,
+        "title": "Application Performance",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
+        "collapsed": false
+      },
+      {
+        "id": 7,
+        "title": "API Response Times",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(api_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.75, rate(api_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "75th percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(api_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile",
+            "refId": "C"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(api_response_duration_seconds_bucket[5m]))",
+            "legendFormat": "99th percentile",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 }
+      },
+      {
+        "id": 8,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(api_requests_total[5m])",
+            "legendFormat": "{{endpoint}} {{method}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 }
+      },
+      {
+        "id": 9,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(api_errors_total[5m])",
+            "legendFormat": "{{status_code}} - {{endpoint}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(api_exceptions_total[5m])",
+            "legendFormat": "{{exception_type}} - {{endpoint}}",
+            "refId": "B"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 }
+      },
+      {
+        "id": 10,
+        "title": "API Throughput",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "api_throughput",
+            "legendFormat": "Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "color": { "mode": "palette-classic" }
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 }
+      },
+      {
+        "id": 11,
+        "title": "Database Performance",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
+        "collapsed": false
+      },
+      {
+        "id": 12,
+        "title": "Database Read/Write Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(database_read_duration_seconds_bucket[5m]))",
+            "legendFormat": "Read 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(database_write_duration_seconds_bucket[5m]))",
+            "legendFormat": "Write 95th percentile",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(database_read_duration_seconds_sum[5m]) / rate(database_read_duration_seconds_count[5m])",
+            "legendFormat": "Read Average",
+            "refId": "C"
+          },
+          {
+            "expr": "rate(database_write_duration_seconds_sum[5m]) / rate(database_write_duration_seconds_count[5m])",
+            "legendFormat": "Write Average",
+            "refId": "D"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 35 }
+      },
+      {
+        "id": 13,
+        "title": "S3 Performance",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
+        "collapsed": false
+      },
+      {
+        "id": 14,
+        "title": "S3 Upload Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(s3_upload_duration_seconds_bucket[5m]))",
+            "legendFormat": "Upload 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(s3_upload_duration_seconds_sum[5m]) / rate(s3_upload_duration_seconds_count[5m])",
+            "legendFormat": "Upload Average",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 }
+      },
+      {
+        "id": 15,
+        "title": "S3 Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(s3_uploads_total[5m])",
+            "legendFormat": "Uploads/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(s3_downloads_total[5m])",
+            "legendFormat": "Downloads/sec",
+            "refId": "B"
+          },
+          {
+            "expr": "rate(s3_deletes_total[5m])",
+            "legendFormat": "Deletes/sec",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 }
+      },
+      {
+        "id": 16,
+        "title": "S3 File Sizes",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(s3_upload_size_bytes_bucket[5m]))",
+            "legendFormat": "Upload Size 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(s3_upload_size_bytes_sum[5m]) / rate(s3_upload_size_bytes_count[5m])",
+            "legendFormat": "Upload Size Average",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 52 }
+      },
+      {
+        "id": 17,
+        "title": "RabbitMQ Performance",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 60 },
+        "collapsed": false
+      },
+      {
+        "id": 18,
+        "title": "Message Processing Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(rabbitmq_message_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "Processing 95th percentile",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rabbitmq_message_processing_duration_seconds_sum[5m]) / rate(rabbitmq_message_processing_duration_seconds_count[5m])",
+            "legendFormat": "Processing Average",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 61 }
+      },
+      {
+        "id": 19,
+        "title": "Message Throughput",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(rabbitmq_messages_published_total[5m])",
+            "legendFormat": "Published/sec",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(rabbitmq_messages_consumed_total[5m])",
+            "legendFormat": "Consumed/sec",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "msgps"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 61 }
+      },
+      {
+        "id": 20,
+        "title": "Queue Size",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rabbitmq_queue_size",
+            "legendFormat": "Messages in Queue",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 100 },
+                { "color": "red", "value": 1000 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 69 }
+      },
+      {
+        "id": 21,
+        "title": "Infrastructure Metrics",
+        "type": "row",
+        "gridPos": { "h": 1, "w": 24, "x": 0, "y": 77 },
+        "collapsed": false
+      },
+      {
+        "id": 22,
+        "title": "Health Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up",
+            "legendFormat": "Application Up",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "green", "value": 1 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 78 }
+      },
+      {
+        "id": 23,
+        "title": "Network I/O",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(system_network_input_bytes[5m])",
+            "legendFormat": "Network Input",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(system_network_output_bytes[5m])",
+            "legendFormat": "Network Output",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "Bps"
+          }
+        },
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 78 }
+      },
+      {
+        "id": 24,
+        "title": "Container Resources",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "container_cpu_usage_percent",
+            "legendFormat": "CPU Usage %",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_usage_bytes / 1024 / 1024",
+            "legendFormat": "Memory Usage MB",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 78 }
+      },
+      {
+        "id": 25,
+        "title": "JVM Metrics",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{area=\"heap\"} / 1024 / 1024",
+            "legendFormat": "Heap Memory MB",
+            "refId": "A"
+          },
+          {
+            "expr": "jvm_memory_used_bytes{area=\"nonheap\"} / 1024 / 1024",
+            "legendFormat": "Non-Heap Memory MB",
+            "refId": "B"
+          },
+          {
+            "expr": "jvm_threads_live_threads",
+            "legendFormat": "Live Threads",
+            "refId": "C"
+          }
+        ],
+        "gridPos": { "h": 8, "w": 24, "x": 0, "y": 86 }
+      }
+    ]
+  }
+}
