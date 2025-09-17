@@ -2,7 +2,6 @@ package com.codinglemonsbackend.Config;
 
 import io.micrometer.core.instrument.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.info.Info;
 import org.springframework.boot.actuate.info.InfoContributor;
 import org.springframework.context.annotation.Bean;
@@ -11,7 +10,11 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 
 // import com.codinglemonsbackend.Service.MetricsService;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +24,9 @@ public class MonitoringConfig {
 
     // @Autowired
     // private MetricsService metricsService;
+
+    @Autowired
+    private  MeterRegistry meterRegistry;
 
     @Bean
     public InfoContributor customInfoContributor() {
@@ -63,6 +69,57 @@ public class MonitoringConfig {
                 return Health.down()
                         .withDetail("error", e.getMessage())
                         .build();
+            }
+        };
+    }
+
+    @Bean("metricsFilter")
+    public Filter metricsFilter() {
+        return new Filter() {
+            @Override
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                    throws IOException, ServletException {
+
+                HttpServletRequest httpRequest = (HttpServletRequest) request;
+                HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+                // long startTime = System.currentTimeMillis();
+                try {
+                    chain.doFilter(request, response);
+                } finally {
+                    String method = httpRequest.getMethod();
+                    String pathPattern = getPathPattern(httpRequest);
+                    String status = String.valueOf(httpResponse.getStatus());
+
+                    Tags tags = Tags.of(
+                        "method", method,
+                        "path", pathPattern,
+                        "status", status
+                    );
+
+                    meterRegistry.counter("api.requests.count", tags).increment();
+                //     long duration = System.currentTimeMillis() - startTime;
+                //     // Here you can log the duration or send it to a monitoring system
+                //     System.out.println("Request processed in " + duration + " ms");
+                // }
+                }
+            }
+
+            private String getPathPattern(HttpServletRequest request) {
+                // For actuator endpoints, use the actual URI
+                String requestURI = request.getRequestURI();
+                if (requestURI.startsWith("/actuator/")) {
+                    return requestURI;
+                }
+                
+                // For application controller endpoints, use controller pattern if available
+                Object controllerPattern = request.getAttribute("CONTROLLER_PATTERN");
+                if (controllerPattern != null) {
+                    return controllerPattern.toString();
+                }
+                
+                // Fallback for requests without controller pattern (likely invalid JWT)
+                return "INVALID JWT";
             }
         };
     }
