@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 
-// import com.codinglemonsbackend.Service.MetricsService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

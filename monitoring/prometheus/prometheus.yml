@@ -12,12 +12,13 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'codinglemons-backend'
+  - job_name: 'codinglemons-backend-metrics'
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['host.docker.internal:3000']
     scrape_interval: 5s
     scrape_timeout: 5s
+  
 
   # - job_name: 'node-exporter'
   #   static_configs:

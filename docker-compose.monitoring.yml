@@ -51,6 +51,24 @@ services:
       - app_network
 
 
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.10.2
+    container_name: logstash
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+    volumes:
+      - ./monitoring/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./monitoring/logstash/pipeline:/usr/share/logstash/pipeline:ro
+    networks:
+      - app_network
+    depends_on:
+      - elasticsearch
+
   kibana:
     image: docker.elastic.co/kibana/kibana:7.10.2
     container_name: kibana

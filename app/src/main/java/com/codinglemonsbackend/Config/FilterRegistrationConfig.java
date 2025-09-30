@@ -16,9 +16,9 @@ public class FilterRegistrationConfig {
     @Qualifier("metricsFilter")
     private Filter metricsFilter;
 
-    @Autowired
-    @Qualifier("mdcFilter")
-    private Filter mdcFilter;
+    // @Autowired
+    // @Qualifier("mdcFilter")
+    // private Filter mdcFilter;
 
     @Bean
     public FilterRegistrationBean<Filter> metricsFilterRegistration() {
@@ -28,11 +28,11 @@ public class FilterRegistrationConfig {
         return registrationBean;
     }
 
-    @Bean
-    public FilterRegistrationBean<Filter> mdcFilterRegistration() {
-        FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(mdcFilter);
-        registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE + 2); // Run second
-        return registrationBean;
-    }
+    // @Bean
+    // public FilterRegistrationBean<Filter> mdcFilterRegistration() {
+    //     FilterRegistrationBean<Filter> registrationBean = new FilterRegistrationBean<>();
+    //     registrationBean.setFilter(mdcFilter);
+    //     registrationBean.setOrder(Ordered.HIGHEST_PRECEDENCE + 2); // Run second
+    //     return registrationBean;
+    // }
 }
