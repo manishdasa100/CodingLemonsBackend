@@ -316,6 +316,7 @@ public class MainServiceImpl{
                                                 .username(getCurrentlySignedInUser().getUsername())
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
+                                                .b64Encoded(payload.getB64Encoded())
                                                 .build();
         String submissionJobId = submissionService.submitCode(submissionMetadata);
         redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionJobId, PendingOrdersStatus.QUEUED.toString(), -1);

@@ -4,11 +4,14 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Config.RabbitMQConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.codinglemonsbackend.Dto.LikeEvent;
 import com.codinglemonsbackend.Entities.UserLike;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -25,7 +28,13 @@ public class LikeService {
     private RedisService redisService;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private SqsClient sqsClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Value("${aws.sqs.queue.like-events}")
+    private String likeEventsQueueUrl;
 
     /*
      * When this function is called
@@ -43,14 +52,24 @@ public class LikeService {
         System.out.println(String.format("User %s liked problem %d", username, problemId));
 
         LikeEvent likeEvent = new LikeEvent(
-            problemId, 
-            username,  
-            LocalDateTime.now(ZoneId.of("UTC")), 
+            problemId,
+            username,
+            LocalDateTime.now(ZoneId.of("UTC")),
             true
         );
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
-        
+        try {
+            String messageBody = objectMapper.writeValueAsString(likeEvent);
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(likeEventsQueueUrl)
+                    .messageBody(messageBody)
+                    .build();
+            sqsClient.sendMessage(sendMessageRequest);
+        } catch (Exception e) {
+            System.err.println("Error sending like event to SQS: " + e.getMessage());
+            throw new RuntimeException("Failed to send like event to queue", e);
+        }
+
         addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
     
@@ -69,14 +88,24 @@ public class LikeService {
 
         System.out.println(String.format("User %s has disliked problem %d", username, problemId));
 
-        LikeEvent likeEvent = new LikeEvent( 
-            problemId, 
-            username, 
-            LocalDateTime.now(ZoneId.of("UTC")), 
+        LikeEvent likeEvent = new LikeEvent(
+            problemId,
+            username,
+            LocalDateTime.now(ZoneId.of("UTC")),
             false
         );
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, RabbitMQConfig.LIKE_EVENTS, likeEvent);
+        try {
+            String messageBody = objectMapper.writeValueAsString(likeEvent);
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(likeEventsQueueUrl)
+                    .messageBody(messageBody)
+                    .build();
+            sqsClient.sendMessage(sendMessageRequest);
+        } catch (Exception e) {
+            System.err.println("Error sending dislike event to SQS: " + e.getMessage());
+            throw new RuntimeException("Failed to send dislike event to queue", e);
+        }
 
         addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }

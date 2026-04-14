@@ -34,13 +34,7 @@ dependencies {
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
-	// Redis dependencies
-	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-	// RabbitMQ dependency
-	implementation 'org.springframework.boot:spring-boot-starter-amqp'
 
 	// Reactive webflux dependency
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
@@ -83,6 +77,7 @@ dependencies {
 
 	//Cache
 	implementation 'org.springframework.boot:spring-boot-starter-cache'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
 	// Jackson JSR310 for LocalDateTime serialization
 	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
@@ -90,6 +85,7 @@ dependencies {
 	//AWS dependencies
 	implementation platform('software.amazon.awssdk:bom:2.21.1')
 	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:sqs'
 	implementation 'software.amazon.awssdk:sso'
     implementation 'software.amazon.awssdk:ssooidc'
 

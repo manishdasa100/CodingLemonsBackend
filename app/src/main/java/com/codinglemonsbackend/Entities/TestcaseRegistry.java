@@ -24,7 +24,7 @@ public class TestcaseRegistry {
     @Data
     public static class TestcasePair{
         private String input;
-        private String output;
+        private String expectedOutput;
     }
 
     @Id

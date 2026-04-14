@@ -1,6 +1,7 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <springProperty scope="context" name="appName" source="spring.application.name"/>
+    <springProperty scope="context" name="appVersion" source="application.version" defaultValue="unknown"/>
     <springProperty scope="context" name="logLevel" source="logging.level.root" defaultValue="INFO"/>
     <springProperty scope="context" name="logFilePath" source="logging.file.path" defaultValue="logs"/>
     <springProfile name="!prod">
@@ -10,31 +11,13 @@
         <springProperty scope="context" name="enableStructuredLogging" source="logging.structured" defaultValue="true"/>
     </springProfile>
 
-    <property name="LOG_FILE" value="${logFilePath}/${appName}.log"/>
+    <property name="LOG_FILE" value="${logFilePath}/${appName}"/>
     
-    <!-- Console appender with conditional structured logging -->
+    <!-- Console appender with human-readable format -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <if condition='property("enableStructuredLogging").equals("true")'>
-            <then>
-                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                    <includeContext>true</includeContext>
-                    <includeMdc>true</includeMdc>
-                    <customFields>{"service":"${appName}","version":"${application.version:-unknown}"}</customFields>
-                    <fieldNames>
-                        <timestamp>@timestamp</timestamp>
-                        <level>level</level>
-                        <thread>thread</thread>
-                        <logger>logger</logger>
-                        <message>message</message>
-                    </fieldNames>
-                </encoder>
-            </then>
-            <else>
-                <encoder>
-                    <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
-                </encoder>
-            </else>
-        </if>
+        <encoder>
+            <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+        </encoder>
     </appender>
 
     <!-- File appender with structured JSON logging -->
@@ -49,9 +32,8 @@
             <totalSizeCap>10GB</totalSizeCap>
         </rollingPolicy>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <includeContext>true</includeContext>
             <includeMdc>true</includeMdc>
-            <customFields>{"service":"${appName}","version":"${application.version:-unknown}"}</customFields>
+            <customFields>{"service":"${appName}","version":"${appVersion}"}</customFields>
             <fieldNames>
                 <timestamp>@timestamp</timestamp>
                 <level>level</level>

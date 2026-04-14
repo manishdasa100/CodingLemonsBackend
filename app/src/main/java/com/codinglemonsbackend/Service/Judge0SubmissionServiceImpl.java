@@ -8,11 +8,15 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Config.RabbitMQConfig;
+import com.codinglemonsbackend.Config.SQSConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionDto;
@@ -28,17 +32,22 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Service
-public class Judge0SubmissionServiceImpl implements SubmissionService{
+public class Judge0SubmissionServiceImpl extends SubmissionService{
 
     @Autowired
     private SubmissionRepository submissionRepository;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private SqsClient sqsClient;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Value("${aws.sqs.queue.pending-submissions}")
+    private String pendingSubmissionsQueueUrl;
 
     @Autowired
     private DriverCodeRepositoryService driverCodeRepositoryService;
@@ -48,12 +57,9 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
     private final Integer runCodeTestCaseCount = 2;
 
-    @Override
-    public SubmissionDto getSubmission(String submissionId) {
-        Optional<Submission> submissionEntity = submissionRepository.getSubmission(submissionId);
-        if (submissionEntity.isEmpty()) throw new NoSuchElementException("No submission found for id "+submissionId);
-        SubmissionDto submissionDto = modelMapper.map(submissionEntity.get(), SubmissionDto.class);
-        return submissionDto;
+    @Autowired
+    public Judge0SubmissionServiceImpl(SubmissionRepository submissionRepository, ModelMapper modelMapper) {
+        super(submissionRepository, modelMapper);
     }
 
     @Data
@@ -127,11 +133,21 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
         submissionMetadata.setSubmissionJobId(submissionJobId);
 
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, 
-            RabbitMQConfig.PENDING_SUBMISSIONS, 
-            createSubmissionJob(submissionMetadata)
-        );
-        
+        try {
+            SubmissionJob submissionJob = createSubmissionJob(submissionMetadata);
+            String messageBody = objectMapper.writeValueAsString(submissionJob);
+
+            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
+                    .queueUrl(pendingSubmissionsQueueUrl)
+                    .messageBody(messageBody)
+                    .build();
+
+            sqsClient.sendMessage(sendMessageRequest);
+        } catch (Exception e) {
+            System.err.println("Error sending message to SQS: " + e.getMessage());
+            throw new RuntimeException("Failed to send submission to queue", e);
+        }
+
         return submissionJobId;
     }
 
@@ -159,7 +175,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
         List<TestcasePair> testCases = testcaseRepositoryService.getRegistry(problemId)
                                         .get().getTestcases();
 
-        testCases.stream().forEach(e -> System.out.println("Input:" + e.getInput() + " , " + "output: "+ e.getOutput()));
+        testCases.stream().forEach(e -> System.out.println("Input:" + e.getInput() + " , " + "output: "+ e.getExpectedOutput()));
 
         String userCode = submissionMetadata.getUserCode();
 
@@ -190,7 +206,7 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
             .source_code(encodedSourceCode)
             .language_id(languageId)
             .stdin(Base64.getEncoder().encodeToString(entry.getInput().getBytes()))
-            .expected_output(Base64.getEncoder().encodeToString(entry.getOutput().getBytes()))
+            .expected_output(Base64.getEncoder().encodeToString(entry.getExpectedOutput().getBytes()))
             .cpu_time_limit(cpuTimeLimit)
             .memory_limit(memoryLimit)
             .stack_limit(stackLimit)
@@ -199,21 +215,6 @@ public class Judge0SubmissionServiceImpl implements SubmissionService{
 
             submissions.add(payload);
         });
-   
-        // for (int i = 0; i < testCases.size(); i++) {
-        //     Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
-        //     .source_code(Base64.getEncoder().encodeToString(sourceCode.getBytes()))
-        //     .language_id(languageId)
-        //     .stdin(Base64.getEncoder().encodeToString(testCases.get(i)..getBytes()))
-        //     .expected_output(Base64.getEncoder().encodeToString(testCaseOutputs.get(i).getBytes()))
-        //     .cpu_time_limit(cpuTimeLimit)
-        //     .memory_limit(memoryLimit)
-        //     .stack_limit(stackLimit)
-        //     .enable_network(false)
-        //     .build();
-
-        //     submissions.add(payload);
-        // }
 
         return new SubmissionJob(
             submissionJobId, 

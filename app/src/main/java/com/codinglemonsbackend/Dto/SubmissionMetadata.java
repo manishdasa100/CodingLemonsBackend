@@ -26,4 +26,6 @@ public class SubmissionMetadata {
     private String username;
 
     private Boolean isRunCode;
+
+    private Boolean b64Encoded;
 }

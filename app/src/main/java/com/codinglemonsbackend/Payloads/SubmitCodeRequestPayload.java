@@ -25,4 +25,7 @@ public class SubmitCodeRequestPayload {
 
     @NotNull
     private Boolean isRunCode;
+
+    @NotNull
+    private Boolean b64Encoded;
 }

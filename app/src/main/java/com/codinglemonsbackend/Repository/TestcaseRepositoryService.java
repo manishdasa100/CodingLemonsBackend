@@ -52,7 +52,7 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
         if (testcase.getInput() == null) {
             throw new IllegalArgumentException("Testcase input cannot be null");
         }
-        if (testcase.getOutput() == null) {
+        if (testcase.getExpectedOutput() == null) {
             throw new IllegalArgumentException("Testcase output cannot be null");
         }
     }
@@ -172,7 +172,7 @@ public class TestcaseRepositoryService implements IRegistryService<TestcaseRegis
             // Update existing testcases in-place
             currentTestcases.stream()
             .filter(testcasePair -> updatesMap.containsKey(testcasePair.getInput()))
-            .forEach(testcasePair -> testcasePair.setOutput(updatesMap.get(testcasePair.getInput()).getOutput()));
+            .forEach(testcasePair -> testcasePair.setExpectedOutput(updatesMap.get(testcasePair.getInput()).getExpectedOutput()));
             
 
             saveRegistry(testcaseRegistry);
