@@ -104,7 +104,7 @@ public class MainServiceImpl{
     @Autowired
     private ModelMapper modelMapper;
 
-    private final String PENDING_SUBMISSION_REDIS_KEY = "submissions:pending";
+    private final String PENDING_SUBMISSION_REDIS_KEY = "submission:report";
 
     public final String CODERUN_RESULTS = "coderun:results";
 
@@ -318,8 +318,10 @@ public class MainServiceImpl{
                                                 .isRunCode(payload.getIsRunCode())
                                                 .b64Encoded(payload.getB64Encoded())
                                                 .build();
+
         String submissionJobId = submissionService.submitCode(submissionMetadata);
-        redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY, submissionJobId, PendingOrdersStatus.QUEUED.toString(), -1);
+        System.out.println("Storing submission job id in redis with key: " + PENDING_SUBMISSION_REDIS_KEY + " and field: " + submissionJobId    );
+        redisService.storeValue(PENDING_SUBMISSION_REDIS_KEY + ":" + submissionJobId, PendingOrdersStatus.QUEUED.name(), 300);
         return submissionJobId;
     }
 
