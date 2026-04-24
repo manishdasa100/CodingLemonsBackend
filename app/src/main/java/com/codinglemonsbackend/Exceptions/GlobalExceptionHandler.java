@@ -58,11 +58,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ExceptionMessage> handleException(Exception e){
-        logError("GeneralException", e);
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("An internal server error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    // @ExceptionHandler(Exception.class)
+    // public ResponseEntity<ExceptionMessage> handleException(Exception e){
+    //     logError("GeneralException", e);
+    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("An internal server error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
+    // }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ExceptionMessage> handleIllegalArgumentException(IllegalArgumentException e) {

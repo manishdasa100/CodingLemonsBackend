@@ -2,9 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
@@ -12,16 +10,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Config.SQSConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+
+import com.codinglemonsbackend.Dto.ExecutionReportDto;
+import com.codinglemonsbackend.Dto.ExecutionStatus;
+import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
-import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
-import com.codinglemonsbackend.Entities.Submission;
+import com.codinglemonsbackend.Dto.TestcaseResult;
+import com.codinglemonsbackend.Dto.TestcaseStatus;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
 import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
@@ -32,6 +33,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+@Service
 public class Judge0SubmissionServiceImpl extends SubmissionService{
 
     @Autowired
@@ -125,7 +127,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
         return res;
     }*/
     @Override
-    public String submitCode(SubmissionMetadata submissionMetadata) {
+    public String queueSubmission(SubmissionMetadata submissionMetadata) {
 
         System.out.println("RECEIVED SUBMISSION FROM " + submissionMetadata.getUsername());
 
@@ -226,5 +228,129 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
         );
         
     }
-    
+
+    // -------------------------------------------------------------------------
+    // Raw response POJOs - field names must match what the Judge0 worker writes
+    // to Redis after aggregating all per-testcase Judge0 API responses.
+    // -------------------------------------------------------------------------
+
+    private record Judge0RawTestcaseResult(
+        int index,
+        int statusId,               // Judge0 status id (3=ACC, 4=WA, 5=TLE, 6=CE, 7-12=RE, 13+=IE)
+        String statusDescription,
+        String stdout,
+        String stderr,
+        String compile_output,
+        String time,                // seconds as string, e.g. "0.123"
+        Integer memory,             // KB
+        String input,
+        String expectedOutput
+    ) {}
+
+    private record Judge0ExecutionResult(
+        String jobId,
+        String language,
+        String task,
+        List<Judge0RawTestcaseResult> testcaseResults
+    ) {}
+
+    @Override
+    public ExecutionReportDto constructExecutionReport(String report) {
+        try {
+            Judge0ExecutionResult raw = objectMapper.readValue(report, Judge0ExecutionResult.class);
+
+            List<TestcaseResult> testcaseResults = raw.testcaseResults().stream()
+                    .map(r -> new TestcaseResult(
+                            r.index(),
+                            mapTestcaseStatus(r.statusId()),
+                            r.input(),
+                            r.expectedOutput(),
+                            r.stdout(),
+                            r.stdout(),
+                            r.stderr(),
+                            r.time() != null ? (int) (Float.parseFloat(r.time()) * 1000) : null,
+                            r.memory() != null ? r.memory() / 1024 : null,
+                            r.statusDescription()
+                    ))
+                    .toList();
+
+            // Compile error from any testcase (CE applies to all, so first is enough)
+            String compileError = raw.testcaseResults().stream()
+                    .map(Judge0RawTestcaseResult::compile_output)
+                    .filter(c -> c != null && !c.isBlank())
+                    .findFirst()
+                    .orElse(null);
+
+            // Overall status: compile error takes priority, then first non-ACC testcase
+            ExecutionStatus overallStatus;
+            if (compileError != null) {
+                overallStatus = ExecutionStatus.CE;
+            } else {
+                overallStatus = raw.testcaseResults().stream()
+                        .map(r -> mapOverallStatus(r.statusId()))
+                        .filter(s -> s != ExecutionStatus.ACC)
+                        .findFirst()
+                        .orElse(ExecutionStatus.ACC);
+            }
+
+            long totalCorrect = testcaseResults.stream()
+                    .filter(r -> r.status() == TestcaseStatus.PASSED)
+                    .count();
+
+            TestcaseResult firstFailed = testcaseResults.stream()
+                    .filter(r -> r.status() != TestcaseStatus.PASSED)
+                    .findFirst()
+                    .orElse(null);
+
+            TestcasePair failedTestcase = firstFailed != null
+                    ? new TestcasePair(firstFailed.input(), firstFailed.expectedOutput())
+                    : null;
+
+            // return new ExecutionReportDto(
+            //         raw.jobId(),
+            //         raw.language(),
+            //         raw.task(),
+            //         testcaseResults.size(),
+            //         (int) totalCorrect,
+            //         overallStatus,
+            //         overallStatus.getStatusMessage(),
+            //         testcaseResults,
+            //         failedTestcase,
+            //         compileError,
+            //         null,
+            //         null,
+            //         ExecutorWorkerType.JUDGE0_WORKER
+            // );
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse Judge0 execution report", e);
+        }
+    }
+
+    @Override
+    public ExecutorWorkerType getWorkerType() {
+        return ExecutorWorkerType.JUDGE0_WORKER;
+    }
+
+    // Judge0 status IDs: 3=ACC, 4=WA, 5=TLE, 6=CE, 7-12=RE, 13+=IE
+    private static ExecutionStatus mapOverallStatus(int statusId) {
+        return switch (statusId) {
+            case 3 -> ExecutionStatus.ACC;
+            case 4 -> ExecutionStatus.WA;
+            case 5 -> ExecutionStatus.TLE;
+            case 6 -> ExecutionStatus.CE;
+            case 7, 8, 9, 10, 11, 12 -> ExecutionStatus.RE;
+            default -> ExecutionStatus.IE;
+        };
+    }
+
+    private static TestcaseStatus mapTestcaseStatus(int statusId) {
+        return switch (statusId) {
+            case 3 -> TestcaseStatus.PASSED;
+            case 4 -> TestcaseStatus.FAILED;
+            case 5 -> TestcaseStatus.TIMEOUT;
+            case 7, 8, 9, 10, 11, 12 -> TestcaseStatus.RUNTIME_ERROR;
+            default -> TestcaseStatus.ERROR;
+        };
+    }
 }

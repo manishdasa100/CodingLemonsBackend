@@ -11,3 +11,6 @@ Code Submission UML.pdf
 app/src/test/
 
 app/logs/
+
+app/src/main/resources/application*.properties
+!app/src/main/resources/application-demo.properties

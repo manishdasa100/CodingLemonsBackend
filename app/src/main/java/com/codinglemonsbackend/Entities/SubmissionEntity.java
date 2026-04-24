@@ -1,12 +1,11 @@
 package com.codinglemonsbackend.Entities;
 
-import java.util.List;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
-import com.codinglemonsbackend.Dto.StatusMessage;
+import com.codinglemonsbackend.Dto.TestcaseResult;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,20 +17,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "Submissions")
-public class Submission {
+public class SubmissionEntity {
     @Id
     private String submissionId;
-    private List<String> submissionTokens;
     private String username;
     private Integer problemId;
     private ProgrammingLanguage language;
     private String userCode;
-    private Integer runtime;
+    private int runtimeMs;
+    private int memoryMb;
     private String dateOfSubmission;
     private Boolean runSucccess;
-    private String error;
     private Integer totalTestCases;
     private Integer totalCorrectOutput;
-    private String failedTestCase;
-    private StatusMessage statusMessage;
+    private TestcaseResult failedTestCase;
+    private ExecutionStatus status;
 }

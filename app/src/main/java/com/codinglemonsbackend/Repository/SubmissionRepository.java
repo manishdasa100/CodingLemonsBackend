@@ -6,9 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
-import com.codinglemonsbackend.Entities.Submission;
+import com.codinglemonsbackend.Entities.SubmissionEntity;
 
 @Repository
 public class SubmissionRepository {
@@ -16,18 +17,18 @@ public class SubmissionRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public String saveSubmission(Submission submission){
+    public String saveSubmission(@NonNull SubmissionEntity submission){
         
-        Submission savedSubmission = mongoTemplate.save(submission);
+        SubmissionEntity savedSubmission = mongoTemplate.save(submission);
 
         return savedSubmission.getSubmissionId();
     }
 
-    public Optional<Submission> getSubmission(String submissionId){
+    public Optional<SubmissionEntity> getSubmission(String submissionId){
 
         Query query = new Query(Criteria.where("submissionId").is(submissionId));
 
-        Submission submission = mongoTemplate.findOne(query, Submission.class);
+        SubmissionEntity submission = mongoTemplate.findOne(query, SubmissionEntity.class);
 
         return Optional.ofNullable(submission);
     }

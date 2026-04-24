@@ -17,15 +17,19 @@ import lombok.NoArgsConstructor;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SubmissionDto {
     
+    private String submissionId;
+    private String username;
     private Integer problemId;
     private ProgrammingLanguage language;
     private String userCode;
     private Integer runtime;
     private String dateOfSubmission;
     private Boolean runSucccess;
+    private int runtimeMs;
+    private int memoryMb;
     private String error;
     private Integer totalTestCases;
     private Integer totalCorrectOutput;
-    private String failedTestCase;
-    private StatusMessage statusMessage;
+    private TestcaseResult failedTestCase;
+    private ExecutionStatus status;
 }

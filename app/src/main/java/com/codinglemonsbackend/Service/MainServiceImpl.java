@@ -1,6 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,8 +17,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.codinglemonsbackend.Dto.CodeRunResultDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.ExecutionReportDto;
+import com.codinglemonsbackend.Dto.ExecutionStatus;
+import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
@@ -31,8 +32,10 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
+import com.codinglemonsbackend.Entities.SubmissionEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
+import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -45,6 +48,7 @@ import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +91,12 @@ public class MainServiceImpl{
     private SubmissionService submissionService;
 
     @Autowired
+    private SubmissionServiceRegistry submissionServiceRegistry;
+
+    @Autowired
+    private SubmissionRepository submissionRepository;
+
+    @Autowired
     private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired
@@ -104,9 +114,7 @@ public class MainServiceImpl{
     @Autowired
     private ModelMapper modelMapper;
 
-    private final String PENDING_SUBMISSION_REDIS_KEY = "submission:report";
-
-    public final String CODERUN_RESULTS = "coderun:results";
+    private final String PENDING_SUBMISSION_REDIS_KEY_PREFIX = "submission:report";
 
     private UserEntity getCurrentlySignedInUser(){
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -291,17 +299,6 @@ public class MainServiceImpl{
                     getCurrentlySignedInUser().getUsername(), payload.getProblemId());
         }
         
-        int solutionPoints = 1;
-        switch (problemDto.getDifficulty()) {
-            case MEDIUM:
-                solutionPoints = 2;
-                break;
-            case HARD:
-                solutionPoints = 3;
-                break;
-            default:
-                break;
-        }
         ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
                                                 .cpuTimeLimit(problemDto.getCpuTimeLimit())
                                                 .memoryLimit(problemDto.getMemoryLimit())
@@ -310,7 +307,7 @@ public class MainServiceImpl{
 
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemId(payload.getProblemId())
-                                                .solutionPoints(solutionPoints)
+                                                .solutionPoints(problemDto.getDifficulty().getPoints())
                                                 .executionDetails(executionDetails)
                                                 .language(payload.getLanguage())
                                                 .username(getCurrentlySignedInUser().getUsername())
@@ -319,42 +316,81 @@ public class MainServiceImpl{
                                                 .b64Encoded(payload.getB64Encoded())
                                                 .build();
 
-        String submissionJobId = submissionService.submitCode(submissionMetadata);
-        System.out.println("Storing submission job id in redis with key: " + PENDING_SUBMISSION_REDIS_KEY + " and field: " + submissionJobId    );
-        redisService.storeValue(PENDING_SUBMISSION_REDIS_KEY + ":" + submissionJobId, PendingOrdersStatus.QUEUED.name(), 300);
+        String submissionJobId = submissionService.queueSubmission(submissionMetadata);
+        log.info("Storing submission {} in Redis with key: {}", submissionJobId, PENDING_SUBMISSION_REDIS_KEY_PREFIX);
+
+        try {
+            String metadataJson = objectMapper.writeValueAsString(submissionMetadata);
+            redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "status", PendingOrdersStatus.QUEUED.name(), 3600);
+            redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "submissionMetadata", metadataJson, 3600);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize submission metadata for job {}", submissionJobId, e);
+            throw new RuntimeException("Failed to store submission metadata in Redis", e);
+        }
+
         return submissionJobId;
     }
 
-    public SubmissionResponsePayload<?> getSubmission(String submissionId) throws FailedSubmissionException {
+    public SubmissionResponsePayload check(String submissionJobId) {
+        
+        String redisKey = PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId;
 
-        // First check if the submission is present in redis hash, if yes then return the status as pending
-        // else search the database for the submission and return 
-
-        if (redisService.hashKeyExists(PENDING_SUBMISSION_REDIS_KEY, submissionId)) {
-            String status = redisService.getHashValue(PENDING_SUBMISSION_REDIS_KEY, submissionId);
-            if (status.equals(PendingOrdersStatus.FAILED.toString()) || status.equals(PendingOrdersStatus.HAULTED.toString())) {
-                redisService.deleteHashEntry(PENDING_SUBMISSION_REDIS_KEY, submissionId);
-                log.info("Submission {} for username {} {}", submissionId, getCurrentlySignedInUser(), status);
-                throw new FailedSubmissionException("Submission " + status);
-            } 
-            return new SubmissionResponsePayload<SubmissionDto>(status, null);
+        if (!redisService.keyExist(redisKey)) {
+            log.info("No pending submission found in Redis for id {}", submissionJobId);
+            throw new NoSuchElementException("No pending submission found for id " + submissionJobId);
         }
 
-        // Check if the submission is in code run hashc
-        if (redisService.hashKeyExists(CODERUN_RESULTS, submissionId)) {
-            String result = redisService.getHashValue(CODERUN_RESULTS, submissionId);
+        PendingOrdersStatus status = PendingOrdersStatus.valueOf(
+            redisService.getHashValue(redisKey, "status")
+        );
+
+        ExecutionReportDto executionReport = null;
+
+        if (status.equals(PendingOrdersStatus.COMPLETED)) {
+            // Read all required fields from Redis in one pass
+            String executionReportJson = redisService.getHashValue(redisKey, "executionReport");
+            String metadataJson        = redisService.getHashValue(redisKey, "submissionMetadata");
+            ExecutorWorkerType workerType = ExecutorWorkerType.valueOf(
+                redisService.getHashValue(redisKey, "workerType")
+            );
+
+            SubmissionMetadata submissionMetadata;
             try {
-                CodeRunResultDto codeRunResult = objectMapper.readValue(result, CodeRunResultDto.class);
-                redisService.deleteHashEntry(CODERUN_RESULTS, submissionId);
-                return new SubmissionResponsePayload<CodeRunResultDto>("Completed", codeRunResult);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }    
+                submissionMetadata = objectMapper.readValue(metadataJson, SubmissionMetadata.class);
+            } catch (JsonProcessingException e) {
+                log.error("Failed to deserialize submission metadata for job {}", submissionJobId, e);
+                throw new RuntimeException("Failed to read submission metadata from Redis", e);
+            }
+
+            // Route to the executor-specific service to normalize the raw report
+            executionReport = submissionServiceRegistry.getService(workerType)
+                                             .constructExecutionReport(executionReportJson);
+
+            // Persist submission to db for submit code
+            if (!submissionMetadata.getIsRunCode()) {
+                submissionService.saveSubmission(executionReport, submissionMetadata);
+                log.info("Persisted submission {} for user {}", submissionJobId,
+                        submissionMetadata.getUsername());
+            }
+            redisService.deleteKey(redisKey);
+            return new SubmissionResponsePayload(PendingOrdersStatus.COMPLETED, executionReport);
+
+        } else if(status.equals(PendingOrdersStatus.FAILED)){
+            ExecutorWorkerType workerType = ExecutorWorkerType.valueOf(
+                redisService.getHashValue(redisKey, "workerType")
+            );
+            log.error("Submission {} has failed. Worker type: {}", submissionJobId, workerType.name());
+            redisService.deleteKey(redisKey);
         }
+            
+        // QUEUED — tell the caller to poll again
+        return new SubmissionResponsePayload(status, null);
+    
+    }
 
+    public SubmissionDto getSubmission(String submissionId) throws FailedSubmissionException {
         SubmissionDto submissionDto = submissionService.getSubmission(submissionId);
-
-        return new SubmissionResponsePayload<SubmissionDto>("Completed", submissionDto);
+        return submissionDto;
     }
 
     public ProblemDto getProblemOfTheDay() {

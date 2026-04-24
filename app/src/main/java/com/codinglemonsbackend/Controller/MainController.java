@@ -121,11 +121,17 @@ public class MainController {
         return ResponseEntity.accepted().body(responsePayload);
     }
 
-    @GetMapping("/submission/get/{submissionId}")
-    public ResponseEntity<SubmissionResponsePayload<?>> getSubmission(@PathVariable String submissionId) throws FailedSubmissionException{
-        SubmissionResponsePayload<?> payload = mainService.getSubmission(submissionId);
-        return ResponseEntity.ok().body(payload);
+    @GetMapping("/submission/check/{submissionId}")
+    public ResponseEntity<SubmissionResponsePayload> check(@PathVariable String submissionId) {
+        SubmissionResponsePayload reponse = mainService.check(submissionId);
+        return ResponseEntity.accepted().body(reponse);
     }
+
+    // @GetMapping("/submission/get/{submissionId}")
+    // public ResponseEntity<SubmissionResponsePayload<?>> getSubmission(@PathVariable String submissionId) throws FailedSubmissionException{
+    //     SubmissionResponsePayload<?> payload = mainService.getSubmission(submissionId);
+    //     return ResponseEntity.ok().body(payload);
+    // }
 
     @GetMapping("/problem/today")
     public ResponseEntity<ProblemDto> getProblemOfTheDay(){

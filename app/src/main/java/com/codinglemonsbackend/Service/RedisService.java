@@ -89,4 +89,8 @@ public class RedisService {
     public Boolean isSetMember(String key, String value) {
         return setOperations.isMember(key, value);
     }
+
+    public void deleteKey(String key) {
+        redisTemplate.delete(key);
+    }
 }

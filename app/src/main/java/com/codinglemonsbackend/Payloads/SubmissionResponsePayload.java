@@ -1,7 +1,7 @@
 package com.codinglemonsbackend.Payloads;
 
-import com.codinglemonsbackend.Dto.SubmissionDto;
-import com.codinglemonsbackend.Entities.Submission;
+import com.codinglemonsbackend.Dto.ExecutionReportDto;
+import com.codinglemonsbackend.Service.PendingOrdersStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @JsonInclude(value = Include.NON_NULL)
-public class SubmissionResponsePayload<T> {
+public class SubmissionResponsePayload {
 
-    private String submissionStatus;
+    private PendingOrdersStatus submissionStatus;
 
-    private T submission;
+    private ExecutionReportDto executionReport;
 }
