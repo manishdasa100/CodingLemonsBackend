@@ -36,6 +36,7 @@ import com.codinglemonsbackend.Entities.SubmissionEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
+import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -139,7 +140,7 @@ public class MainServiceImpl{
         // ).getProblemIds();
     }
 
-    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companiesStr, Integer page, Integer size) {
+    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companysStr, Integer page, Integer size, Boolean isAdmin) {
 
         if (page < 0) page = 0;
         if (size <= 0) size = DEFAULT_PROBLEMSET_SIZE; 
@@ -147,8 +148,8 @@ public class MainServiceImpl{
 
         ProblemSet problemSet = null;
 
-        if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companiesStr)) problemSet = problemRepositoryService.getAllProblems(page, size);
-        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companiesStr, page, size);
+        if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companysStr)) problemSet = problemRepositoryService.getAllProblems(page, size, isAdmin);
+        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companysStr, page, size, isAdmin);
 
         List<ProblemDto> problemDtos = problemSet.getProblems();
 
@@ -227,7 +228,7 @@ public class MainServiceImpl{
     }
 
     public int addProblemToList(String listId, Set<Integer> problemIds) {
-        Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds))
+        Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds), false)
                                         .stream()
                                         .map(ProblemDto::getId)
                                         .collect(Collectors.toSet());
@@ -371,6 +372,7 @@ public class MainServiceImpl{
                 submissionService.saveSubmission(executionReport, submissionMetadata);
                 log.info("Persisted submission {} for user {}", submissionJobId,
                         submissionMetadata.getUsername());
+                eventPublisher.publishEvent(new SubmitCodeCompletedEvent(this, executionReport, submissionMetadata));
             }
             redisService.deleteKey(redisKey);
             return new SubmissionResponsePayload(PendingOrdersStatus.COMPLETED, executionReport);

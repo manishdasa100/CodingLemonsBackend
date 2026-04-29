@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
+import java.time.LocalDate;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,7 +18,7 @@ public class UserStreakEntity {
     @Id
     private String username;
     private Integer streakDays;
-    private String lastSubmissionDate;
+    private LocalDate lastSubmissionDate;
     private Integer highestStreakDays;
-    private String highestStreakDate; 
+    private LocalDate highestStreakDate; 
 }

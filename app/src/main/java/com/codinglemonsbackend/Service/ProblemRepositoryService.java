@@ -10,17 +10,21 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.EnumUtils;      
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemSet;
@@ -51,12 +55,12 @@ public class ProblemRepositoryService {
     private CompanyService companyService;
 
     @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
-    public ProblemSet getAllProblems(Integer page, Integer size) {
+    public ProblemSet getAllProblems(Integer page, Integer size, Boolean isAdmin) {
         System.out.println("CACHE MISS");
-        return problemsRepository.findAll(page, size);
+        return problemsRepository.getProblems(null, null, null, page, size, isAdmin);
     }
 
-    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size){
+    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size, Boolean isAdmin) {
         
         Difficulty[] difficulties = null;
 
@@ -87,7 +91,7 @@ public class ProblemRepositoryService {
                             .toArray(String[]::new);
         }
 
-        return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size);
+        return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size, isAdmin);
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
@@ -114,8 +118,8 @@ public class ProblemRepositoryService {
         return probEntity.get();
     }
 
-    public List<ProblemDto> getProblemsByIds(List<Integer> problemIds) {
-        List<ProblemEntity> probEntities = problemsRepository.getProblemsByIds(problemIds);
+    public List<ProblemDto> getProblemsByIds(List<Integer> problemIds, Boolean isAdmin) {
+        List<ProblemEntity> probEntities = problemsRepository.getProblemsByIds(problemIds, isAdmin);
         List<ProblemDto> problemDtos = probEntities.stream().map(probEntity -> modelMapper.map(probEntity, ProblemDto.class)).collect(Collectors.toList());
         return problemDtos;
     }
@@ -338,6 +342,14 @@ public class ProblemRepositoryService {
         }
 
         return problemsRepository.updateProblemProperties(problemId, validUpdates);
+    }
+
+    @Async("applicationAsyncExecutor")
+    @EventListener
+    public void onSubmitCodeCompleted(SubmitCodeCompletedEvent event) {
+        Integer problemId = event.getSubmissionMetadata().getProblemId();
+        boolean accepted = event.getExecutionReport().status() == ExecutionStatus.ACC;
+        problemsRepository.incrementProblemStats(problemId, accepted);
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)

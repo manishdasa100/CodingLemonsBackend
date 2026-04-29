@@ -49,6 +49,12 @@ public class UserProfileRepository {
     //     // }
     // }
 
+    public void incrementScore(String username, int points) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update().inc("score", points);
+        mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
+    }
+
     public boolean updateUserProfile(String username, Map<String, Object> updatePropertiesMap) {
        
         Query query = new Query(Criteria.where("username").is(username));

@@ -1,7 +1,5 @@
 package com.codinglemonsbackend.Service;
 
-import java.util.stream.IntStream;
-
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
@@ -14,6 +12,7 @@ import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
 import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TestcaseRepositoryService;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -193,6 +192,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String errorMessage
     ) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     private record NsjailExecutionReport(
         String executionId,
@@ -207,9 +207,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         List<NsjailTestcaseResult> testResults,
         NsjailTestcaseResult failedTestcase,  // Optional - can be null if all passed(only applicable for SUBMIT_CODE task)
         String compileError,
-        String runtimeError,
-        String internalError,
-        float createdAt
+        String runtimeError
     ) {}
 
     @Override
@@ -267,7 +265,6 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     .failedTestcase(failedTestcase)
                     .compileError(raw.compileError())
                     .runtimeError(raw.runtimeError())
-                    .internalError(raw.internalError())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse NSJAIL worker execution report", e);

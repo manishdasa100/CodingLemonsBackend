@@ -14,9 +14,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
+import com.codinglemonsbackend.Dto.ExecutionStatus;
+import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -77,13 +80,23 @@ public class UserProfileService {
 
     @Async("applicationAsyncExecutor")
     @EventListener
+    public void onSubmitCodeCompleted(SubmitCodeCompletedEvent event) {
+        if (event.getExecutionReport().status() != ExecutionStatus.ACC) return;
+        String username = event.getSubmissionMetadata().getUsername();
+        Integer points = event.getSubmissionMetadata().getSolutionPoints();
+        userProfileRepository.incrementScore(username, points);
+        log.info("Score updated for user {} by {} points", username, points);
+    }
+
+    @Async("applicationAsyncExecutor")
+    @EventListener
     public void createUserProfile(UserAccountCreationEvent event) {
         System.out.println("Received user account creation event");
-        UserEntity newUser = event.getUser();
+        UserDto newUser = event.getUser();
         createUserProfile(newUser);
     }
 
-    public void createUserProfile(UserEntity user) {
+    public void createUserProfile(UserDto user) {
         UserProfileEntity userProfileEntity = UserProfileEntity.builder()
                                                 .username(user.getUsername())
                                                 .firstName(user.getFirstName())
@@ -94,6 +107,7 @@ public class UserProfileService {
                                                 .build();
         userProfileRepository.saveUserProfile(userProfileEntity);
     }
+    
     public Boolean updateUserProfile(String username, UserProfileDto newProfile) {
 
         System.out.println("Received user profile update event");

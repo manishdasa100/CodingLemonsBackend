@@ -29,12 +29,6 @@ public class UserEntity implements UserDetails{
     @Id
     private String username;
 
-    private String firstName;
-
-    private String lastName;
-
-    private String email;
-
     private String password;
 
     private Date passwordIssueDate;

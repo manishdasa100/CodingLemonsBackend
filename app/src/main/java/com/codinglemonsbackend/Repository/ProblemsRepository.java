@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemSet;
+import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.DatabaseSequence;
 import com.codinglemonsbackend.Entities.ProblemEntity;
@@ -54,14 +55,13 @@ public class ProblemsRepository {
     //         ()->mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class)
     //     );
     // } 
-    public ProblemSet findAll(Integer page, Integer size) {
-       
-       System.out.println("CACHE MISS");
-       return getProblems(null, null, null, page, size);
-    } 
+    
+    // public ProblemSet findAll(Integer page, Integer size, Boolean isAdmin) {
+    //    return getProblems(null, null, null, page, size, isAdmin);
+    // } 
     
 
-    public ProblemSet getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size) {
+    public ProblemSet getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size, Boolean isAdmin) {
 
         List<ProblemEntity> filteredProblemSet;
 
@@ -76,10 +76,17 @@ public class ProblemsRepository {
         if (ArrayUtils.isNotEmpty(companySlugs)) {
             query.addCriteria(Criteria.where("companies.slug").in((Object[])companySlugs));
         }
+        
+        String[] fields = isAdmin
+                ? ArrayUtils.add(projectionFields, "status")
+                : projectionFields;
 
+        if (!isAdmin) {
+            query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+        }
         query.skip(page*size).limit(size);
-      
-        query.fields().include(projectionFields);
+
+        query.fields().include(fields);
 
         filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
 
@@ -119,20 +126,34 @@ public class ProblemsRepository {
         return Optional.ofNullable(mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getUniqueMappedResult());    
     }
 
-    public List<ProblemEntity> getProblemsByIds(List<Integer> ids) {
-        Query query = new Query(Criteria.where("id").in((Object[])ids.toArray()));
-        query.fields().include(projectionFields);
+    public List<ProblemEntity> getProblemsByIds(List<Integer> ids, Boolean isAdmin) {
+        Query query = new Query(Criteria.where("_id").in((Object[])ids.toArray()));
+        String[] fields = isAdmin
+                ? ArrayUtils.add(projectionFields, "status")
+                : projectionFields;
+
+        if (!isAdmin) {
+            query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+        }
+        query.fields().include(fields);
         List<ProblemEntity> problemEntities = mongoTemplate.find(query, ProblemEntity.class);
         return problemEntities;
     }
 
+    public void incrementProblemStats(Integer problemId, boolean accepted) {
+        Query query = new Query(Criteria.where("_id").is(problemId));
+        Update update = new Update().inc("submissionCount", 1);
+        if (accepted) update.inc("acceptedCount", 1);
+        mongoTemplate.updateFirst(query, update, ProblemEntity.class);
+    }
+
     public Boolean problemExists(Integer problemId) {
-        Query query = new Query(Criteria.where("id").is(problemId));
+        Query query = new Query(Criteria.where("_id").is(problemId));
         return mongoTemplate.exists(query, ProblemEntity.class);
     }
 
     public long updateProblemProperties(Integer id, Map<String, Object> updatePropertiesMap) {
-        Query query = new Query(Criteria.where("id").is(id));
+        Query query = new Query(Criteria.where("_id").is(id));
         Update update = new Update();
         updatePropertiesMap.entrySet().stream().forEach(e -> update.set(e.getKey(), e.getValue()));
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, ProblemEntity.class);
@@ -145,7 +166,7 @@ public class ProblemsRepository {
     }
 
     public DeleteResult removeProblemById(Integer id) {
-        Query query = new Query(Criteria.where("id").is(id));
+        Query query = new Query(Criteria.where("_id").is(id));
         return mongoTemplate.remove(query, ProblemEntity.class);
     }
 
@@ -153,7 +174,7 @@ public class ProblemsRepository {
     public void removeAllProblems() {
         mongoTemplate.dropCollection(ProblemEntity.ENTITY_COLLECTION_NAME);
         
-        Query query = new Query(Criteria.where("id").is(ProblemEntity.SEQUENCE_NAME));
+        Query query = new Query(Criteria.where("_id").is(ProblemEntity.SEQUENCE_NAME));
         mongoTemplate.remove(query, DatabaseSequence.class);
     }
 

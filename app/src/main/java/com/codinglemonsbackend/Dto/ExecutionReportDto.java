@@ -18,6 +18,5 @@ public record ExecutionReportDto(
     List<TestcaseResult> testcaseResults,
     TestcaseResult failedTestcase,
     String compileError,
-    String runtimeError,
-    String internalError
+    String runtimeError
 ) {}

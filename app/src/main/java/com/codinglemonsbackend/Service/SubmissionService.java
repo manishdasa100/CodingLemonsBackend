@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.time.LocalDate;
 import java.util.EnumSet;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -38,7 +39,7 @@ public abstract class SubmissionService {
                         .problemId(submissionMetadata.getProblemId())
                         .language(submissionMetadata.getLanguage())
                         .userCode(submissionMetadata.getUserCode())
-                        .dateOfSubmission(java.time.LocalDate.now().toString())
+                        .dateOfSubmission(LocalDate.now().toString())
                         .runSucccess(!EnumSet.of(ExecutionStatus.CE, ExecutionStatus.RE, ExecutionStatus.IE).contains(executionReport.status()))
                         .totalTestCases(executionReport.totalTestcases())
                         .totalCorrectOutput(executionReport.totalCorrect())

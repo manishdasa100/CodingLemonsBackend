@@ -59,9 +59,6 @@ public class AuthenticationService {
         
         UserEntity user = UserEntity.builder()
                             .username(userDto.getUsername())
-                            .firstName(userDto.getFirstName())
-                            .lastName(userDto.getLastName())
-                            .email(userDto.getEmail())
                             .password(passwordEncoder.encode(userDto.getPassword()))
                             .passwordIssueDate(new Date(System.currentTimeMillis()))
                             .role((isAdmin)?Role.ADMIN:Role.USER)
@@ -74,7 +71,7 @@ public class AuthenticationService {
         
         String jwtToken = jwtUtils.generateToken(user);
 
-        UserAccountCreationEvent event = new UserAccountCreationEvent(this, user);
+        UserAccountCreationEvent event = new UserAccountCreationEvent(this, userDto);
 
         eventPublisher.publishEvent(event);
 
