@@ -1,10 +1,7 @@
 package com.codinglemonsbackend.Service;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
+import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
@@ -24,8 +23,8 @@ import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
-import com.codinglemonsbackend.Repository.CompanyRepository;
-import com.codinglemonsbackend.Repository.IRegistryService;
+import com.codinglemonsbackend.Repository.DriverCodeRepository;
+import com.codinglemonsbackend.Repository.TestcaseRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
@@ -39,7 +38,10 @@ public class AdminServiceImpl {
     private ProblemRepositoryService problemRepositoryService;
 
     @Autowired
-    private RegistryServiceDispatcher registryServiceDispatcher;
+    private TestcaseRepository testcaseRepository;
+
+    @Autowired
+    private DriverCodeRepository driverCodeRepository;
 
     @Autowired
     private CompanyService companyService;
@@ -60,17 +62,7 @@ public class AdminServiceImpl {
     private ModelMapper moddModelMapper;
     
     public ProblemEntity addProblem(ProblemDto payload) throws Exception {
-        List<String> topicSlugs = payload.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toList());
-        Set<Topic> validTopics = topicRepository.getValidTags(topicSlugs);
-        if(validTopics.isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
-        
-        payload.setTopics(validTopics);
-
-        if (payload.getCompanies() != null) {
-            List<String> companySlugs = payload.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toList());
-            Set<CompanyDto> validCompanies = companyService.getValidTags(companySlugs);
-            payload.setCompanies(validCompanies);
-        }
+        if(payload.getTopics().isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
 
         ProblemEntity savedEntity =  problemRepositoryService.addProblem(payload);
 
@@ -125,35 +117,27 @@ public class AdminServiceImpl {
         return savedRank.getRankName();
     }
     
-    public RegistryOperationResult addItemsInRegistry(Integer problemId, Object data, String registryType) {
-        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        RegistryOperationResult result = registryService.addItemsInRegistry(problemId, data);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
-        return result;
-    }
-    
-    public RegistryOperationResult updateRegistry(String registryId, Object data, String registryType) {
-        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        RegistryOperationResult result = registryService.updateItemsInRegistry(registryId, data);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+    public RegistryOperationResult syncTestcases(Integer problemId, TestcaseRegistryDto dto) {
+        RegistryOperationResult result = testcaseRepository.syncItems(problemId, dto);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
         return result;
     }
 
-    public RegistryOperationResult removeItemFromRegistry(String registryId, Object data, String registryType) {
-        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        RegistryOperationResult result = registryService.removeItemFromRegistry(registryId, data);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+    public RegistryOperationResult deleteTestcaseRegistry(Integer problemId) {
+        RegistryOperationResult result = testcaseRepository.deleteByProblemId(problemId);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
         return result;
     }
 
-    public RegistryOperationResult deleteRegistry(String registryType, String registryId) {
-        IRegistryService<?> registryService = registryServiceDispatcher.getService(registryType);
-        RegistryOperationResult result = registryService.deleteRegistry(registryId);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, result.getProblemId()));
+    public RegistryOperationResult syncDriverCodes(Integer problemId, DriverCodeRegistryDto dto) {
+        RegistryOperationResult result = driverCodeRepository.syncItems(problemId, dto);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
         return result;
     }
 
-    public List<String> getSupportedRegistryTypes() {
-        return registryServiceDispatcher.getSupportedRegistryTypes();
+    public RegistryOperationResult deleteDriverCodeRegistry(Integer problemId) {
+        RegistryOperationResult result = driverCodeRepository.deleteByProblemId(problemId);
+        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
+        return result;
     }
 }

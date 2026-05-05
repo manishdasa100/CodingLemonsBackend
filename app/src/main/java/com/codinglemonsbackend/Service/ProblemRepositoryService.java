@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +28,7 @@ import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
+import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
@@ -54,18 +56,34 @@ public class ProblemRepositoryService {
     @Autowired
     private CompanyService companyService;
 
+    private ProblemSet toResolvedProblemSet(ProblemsPage page) {
+        List<ProblemDto> problemDtos = page.entities().stream().map(entity -> {
+            ProblemDto dto = modelMapper.map(entity, ProblemDto.class);
+            if (entity.getTopics() != null) {
+                Set<String> topicNames = topicRepository.getValidTags(entity.getTopics())
+                        .stream().map(t -> t.getName()).collect(Collectors.toSet());
+                dto.setTopics(topicNames);
+            }
+            if (entity.getCompanies() != null) {
+                Set<String> companyNames = companyService.getValidTags(entity.getCompanies())
+                        .stream().map(c -> c.getName()).collect(Collectors.toSet());
+                dto.setCompanies(companyNames);
+            }
+            return dto;
+        }).collect(Collectors.toList());
+        return new ProblemSet(page.total(), problemDtos);
+    }
+
     @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public ProblemSet getAllProblems(Integer page, Integer size, Boolean isAdmin) {
         System.out.println("CACHE MISS");
-        return problemsRepository.getProblems(null, null, null, page, size, isAdmin);
+        return toResolvedProblemSet(problemsRepository.getProblems(null, null, null, page, size, isAdmin));
     }
 
     public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size, Boolean isAdmin) {
-        
+
         Difficulty[] difficulties = null;
-
         String[] topicSlugs = null;
-
         String[] companySlugs = null;
 
         if (StringUtils.isNotBlank(difficultyStr)) {
@@ -91,16 +109,12 @@ public class ProblemRepositoryService {
                             .toArray(String[]::new);
         }
 
-        return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size, isAdmin);
+        return toResolvedProblemSet(problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size, isAdmin));
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public ProblemEntity addProblem(ProblemDto problemDto) throws Exception {
         ProblemEntity entity = modelMapper.map(problemDto, ProblemEntity.class);
-        Set<String> topicSlugs = problemDto.getTopics().stream().map(topic -> topic.getSlug()).collect(Collectors.toSet());
-        Set<String> companySlugs = problemDto.getCompanies().stream().map(company -> company.getSlug()).collect(Collectors.toSet());
-        entity.setTopicSlugs(topicSlugs);
-        entity.setCompanySlugs(companySlugs);
         ProblemEntity savedEntity = problemsRepository.addProblem(entity);
         return savedEntity;
     }
@@ -245,18 +259,18 @@ public class ProblemRepositoryService {
             }
         }
 
-        if (updatesMetadata.containsKey("topicSlugs")) {
-            Object topicsObj = updatesMetadata.get("topicSlugs");
+        if (updatesMetadata.containsKey("topics")) {
+            Object topicsObj = updatesMetadata.get("topics");
             if (topicsObj instanceof List<?>) {
                 List<?> topicsList = (List<?>) topicsObj;
                 if (!topicsList.isEmpty() && topicsList.stream().allMatch(item -> item instanceof String)) {
                     @SuppressWarnings("unchecked")
                     List<String> newTopics = (List<String>) topicsList;
-                    Set<Topic> newValidTopicTags = topicRepository.getValidTags(newTopics);
+                    Set<Topic> newValidTopicTags = topicRepository.getValidTags(new HashSet<>(newTopics));
                     if (newValidTopicTags.size() != newTopics.size()) {
                         throw new IllegalArgumentException("Invalid topic slugs. Some topics do not exist");
                     }
-                    validUpdates.put("topicSlugs", newValidTopicTags.stream().map(Topic::getSlug).collect(Collectors.toSet()));
+                    validUpdates.put("topics", newValidTopicTags.stream().map(Topic::getSlug).collect(Collectors.toSet()));
                 } else {
                     throw new IllegalArgumentException("Topics must be a non-empty set of strings");
                 }
@@ -265,18 +279,18 @@ public class ProblemRepositoryService {
             }
         }
 
-        if (updatesMetadata.containsKey("companySlugs")) {
-            Object companiesObj = updatesMetadata.get("companySlugs");
+        if (updatesMetadata.containsKey("companies")) {
+            Object companiesObj = updatesMetadata.get("companies");
             if (companiesObj instanceof List<?>) {
                 List<?> companiesList = (List<?>) companiesObj;
                 if (!companiesList.isEmpty() && companiesList.stream().allMatch(item -> item instanceof String)) {
                     @SuppressWarnings("unchecked")
                     List<String> newCompanies = (List<String>) companiesList;
-                    Set<CompanyDto> newValidCompanyTags = companyService.getValidTags(newCompanies);
+                    Set<CompanyDto> newValidCompanyTags = companyService.getValidTags(new HashSet<>(newCompanies));
                     if (newValidCompanyTags.size() != newCompanies.size()) {
                         throw new IllegalArgumentException("Invalid company slugs. Some companies do not exist");
                     }
-                    validUpdates.put("companySlugs", newValidCompanyTags.stream().map(CompanyDto::getSlug).collect(Collectors.toSet()));
+                    validUpdates.put("companies", newValidCompanyTags.stream().map(CompanyDto::getSlug).collect(Collectors.toSet()));
                 } else {
                     throw new IllegalArgumentException("Companies must be a non-empty set of strings");
                 }

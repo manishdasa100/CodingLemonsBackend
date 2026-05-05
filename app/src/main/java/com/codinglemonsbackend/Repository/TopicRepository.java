@@ -29,6 +29,8 @@ public class TopicRepository {
 
     public void addTopicTag(Topic topicTag) {
         mongoTemplate.save(topicTag);
+        boolean exists = this.topicTags.stream().anyMatch(t -> t.getSlug().equals(topicTag.getSlug()));
+        if (!exists) this.topicTags.add(topicTag);
     }
 
     public List<Topic> getAllTopicTags() {
@@ -41,7 +43,7 @@ public class TopicRepository {
         this.topicTags.removeIf(topicTag -> topicTag.getSlug().equals(slug));
     }
 
-    public Set<Topic> getValidTags(List<String> topicSlugs) {
+    public Set<Topic> getValidTags(Set<String> topicSlugs) {
         
         Set<Topic> matchingTags = this.topicTags.stream()
             .filter(topicTag -> topicSlugs.contains(topicTag.getSlug()))

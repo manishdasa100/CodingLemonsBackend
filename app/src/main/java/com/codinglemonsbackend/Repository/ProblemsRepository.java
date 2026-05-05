@@ -3,19 +3,16 @@ package com.codinglemonsbackend.Repository;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.bson.Document;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
-import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
-import org.springframework.data.mongodb.core.aggregation.VariableOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -24,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
-import com.codinglemonsbackend.Dto.ProblemSet;
+import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.DatabaseSequence;
@@ -39,16 +36,13 @@ public class ProblemsRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
-    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "likes"};
+    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "topics", "likes"};
 
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);
     //     Query query = new Query();
     //     query.with(pageable);
-
+    
     //     return PageableExecutionUtils.getPage(
     //         mongoTemplate.find(query, ProblemEntity.class, "problems"), 
     //         pageable, 
@@ -61,22 +55,20 @@ public class ProblemsRepository {
     // } 
     
 
-    public ProblemSet getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size, Boolean isAdmin) {
+    public ProblemsPage getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size, Boolean isAdmin) {
 
-        List<ProblemEntity> filteredProblemSet;
-
-        Query query = new Query(); 
+        Query query = new Query();
 
         if (ArrayUtils.isNotEmpty(difficulties)) {
             query.addCriteria(Criteria.where("difficulty").in((Object[])difficulties));
         }
         if (ArrayUtils.isNotEmpty(topicSlugs)) {
-            query.addCriteria(Criteria.where("topics.slug").in((Object[])topicSlugs));
+            query.addCriteria(Criteria.where("topics").in((Object[])topicSlugs));
         }
         if (ArrayUtils.isNotEmpty(companySlugs)) {
-            query.addCriteria(Criteria.where("companies.slug").in((Object[])companySlugs));
+            query.addCriteria(Criteria.where("companies").in((Object[])companySlugs));
         }
-        
+
         String[] fields = isAdmin
                 ? ArrayUtils.add(projectionFields, "status")
                 : projectionFields;
@@ -84,19 +76,15 @@ public class ProblemsRepository {
         if (!isAdmin) {
             query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
         }
-        query.skip(page*size).limit(size);
 
+        long total = mongoTemplate.count(query, ProblemEntity.class);
+
+        query.skip(page * size).limit(size);
         query.fields().include(fields);
 
-        filteredProblemSet = mongoTemplate.find(query, ProblemEntity.class);
+        List<ProblemEntity> entities = mongoTemplate.find(query, ProblemEntity.class);
 
-        List<ProblemDto> problemDtos = filteredProblemSet.stream().map(prob->modelMapper.map(prob, ProblemDto.class))
-                                                                    .collect(Collectors.toList());
-
-        return new ProblemSet(
-            mongoTemplate.count(query.skip(0).limit(0), ProblemEntity.class),
-            problemDtos
-        );
+        return new ProblemsPage(total, entities);
 
     }
     
@@ -106,21 +94,32 @@ public class ProblemsRepository {
         MatchOperation matchOperation = Aggregation.match(criteria);
 
         LookupOperation lookupOperation1 = LookupOperation.newLookup()
-                .from(Company.ENTITY_COLLECTION_NAME)                            
-                .localField("companySlugs")                    
-                .foreignField("slug")                          
-                .as("companies"); 
-    
+                .from(Company.ENTITY_COLLECTION_NAME)
+                .localField("companies")
+                .foreignField("slug")
+                .as("companies");
+
         LookupOperation lookupOperation2 = LookupOperation.newLookup()
-                .from(Topic.ENTITY_COLLECTION_NAME)                            
-                .localField("topicSlugs")                    
-                .foreignField("slug")                          
-                .as("topics"); 
+                .from(Topic.ENTITY_COLLECTION_NAME)
+                .localField("topics")
+                .foreignField("slug")
+                .as("topics");
+
+        AggregationOperation extractNames = ctx -> new Document("$set", new Document()
+                .append("topics", new Document("$map", new Document()
+                        .append("input", "$topics")
+                        .append("as", "t")
+                        .append("in", "$$t.name")))
+                .append("companies", new Document("$map", new Document()
+                        .append("input", "$companies")
+                        .append("as", "c")
+                        .append("in", "$$c.name"))));
 
         Aggregation aggregation = Aggregation.newAggregation(
             matchOperation,
             lookupOperation1,
-            lookupOperation2
+            lookupOperation2,
+            extractNames
         );
 
         return Optional.ofNullable(mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getUniqueMappedResult());    

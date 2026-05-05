@@ -40,8 +40,8 @@ public class ProblemEntity {
     private List<Example> examples;
     private Difficulty difficulty;
     private Map<ProgrammingLanguage, String> codeSnippets;
-    private Set<String> topicSlugs;
-    private Set<String> companySlugs;
+    private Set<String> topics;
+    private Set<String> companies;
     private Float cpuTimeLimit;
     private Float memoryLimit;
     private Integer stackLimit;

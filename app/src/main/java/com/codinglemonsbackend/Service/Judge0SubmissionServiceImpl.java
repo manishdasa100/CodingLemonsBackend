@@ -24,9 +24,9 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
-import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
+import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
-import com.codinglemonsbackend.Repository.TestcaseRepositoryService;
+import com.codinglemonsbackend.Repository.TestcaseRepository;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,10 +52,10 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
     private String pendingSubmissionsQueueUrl;
 
     @Autowired
-    private DriverCodeRepositoryService driverCodeRepositoryService;
+    private DriverCodeRepository driverCodeRepository;
 
     @Autowired
-    private TestcaseRepositoryService testcaseRepositoryService;
+    private TestcaseRepository testcaseRepository;
 
     private final Integer runCodeTestCaseCount = 2;
 
@@ -167,15 +167,17 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
 
-        String driverCode = driverCodeRepositoryService.getRegistry(problemId)
-                            .get().getDriverCodes().get(programmingLanguage);
+        String driverCode = driverCodeRepository.getByProblemId(problemId)
+                            .orElseThrow(() -> new IllegalArgumentException("Driver code registry not found for problem ID: " + problemId))
+                            .getDriverCodes().get(programmingLanguage);
 
         // Driver code for the given programming language may not be present or null
 
         System.out.println("Driver code: " + driverCode);
 
-        List<TestcasePair> testCases = testcaseRepositoryService.getRegistry(problemId)
-                                        .get().getTestcases();
+        List<TestcasePair> testCases = testcaseRepository.getByProblemId(problemId)
+                                        .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId))
+                                        .getTestcases();
 
         testCases.stream().forEach(e -> System.out.println("Input:" + e.getInput() + " , " + "output: "+ e.getExpectedOutput()));
 

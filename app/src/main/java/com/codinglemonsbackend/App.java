@@ -1,9 +1,11 @@
 package com.codinglemonsbackend;
 
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,11 +13,21 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.github.slugify.Slugify;
+import org.springframework.http.converter.json.SpringHandlerInstantiator;
 
 @SpringBootApplication
 @EnableCaching
 public class App {
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @Bean
+    public HandlerInstantiator springHandlerInstantiator() {
+        return new SpringHandlerInstantiator(applicationContext.getAutowireCapableBeanFactory());
+    }
 
     @Bean
     public RestTemplate getRestTemplate() {
@@ -37,7 +49,8 @@ public class App {
         ObjectMapper objectMapper =  new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        return objectMapper;  
+        objectMapper.setHandlerInstantiator(springHandlerInstantiator());
+        return objectMapper;
     }
 
     @Bean

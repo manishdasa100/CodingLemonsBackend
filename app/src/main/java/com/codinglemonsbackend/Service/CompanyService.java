@@ -72,7 +72,7 @@ public class CompanyService {
         return this.allCompanies.stream().anyMatch(company -> company.getSlug().equals(companySlug));
     }
 
-    public Set<CompanyDto> getValidTags(List<String> companySlugs) {
+    public Set<CompanyDto> getValidTags(Set<String> companySlugs) {
         if (this.allCompanies == null) loadAllCompanies();
         // Return the matching tags
         Set<CompanyDto> matchingCompanies = this.allCompanies.stream()

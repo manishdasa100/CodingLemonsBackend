@@ -1,5 +1,9 @@
 package com.codinglemonsbackend.Dto;
 
+import java.util.List;
+import java.util.Set;
+
+
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,24 +13,28 @@ import lombok.Setter;
 @AllArgsConstructor
 public class RegistryOperationResult {
     private Integer problemId;
-    private String registryId;
     private Boolean allItemsProcessed;
-    private String message;
+    private List<?> ignoredAdditions;
+    private List<?> ignoredUpdates;
+    private Set<String> ignoredDeletions;
 
     public Integer getProblemId() {
         return problemId;
-    }
-
-    public String getRegistryId() {
-        return registryId;
     }
 
     public Boolean isAllItemsProcessed() {
         return allItemsProcessed;
     }
 
-    public String getMessage() {
-        return message;
+    public List<?> getIgnoredAdditions() {
+        return ignoredAdditions;
     }
 
-} 
+    public List<?> getIgnoredUpdates() {
+        return ignoredUpdates;
+    }
+
+    public Set<String> getIgnoredDeletions() {
+        return ignoredDeletions;
+    }
+}

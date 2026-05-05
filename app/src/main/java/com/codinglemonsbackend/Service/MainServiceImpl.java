@@ -95,9 +95,6 @@ public class MainServiceImpl{
     private SubmissionServiceRegistry submissionServiceRegistry;
 
     @Autowired
-    private SubmissionRepository submissionRepository;
-
-    @Autowired
     private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired

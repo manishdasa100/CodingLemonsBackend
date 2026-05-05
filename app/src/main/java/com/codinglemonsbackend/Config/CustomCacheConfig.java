@@ -20,7 +20,6 @@ public class CustomCacheConfig {
     
     @Bean
     public CacheManager customCacheManager(RedisConnectionFactory redisConnectionFactory){
-        //return new ConcurrentMapCacheManager(DEFAULT_CACHE);
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                                                 .entryTtl(Duration.ofMinutes(30))
                                                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))

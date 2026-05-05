@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.codinglemonsbackend.Entities.Company;
-import com.codinglemonsbackend.Entities.Topic;
+import com.codinglemonsbackend.Utils.ProblemDtoDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -26,7 +26,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 //@JsonIgnoreProperties(value={"testCases", "testCaseOutputs", "driverCodes", "cpuTimeLimit", "memoryLimit", "stackLimit"}, allowSetters = true)
-// @JsonDeserialize(using=ProblemEntityDeserializer.class) 
+@JsonDeserialize(using=ProblemDtoDeserializer.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(value = Include.NON_NULL)
 public class ProblemDto implements Serializable {
@@ -82,9 +82,9 @@ public class ProblemDto implements Serializable {
     private Integer stackLimit;
     
     @NotEmpty
-    private Set<Topic> topics;
+    private Set<String> topics;
 
-    private Set<CompanyDto> companies;
+    private Set<String> companies;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Integer likes;

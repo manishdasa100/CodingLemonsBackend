@@ -1,25 +1,22 @@
 package com.codinglemonsbackend.Utils;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-
-import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
-import com.codinglemonsbackend.Entities.Company;
-import com.codinglemonsbackend.Entities.Topic;
-import com.codinglemonsbackend.Repository.CompanyRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Service.CompanyService;
 import com.fasterxml.jackson.core.JacksonException;
@@ -29,12 +26,13 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
+@Component
+public class ProblemDtoDeserializer extends JsonDeserializer<ProblemDto>{
 
- 
+    @Autowired
     private TopicRepository topicRepository;
 
-
+    @Autowired
     private CompanyService companyService;
 
     @Override
@@ -100,13 +98,13 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
         JsonNode examplesNode = node.get("examples");
         List<Example> examples = new ArrayList<>();
         for (JsonNode item : examplesNode) {
-            if (!item.has("input") || !item.has("output") || !item.has("explanation")) {
+            if (!item.has("input") || !item.has("output")) {
                 throw new IllegalArgumentException("Found invalid Example");
             }
             Example exampleItem = Example.builder()
                     .input(item.get("input").asText())
                     .output(item.get("output").asText())
-                    .explanation(item.get("explanation").asText())
+                    .explanation(item.has("explanation") ? item.get("explanation").asText() : null)
                     .build();
             examples.add(exampleItem);
         }
@@ -157,39 +155,42 @@ public class ProblemEntityDeserializer extends JsonDeserializer<ProblemDto>{
         return stackLimit;
     }
 
-    public Set<Topic> extractTopics(JsonNode node) {
-        if (!node.has("topicSlugs") || !node.get("topicSlugs").isArray()) {
+    public Set<String> extractTopics(JsonNode node) {
+        if (!node.has("topics") || !node.get("topics").isArray()) {
             throw new IllegalArgumentException("Topics must be an array");
         }
-        JsonNode topicSlugsNode = node.get("topicSlugs");
-        List<String> topicSlugList= new ArrayList<>();
-        for (JsonNode item : topicSlugsNode) {
+        Set<String> topicSlugs = new HashSet<>();
+        for (JsonNode item : node.get("topics")) {
             if (item.isTextual()) {
-                topicSlugList.add(item.asText());
+                topicSlugs.add(item.asText());
             } else if (item.has("slug") && item.get("slug").isTextual()) {
-                topicSlugList.add(item.get("slug").asText());
+                topicSlugs.add(item.get("slug").asText());
             } else {
                 throw new IllegalArgumentException("Topic slug not present");
             }
         }
-        return topicRepository.getValidTags(topicSlugList);
+        return topicRepository.getValidTags(topicSlugs).stream()
+                .map(t -> t.getSlug())
+                .collect(Collectors.toSet());
     }
 
-    public Set<CompanyDto> extractCompanies(JsonNode node) {
-        if (!node.has("companySlugs") || !node.get("companySlugs").isArray()) {
+    public Set<String> extractCompanies(JsonNode node) {
+        if (!node.has("companies") || !node.get("companies").isArray()) {
             throw new IllegalArgumentException("Companies must be an array");
         }
-        List<String> companySlugList = new ArrayList<>();
-        for (JsonNode item : node.get("companySlugs")) {
+        Set<String> companySlugs = new HashSet<>();
+        for (JsonNode item : node.get("companies")) {
             if (item.isTextual()) {
-                companySlugList.add(item.asText());
+                companySlugs.add(item.asText());
             } else if (item.has("slug") && item.get("slug").isTextual()) {
-                companySlugList.add(item.get("slug").asText());
+                companySlugs.add(item.get("slug").asText());
             } else {
                 throw new IllegalArgumentException("Company slug not present");
             }
         }
-        return companyService.getValidTags(companySlugList);
+        return companyService.getValidTags(companySlugs).stream()
+                .map(c -> c.getSlug())
+                .collect(Collectors.toSet());
     }
 
     public Map<ProgrammingLanguage, String> extractCodeSnippets(JsonNode node) {

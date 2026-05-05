@@ -2,34 +2,34 @@ package com.codinglemonsbackend.Events;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import com.codinglemonsbackend.Dto.ProblemStatus;
-import com.codinglemonsbackend.Entities.ProblemEntity;
-import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
+import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
-import com.codinglemonsbackend.Repository.TestcaseRepositoryService;
+import com.codinglemonsbackend.Repository.TestcaseRepository;
 
 import java.util.Collections;
-import java.util.Optional;
 
 @Component
 public class ProblemRegistryStatusListener {
 
     @Autowired
-    private DriverCodeRepositoryService driverCodeRepositoryService;
+    private DriverCodeRepository driverCodeRepository;
 
     @Autowired
-    private TestcaseRepositoryService testcaseRepositoryService;
+    private TestcaseRepository testcaseRepository;
 
     @Autowired
     private ProblemsRepository problemsRepository;
 
+    @Async("applicationTaskExecutor")
     @EventListener
     public void onProblemRegistryUpdated(ProblemRegistryUpdatedEvent event) {
         Integer problemId = event.getProblemId();
-        boolean hasDriverCode = driverCodeRepositoryService.getRegistry(problemId).isPresent();
-        boolean hasTestcases = testcaseRepositoryService.getRegistry(problemId).isPresent();
+        boolean hasDriverCode = driverCodeRepository.getByProblemId(problemId).isPresent();
+        boolean hasTestcases = testcaseRepository.getByProblemId(problemId).isPresent();
         ProblemStatus problemStatus = ProblemStatus.DRAFT;
         if (hasDriverCode && hasTestcases) {
             problemStatus = ProblemStatus.READY;

@@ -115,12 +115,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
-    @ExceptionHandler(RegistryConversionException.class)
-    public ResponseEntity<ExceptionMessage> handleRegistryConversionException(RegistryConversionException e) {
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
-    }
-
-    // // @ExceptionHandler(RedisConnectionFailureException.class)
+// // @ExceptionHandler(RedisConnectionFailureException.class)
     // // public ResponseEntity<ExceptionMessage> handleRedisConnectionFailureException(RedisConnectionFailureException e) {
     // //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
     // // }

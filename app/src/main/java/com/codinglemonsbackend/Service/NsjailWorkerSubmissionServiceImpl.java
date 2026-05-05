@@ -9,9 +9,9 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
-import com.codinglemonsbackend.Repository.DriverCodeRepositoryService;
+import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
-import com.codinglemonsbackend.Repository.TestcaseRepositoryService;
+import com.codinglemonsbackend.Repository.TestcaseRepository;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -40,9 +40,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
 
-    private final DriverCodeRepositoryService driverCodeRepositoryService;
+    private final DriverCodeRepository driverCodeRepository;
 
-    private final TestcaseRepositoryService testcaseRepositoryService;
+    private final TestcaseRepository testcaseRepository;
 
     private final SqsClient sqsClient;
 
@@ -56,16 +56,16 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
     public NsjailWorkerSubmissionServiceImpl(
         SubmissionRepository submissionRepository,
         ModelMapper modelMapper,
-        DriverCodeRepositoryService driverCodeRepositoryService,
-        TestcaseRepositoryService testcaseRepositoryService,
+        DriverCodeRepository driverCodeRepository,
+        TestcaseRepository testcaseRepository,
         SqsClient sqsClient,
         ObjectMapper objectMapper,
         @Value("${testcase.runcode.count}") Integer runCodeTestCaseCount,
         @Value("${aws.sqs.queue.pending-submissions}") String pendingSubmissionsQueueUrl
     ) {
         super(submissionRepository, modelMapper);
-        this.driverCodeRepositoryService = driverCodeRepositoryService;
-        this.testcaseRepositoryService = testcaseRepositoryService;
+        this.driverCodeRepository = driverCodeRepository;
+        this.testcaseRepository = testcaseRepository;
         this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
         this.runCodeTestCaseCount = runCodeTestCaseCount;
@@ -128,12 +128,12 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
         ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
 
-        String driverCode = driverCodeRepositoryService.getRegistry(problemId)
+        String driverCode = driverCodeRepository.getByProblemId(problemId)
                 .orElseThrow(() -> new IllegalArgumentException("Driver code registry not found for problem ID: " + problemId))
                 .getDriverCodes()
                 .get(programmingLanguage);
 
-        List<TestcasePair> testCases = testcaseRepositoryService.getRegistry(problemId)
+        List<TestcasePair> testCases = testcaseRepository.getByProblemId(problemId)
                 .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId))
                 .getTestcases();
 

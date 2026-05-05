@@ -9,7 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -20,11 +20,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
+import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
 import com.codinglemonsbackend.Dto.UserRankDto;
-import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -86,55 +87,42 @@ public class AdminController {
         return ResponseEntity.ok().body(result);
     }
 
-    @GetMapping("/registry/supported")
+    // --- Testcase endpoints ---
+
+    @PatchMapping("/problem/{problemId}/testcases")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<List<String>> getSupportedRegistryTypes() {
-        List<String> supportedRegistryTypes = adminService.getSupportedRegistryTypes();
-        return ResponseEntity.ok().body(supportedRegistryTypes);
+    public ResponseEntity<RegistryOperationResult> syncTestcases(
+        @PathVariable Integer problemId,
+        @RequestBody TestcaseRegistryDto dto)
+    {
+        return ResponseEntity.ok(adminService.syncTestcases(problemId, dto));
     }
 
-    @PostMapping("/registry/{registryType}/add/{problemId}")
+    @DeleteMapping("/problem/{problemId}/testcases")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<RegistryOperationResult> addItemsInRegistry(
-        @PathVariable String registryType,
-        @PathVariable Integer problemId, 
-        @RequestBody Object registryData) throws Exception
+    public ResponseEntity<RegistryOperationResult> deleteTestcaseRegistry(
+        @PathVariable Integer problemId)
     {
-        RegistryOperationResult response = adminService.addItemsInRegistry(problemId, registryData, registryType);
-        
-        return ResponseEntity.ok().body(response);
+        return ResponseEntity.ok(adminService.deleteTestcaseRegistry(problemId));
     }
 
-    @PutMapping("/registry/{registryType}/update/{registryId}")
+    // --- Driver code endpoints ---
+
+    @PatchMapping("/problem/{problemId}/driverCodes")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<RegistryOperationResult> updateItemsInRegistry(
-        @PathVariable String registryType,
-        @PathVariable String registryId, 
-        @RequestBody Object registryData) 
+    public ResponseEntity<RegistryOperationResult> syncDriverCodes(
+        @PathVariable Integer problemId,
+        @RequestBody DriverCodeRegistryDto dto)
     {
-        RegistryOperationResult result = adminService.updateRegistry(registryId, registryData, registryType);
-        return ResponseEntity.ok().body(result);
+        return ResponseEntity.ok(adminService.syncDriverCodes(problemId, dto));
     }
 
-    @DeleteMapping("/registry/{registryType}/removeItem/{registryId}")
+    @DeleteMapping("/problem/{problemId}/driverCodes")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<RegistryOperationResult> removeItemFromRegistry(
-        @PathVariable String registryType,
-        @PathVariable String registryId, 
-        @RequestBody Object registryData) 
+    public ResponseEntity<RegistryOperationResult> deleteDriverCodeRegistry(
+        @PathVariable Integer problemId)
     {
-        RegistryOperationResult result = adminService.removeItemFromRegistry(registryId, registryData, registryType);
-        return ResponseEntity.ok().body(result);
-    }
-
-    @DeleteMapping("/registry/{registryType}/delete/{registryId}")
-    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<RegistryOperationResult> deleteRegistry(
-        @PathVariable String registryType,
-        @PathVariable String registryId) 
-    {
-        RegistryOperationResult result = adminService.deleteRegistry(registryType, registryId);
-        return ResponseEntity.ok().body(result);    
+        return ResponseEntity.ok(adminService.deleteDriverCodeRegistry(problemId));
     }
 
 
