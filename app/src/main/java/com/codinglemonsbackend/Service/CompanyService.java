@@ -57,6 +57,11 @@ public class CompanyService {
         }
     }
 
+    public List<CompanyDto> getAllCompanies() {
+        if (this.allCompanies == null) loadAllCompanies();
+        return this.allCompanies;
+    }
+
     public CompanyDto getCompanyDetailsBySlug(String slug) {
         if (this.allCompanies == null) loadAllCompanies(); 
         try{

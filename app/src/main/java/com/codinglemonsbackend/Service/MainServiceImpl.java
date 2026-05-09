@@ -33,9 +33,11 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
 import com.codinglemonsbackend.Entities.SubmissionEntity;
+import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
+import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
@@ -99,6 +101,9 @@ public class MainServiceImpl{
 
     @Autowired
     private CompanyService companyService;
+
+    @Autowired
+    private TopicRepository topicRepository;
 
     @Autowired
     private RedisService redisService;
@@ -448,6 +453,14 @@ public class MainServiceImpl{
             userProfileDto.setProfileOwner(true);
         }
         return userProfileDto;
+    }
+
+    public List<Topic> getTopics() {
+        return topicRepository.getAllTopicTags();
+    }
+
+    public List<CompanyDto> getCompanies() {
+        return companyService.getAllCompanies();
     }
 
     public CompanyDto getCompanyDetails(String companySlug) {

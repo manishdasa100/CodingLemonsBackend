@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.List;
 
-import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Dto.ProblemDto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 

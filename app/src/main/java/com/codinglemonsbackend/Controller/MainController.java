@@ -26,6 +26,7 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.UserProfileDto;
+import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -166,6 +167,16 @@ public class MainController {
         }
         mainService.uploadUserProfilePicture(profilePictureImageFile);
         return ResponseEntity.ok().body("Profile picture uploaded successfully");
+    }
+
+    @GetMapping("/allTopics")
+    public ResponseEntity<List<Topic>> getTopics() {
+        return ResponseEntity.ok().body(mainService.getTopics());
+    }
+
+    @GetMapping("/allCompanies")
+    public ResponseEntity<List<CompanyDto>> getCompanies() {
+        return ResponseEntity.ok().body(mainService.getCompanies());
     }
 
     @GetMapping("/company/{companySlug}")

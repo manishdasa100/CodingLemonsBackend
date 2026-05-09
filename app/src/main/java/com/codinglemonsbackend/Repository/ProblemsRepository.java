@@ -36,7 +36,7 @@ public class ProblemsRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "topics", "likes"};
+    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "topics", "companies"};
 
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);

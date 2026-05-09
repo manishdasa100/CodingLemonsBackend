@@ -147,7 +147,7 @@ public class AdminController {
         return ResponseEntity.ok().body("Company tag created");
     }
 
-    @PostMapping("/topicTag/create")
+    @PostMapping("/topic/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<String> addTopicTag(@Valid @RequestBody Topic topicTag){
         adminService.createTopicTag(topicTag);

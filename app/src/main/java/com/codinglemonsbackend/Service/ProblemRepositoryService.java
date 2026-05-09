@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
-import com.codinglemonsbackend.Dto.Example;
+import com.codinglemonsbackend.Dto.ProblemDto.Example;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
@@ -74,7 +74,7 @@ public class ProblemRepositoryService {
         return new ProblemSet(page.total(), problemDtos);
     }
 
-    @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
+    @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE, condition = "!#isAdmin")
     public ProblemSet getAllProblems(Integer page, Integer size, Boolean isAdmin) {
         System.out.println("CACHE MISS");
         return toResolvedProblemSet(problemsRepository.getProblems(null, null, null, page, size, isAdmin));

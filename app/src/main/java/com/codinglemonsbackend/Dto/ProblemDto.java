@@ -31,6 +31,17 @@ import lombok.NoArgsConstructor;
 @JsonInclude(value = Include.NON_NULL)
 public class ProblemDto implements Serializable {
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    @JsonInclude(value = Include.NON_NULL)
+    public static class Example implements Serializable {
+        private String input;
+        private String output;
+        private String explanation;
+    }
+
     public enum Difficulty {
         EASY(1),
         MEDIUM(2),
