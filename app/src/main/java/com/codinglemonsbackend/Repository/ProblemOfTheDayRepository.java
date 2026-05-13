@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Repository;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -7,9 +9,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
-import com.codinglemonsbackend.Entities.ProblemOfTheDayMetadata;
-
-import java.util.Objects;
+import com.codinglemonsbackend.Entities.ProblemOfTheDayEntity;
 
 @Repository
 public class ProblemOfTheDayRepository {
@@ -17,31 +17,18 @@ public class ProblemOfTheDayRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public ProblemOfTheDayMetadata getProblemOfTheDayMetadata(){
+    public ProblemOfTheDayEntity getProblemOfTheDay(){
 
-        ProblemOfTheDayMetadata problemOfTheDayMetadata = mongoTemplate.findById(ProblemOfTheDayMetadata.ENTITY_NAME, ProblemOfTheDayMetadata.class);
+        ProblemOfTheDayEntity potd = mongoTemplate.findById(ProblemOfTheDayEntity.ENTITY_NAME, ProblemOfTheDayEntity.class);
 
-        return problemOfTheDayMetadata;
+        return potd;
     }
 
-    public void saveProblemOfTheDayMetadata(Integer problemId){
-
-        System.out.println("SAVING PROBLEM OF THE DAY WITH ID: " + problemId);
-
-        Query query = new Query(Criteria.where("id").is(ProblemOfTheDayMetadata.ENTITY_NAME));
-
-        ProblemOfTheDayMetadata metadata = mongoTemplate.findAndModify(query, new Update().set("problemId", problemId), ProblemOfTheDayMetadata.class);
-
-        if(Objects.isNull(metadata)) {
-
-            ProblemOfTheDayMetadata problemOfTheDayMetadata = new ProblemOfTheDayMetadata();
-            problemOfTheDayMetadata.setId(ProblemOfTheDayMetadata.ENTITY_NAME);
-            problemOfTheDayMetadata.setProblemId(problemId);
-
-            mongoTemplate.save(
-                problemOfTheDayMetadata, 
-                ProblemOfTheDayMetadata.ENTITY_NAME
-            );
-        } 
+    public void saveProblemOfTheDay(Integer problemId, List<Integer> history) {
+        Query query = new Query(Criteria.where("_id").is(ProblemOfTheDayEntity.ENTITY_NAME));
+        Update update = new Update()
+            .set("problemId", problemId)
+            .set("history", history);
+        mongoTemplate.upsert(query, update, ProblemOfTheDayEntity.class);
     }
 }

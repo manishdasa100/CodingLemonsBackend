@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,6 +14,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -36,7 +38,7 @@ public class ProblemsRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "topics", "companies"};
+    //private String[] projectionFields = {"title", "difficulty", "acceptedCount", "submissionCount", "topics", "companies"};
 
     // public Page<ProblemEntity> findAll(Integer page, Integer size) {
     //     Pageable pageable = PageRequest.of(page, size);
@@ -57,33 +59,77 @@ public class ProblemsRepository {
 
     public ProblemsPage getProblems(Difficulty[] difficulties, String[] topicSlugs, String[] companySlugs, int page, int size, Boolean isAdmin) {
 
-        Query query = new Query();
+        //Query query = new Query();
+
+        List<Criteria> criteriaList = new ArrayList<>();
 
         if (ArrayUtils.isNotEmpty(difficulties)) {
-            query.addCriteria(Criteria.where("difficulty").in((Object[])difficulties));
+            //query.addCriteria(Criteria.where("difficulty").in((Object[])difficulties));
+            criteriaList.add(Criteria.where("difficulty").in((Object[])difficulties));
         }
         if (ArrayUtils.isNotEmpty(topicSlugs)) {
-            query.addCriteria(Criteria.where("topics").in((Object[])topicSlugs));
+            //query.addCriteria(Criteria.where("topics").in((Object[])topicSlugs));
+            criteriaList.add(Criteria.where("topics").in((Object[])topicSlugs));
         }
         if (ArrayUtils.isNotEmpty(companySlugs)) {
-            query.addCriteria(Criteria.where("companies").in((Object[])companySlugs));
+            //query.addCriteria(Criteria.where("companies").in((Object[])companySlugs));
+            criteriaList.add(Criteria.where("companies").in((Object[])companySlugs));
         }
 
-        String[] fields = isAdmin
-                ? ArrayUtils.add(projectionFields, "status")
-                : projectionFields;
+        ProjectionOperation projectionOperation = Aggregation.project("title", "difficulty", "acceptedCount", "submissionCount", "topics", "companies");
 
-        if (!isAdmin) {
-            query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+        if (isAdmin) {
+            projectionOperation = projectionOperation.and("status").as("status");
+        } else {
+           // query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+            criteriaList.add(Criteria.where("status").is(ProblemStatus.PUBLISHED));
         }
 
-        long total = mongoTemplate.count(query, ProblemEntity.class);
+        Criteria combinedCriteria = criteriaList.isEmpty() ? new Criteria() : new Criteria().andOperator(criteriaList.toArray(new Criteria[0]));
 
-        query.skip(page * size).limit(size);
-        query.fields().include(fields);
+        MatchOperation matchOperation = Aggregation.match(combinedCriteria);
 
-        List<ProblemEntity> entities = mongoTemplate.find(query, ProblemEntity.class);
+        LookupOperation lookupCompanies = LookupOperation.newLookup()
+                .from(Company.ENTITY_COLLECTION_NAME)
+                .localField("companies")
+                .foreignField("slug")
+                .as("companies");
 
+        LookupOperation lookupTopics = LookupOperation.newLookup()
+                .from(Topic.ENTITY_COLLECTION_NAME)
+                .localField("topics")
+                .foreignField("slug")
+                .as("topics");
+
+        AggregationOperation extractNames = ctx -> new Document("$set", new Document()
+                .append("topics", new Document("$map", new Document()
+                        .append("input", "$topics")
+                        .append("as", "t")
+                        .append("in", "$$t.name")))
+                .append("companies", new Document("$map", new Document()
+                        .append("input", "$companies")
+                        .append("as", "c")
+                        .append("in", "$$c.name"))));
+
+                        
+        long total = mongoTemplate.count(new Query(combinedCriteria), ProblemEntity.class);
+        
+        // query.skip(page * size).limit(size);
+        // query.fields().include(fields);
+        
+        Aggregation aggregation = Aggregation.newAggregation(
+            matchOperation,
+            lookupCompanies,
+            lookupTopics,
+            extractNames,
+            projectionOperation,
+            Aggregation.skip((long) page * size),
+            Aggregation.limit(size)
+        );
+        //List<ProblemEntity> entities = mongoTemplate.find(query, ProblemEntity.class);
+
+        List<ProblemDto> entities = mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getMappedResults();
+        
         return new ProblemsPage(total, entities);
 
     }
@@ -125,18 +171,54 @@ public class ProblemsRepository {
         return Optional.ofNullable(mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getUniqueMappedResult());    
     }
 
-    public List<ProblemEntity> getProblemsByIds(List<Integer> ids, Boolean isAdmin) {
-        Query query = new Query(Criteria.where("_id").in((Object[])ids.toArray()));
-        String[] fields = isAdmin
-                ? ArrayUtils.add(projectionFields, "status")
-                : projectionFields;
+    public List<ProblemDto> getProblemsByIds(List<Integer> ids, Boolean isAdmin) {
+        
+        Criteria criteria = Criteria.where("_id").in((Object[])ids.toArray());
 
-        if (!isAdmin) {
-            query.addCriteria(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+        ProjectionOperation projectionOperation = Aggregation.project("title", "difficulty", "acceptedCount", "submissionCount", "topics", "companies");
+
+        if (isAdmin) {
+            projectionOperation = projectionOperation.and("status").as("status");
+        } else {
+            criteria.andOperator(Criteria.where("status").is(ProblemStatus.PUBLISHED));
         }
-        query.fields().include(fields);
-        List<ProblemEntity> problemEntities = mongoTemplate.find(query, ProblemEntity.class);
-        return problemEntities;
+        
+        MatchOperation matchOperation = Aggregation.match(criteria);
+
+        LookupOperation lookupCompanies = LookupOperation.newLookup()
+                .from(Company.ENTITY_COLLECTION_NAME)
+                .localField("companies")
+                .foreignField("slug")
+                .as("companies");
+
+        LookupOperation lookupTopics = LookupOperation.newLookup()
+                .from(Topic.ENTITY_COLLECTION_NAME)
+                .localField("topics")
+                .foreignField("slug")
+                .as("topics");
+
+        AggregationOperation extractNames = ctx -> new Document("$set", new Document()
+                .append("topics", new Document("$map", new Document()
+                        .append("input", "$topics")
+                        .append("as", "t")
+                        .append("in", "$$t.name")))
+                .append("companies", new Document("$map", new Document()
+                        .append("input", "$companies")
+                        .append("as", "c")
+                        .append("in", "$$c.name"))));
+
+        Aggregation aggregation = Aggregation.newAggregation(
+            matchOperation,
+            lookupCompanies,
+            lookupTopics,
+            extractNames,
+            projectionOperation
+        );
+        //List<ProblemEntity> entities = mongoTemplate.find(query, ProblemEntity.class);
+
+        List<ProblemDto> entities = mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class).getMappedResults();
+
+        return entities;
     }
 
     public void incrementProblemStats(Integer problemId, boolean accepted) {
@@ -192,6 +274,49 @@ public class ProblemsRepository {
 
     //     return updateResult.getModifiedCount();
     // }
+
+    public Optional<ProblemDto> getProblemSummaryById(Integer id) {
+        Aggregation aggregation = Aggregation.newAggregation(
+            Aggregation.match(Criteria.where("_id").is(id)),
+            LookupOperation.newLookup()
+                .from(Topic.ENTITY_COLLECTION_NAME)
+                .localField("topics")
+                .foreignField("slug")
+                .as("topics"),
+            ctx -> new Document("$set", new Document("topics", new Document("$map", new Document()
+                .append("input", "$topics")
+                .append("as", "t")
+                .append("in", "$$t.name")))),
+            Aggregation.project("title", "difficulty", "topics")
+        );
+        return Optional.ofNullable(
+            mongoTemplate.aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemDto.class)
+                         .getUniqueMappedResult()
+        );
+    }
+
+    public Optional<Integer> getRandomPublishedProblemId(List<Integer> excludeIds) {
+        Criteria criteria = Criteria.where("status").is(ProblemStatus.PUBLISHED);
+        if (excludeIds != null && !excludeIds.isEmpty()) {
+            criteria = criteria.and("_id").nin(excludeIds);
+        }
+
+        Aggregation aggregation = Aggregation.newAggregation(
+            Aggregation.match(criteria),
+            Aggregation.sample(1)
+        );
+
+        ProblemEntity result = mongoTemplate
+            .aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemEntity.class)
+            .getUniqueMappedResult();
+
+        return Optional.ofNullable(result).map(ProblemEntity::getId);
+    }
+
+    public boolean isPublishedProblem(Integer problemId) {
+        Query query = new Query(Criteria.where("_id").is(problemId).and("status").is(ProblemStatus.PUBLISHED));
+        return mongoTemplate.exists(query, ProblemEntity.class);
+    }
 
     public Optional<ProblemEntity> getLasEntity(){
 

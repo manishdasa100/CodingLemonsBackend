@@ -16,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.data.redis.RedisConnectionFailureException;
 
 import com.codinglemonsbackend.Payloads.ExceptionMessage;
 
@@ -58,11 +59,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
-    // @ExceptionHandler(Exception.class)
-    // public ResponseEntity<ExceptionMessage> handleException(Exception e){
-    //     logError("GeneralException", e);
-    //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("An internal server error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
-    // }
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ExceptionMessage> handleException(Exception e){
+        logError("GeneralException", e);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("An internal server error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ExceptionMessage> handleIllegalArgumentException(IllegalArgumentException e) {
@@ -115,10 +116,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
-// // @ExceptionHandler(RedisConnectionFailureException.class)
-    // // public ResponseEntity<ExceptionMessage> handleRedisConnectionFailureException(RedisConnectionFailureException e) {
-    // //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
-    // // }
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public ResponseEntity<ExceptionMessage> handleRedisConnectionFailureException(RedisConnectionFailureException e) {
+        logError("RedisConnectionFailure", e);
+        return new ResponseEntity<>(new ExceptionMessage("Service temporarily unavailable"), HttpStatus.SERVICE_UNAVAILABLE);
+    }
 
     // // @ExceptionHandler(DuplicateKeyException.class)
     // // public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {

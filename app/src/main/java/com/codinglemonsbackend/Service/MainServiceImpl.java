@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,8 +24,10 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemListDto;
+import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
+import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
@@ -142,49 +143,50 @@ public class MainServiceImpl{
         // ).getProblemIds();
     }
 
-    public ProblemSet getProblemSet(String difficultyStr, String topicsStr, String companysStr, Integer page, Integer size, Boolean isAdmin) {
+    public ProblemsPage getProblemSet(String difficultyStr, String topicsStr, String companysStr, Integer pageNo, Integer size, Boolean isAdmin) {
 
-        if (page < 0) page = 0;
+        if (pageNo < 0) pageNo = 0;
         if (size <= 0) size = DEFAULT_PROBLEMSET_SIZE; 
         if (size > MAX_PROBLEMSET_SIZE) size = MAX_PROBLEMSET_SIZE;
 
-        ProblemSet problemSet = null;
+        ProblemsPage problemPage = null;
 
-        if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companysStr)) problemSet = problemRepositoryService.getAllProblems(page, size, isAdmin);
-        else problemSet = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companysStr, page, size, isAdmin);
+        if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companysStr)) problemPage = problemRepositoryService.getAllProblems(pageNo, size, isAdmin);
+        else problemPage = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companysStr, pageNo, size, isAdmin);
 
-        List<ProblemDto> problemDtos = problemSet.getProblems();
+        List<Set<Integer>> acceptedAndAttempted = getAcceptedAndAttemptedProblemIdsOfUser();
+        Set<Integer> acceptedIds = acceptedAndAttempted.get(0);
+        Set<Integer> attemptedIds = acceptedAndAttempted.get(1);
 
-        List<ProblemDto> problemsWithStatus = problemDtos.stream().map((e) -> {
-            UserSubmissionStatus status = getUserSubmissionStatus(e.getId());
+        List<ProblemDto> problemsWithStatus = problemPage.entities().stream().map(e -> {
+            UserSubmissionStatus status;
+            if (acceptedIds.contains(e.getId())) status = UserSubmissionStatus.ACC;
+            else if (attemptedIds.contains(e.getId())) status = UserSubmissionStatus.ATT;
+            else status = UserSubmissionStatus.NATT;
             e.setUserSubmissionStatus(status);
             return e;
         }).collect(Collectors.toList());
 
-        problemSet.setProblems(problemsWithStatus);
-
-        return problemSet;
+        return new ProblemsPage(problemPage.total(), problemsWithStatus);
     }
 
     public ProblemDto getProblem(Integer id) {
         ProblemDto problemDto = problemRepositoryService.getProblemById(id);
 
-        UserSubmissionStatus status = getUserSubmissionStatus(id);
+        List<Set<Integer>> acceptedAndAttempted = getAcceptedAndAttemptedProblemIdsOfUser();
+        Set<Integer> acceptedIds = acceptedAndAttempted.get(0);
+        Set<Integer> attemptedIds = acceptedAndAttempted.get(1);
+
+        UserSubmissionStatus status;
+        if (acceptedIds.contains(problemDto.getId())) status = UserSubmissionStatus.ACC;
+        else if (attemptedIds.contains(problemDto.getId())) status = UserSubmissionStatus.ATT;
+        else status = UserSubmissionStatus.NATT;
+
         problemDto.setUserSubmissionStatus(status);
 
-        redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
+        //redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), Integer.toString(problemDto.getLikes()), 300);
 
         return problemDto;
-    }
-
-    private UserSubmissionStatus getUserSubmissionStatus(Integer problemId) {
-        List<Set<Integer>> acceptedAndAttemptedProblemIds = getAcceptedAndAttemptedProblemIdsOfUser();
-        Set<Integer> acceptedProblemIds = acceptedAndAttemptedProblemIds.get(0);
-        Set<Integer> attemptedProblemIds = acceptedAndAttemptedProblemIds.get(1);
-
-        if (acceptedProblemIds.contains(problemId)) return UserSubmissionStatus.ACC;
-        else if (attemptedProblemIds.contains(problemId)) return UserSubmissionStatus.ATT;
-        else return UserSubmissionStatus.NATT;
     }
     
     public LikesData getProblemLikesData(Integer id) {
@@ -397,13 +399,8 @@ public class MainServiceImpl{
         return submissionDto;
     }
 
-    public ProblemDto getProblemOfTheDay() {
-        
-        ProblemDto problemOfTheDay = problemOfTheDayService.getProblemOfTheDay();
-
-        if (Objects.isNull(problemOfTheDay)) throw new NoSuchElementException("Problem of the day not set");
-
-        return problemOfTheDay;
+    public ProblemOfTheDayDto getProblemOfTheDay() {
+        return problemOfTheDayService.getProblemOfTheDay();
     }
 
     public Boolean updateUserProfile(UserProfileDto newUserProfile) {

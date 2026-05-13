@@ -147,6 +147,13 @@ public class AdminController {
         return ResponseEntity.ok().body("Company tag created");
     }
 
+    @PutMapping("/potd/{problemId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> overrideProblemOfTheDay(@PathVariable Integer problemId) {
+        adminService.overrideProblemOfTheDay(problemId);
+        return ResponseEntity.ok().body("Problem of the day set to problem " + problemId);
+    }
+
     @PostMapping("/topic/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<String> addTopicTag(@Valid @RequestBody Topic topicTag){

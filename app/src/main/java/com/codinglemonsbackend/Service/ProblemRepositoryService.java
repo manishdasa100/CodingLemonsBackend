@@ -56,31 +56,13 @@ public class ProblemRepositoryService {
     @Autowired
     private CompanyService companyService;
 
-    private ProblemSet toResolvedProblemSet(ProblemsPage page) {
-        List<ProblemDto> problemDtos = page.entities().stream().map(entity -> {
-            ProblemDto dto = modelMapper.map(entity, ProblemDto.class);
-            if (entity.getTopics() != null) {
-                Set<String> topicNames = topicRepository.getValidTags(entity.getTopics())
-                        .stream().map(t -> t.getName()).collect(Collectors.toSet());
-                dto.setTopics(topicNames);
-            }
-            if (entity.getCompanies() != null) {
-                Set<String> companyNames = companyService.getValidTags(entity.getCompanies())
-                        .stream().map(c -> c.getName()).collect(Collectors.toSet());
-                dto.setCompanies(companyNames);
-            }
-            return dto;
-        }).collect(Collectors.toList());
-        return new ProblemSet(page.total(), problemDtos);
-    }
-
     @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE, condition = "!#isAdmin")
-    public ProblemSet getAllProblems(Integer page, Integer size, Boolean isAdmin) {
+    public ProblemsPage getAllProblems(Integer page, Integer size, Boolean isAdmin) {
         System.out.println("CACHE MISS");
-        return toResolvedProblemSet(problemsRepository.getProblems(null, null, null, page, size, isAdmin));
+        return problemsRepository.getProblems(null, null, null, page, size, isAdmin);
     }
 
-    public ProblemSet getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size, Boolean isAdmin) {
+    public ProblemsPage getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size, Boolean isAdmin) {
 
         Difficulty[] difficulties = null;
         String[] topicSlugs = null;
@@ -109,7 +91,7 @@ public class ProblemRepositoryService {
                             .toArray(String[]::new);
         }
 
-        return toResolvedProblemSet(problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size, isAdmin));
+        return problemsRepository.getProblems(difficulties, topicSlugs, companySlugs, page, size, isAdmin);
     }
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
@@ -133,9 +115,7 @@ public class ProblemRepositoryService {
     }
 
     public List<ProblemDto> getProblemsByIds(List<Integer> problemIds, Boolean isAdmin) {
-        List<ProblemEntity> probEntities = problemsRepository.getProblemsByIds(problemIds, isAdmin);
-        List<ProblemDto> problemDtos = probEntities.stream().map(probEntity -> modelMapper.map(probEntity, ProblemDto.class)).collect(Collectors.toList());
-        return problemDtos;
+        return problemsRepository.getProblemsByIds(problemIds, isAdmin);
     }
 
 
@@ -378,12 +358,5 @@ public class ProblemRepositoryService {
     public void removeAllProblems() {
         problemsRepository.removeAllProblems();
     }
-
-    // public ProblemSetResponse getFilteredProblems(String difficultyStr, String topics, int page, int size) {
-    //     String[] topicsArray = topics.trim().split(",");
-    //     Difficulty difficulty = Difficulty.valueOf(difficultyStr);
-    //     System.out.println(difficulty + "   " + Arrays.toString(topicsArray));
-    //     return problemsRepository.getFilteredProblems(difficulty, topicsArray, page, size);
-    // }
 
 }

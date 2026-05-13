@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -10,8 +12,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @Document(collection = "ProblemOfTheDay")
-public class ProblemOfTheDayMetadata {
-    
+public class ProblemOfTheDayEntity {
+
     @Transient
     public static final String ENTITY_NAME = "ProblemOfTheDay";
 
@@ -19,4 +21,6 @@ public class ProblemOfTheDayMetadata {
     private String id;
 
     private Integer problemId;
+
+    private List<Integer> history;
 }

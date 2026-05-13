@@ -24,7 +24,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
+import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
+import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
@@ -50,16 +52,13 @@ public class MainController {
     @Autowired
     private MainServiceImpl mainService;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
     @GetMapping("/hello")
     public String hello(){
         return "Hello";
     }
     
     @GetMapping("/problemset/all")
-    public ResponseEntity<ProblemSet> getProblemSet(@RequestParam Integer page, @RequestParam Integer size, 
+    public ResponseEntity<ProblemsPage> getProblemSet(@RequestParam Integer page, @RequestParam Integer size, 
                                             @RequestParam(name = "difficulties", required = false) String difficultyStr, @RequestParam(name = "topics", required = false) String topicsStr, @RequestParam(name = "companies", required = false) String companiesStr) {
         
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -140,8 +139,8 @@ public class MainController {
     // }
 
     @GetMapping("/problem/today")
-    public ResponseEntity<ProblemDto> getProblemOfTheDay(){
-        ProblemDto problemOfTheDay = mainService.getProblemOfTheDay();
+    public ResponseEntity<ProblemOfTheDayDto> getProblemOfTheDay(){
+        ProblemOfTheDayDto problemOfTheDay = mainService.getProblemOfTheDay();
         return ResponseEntity.ok().body(problemOfTheDay);
     }
 

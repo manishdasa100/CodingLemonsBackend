@@ -56,6 +56,9 @@ public class AdminServiceImpl {
     private Slugify slugify;
 
     @Autowired
+    private ProblemOfTheDayService problemOfTheDayService;
+
+    @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
     @Autowired
@@ -139,5 +142,9 @@ public class AdminServiceImpl {
         RegistryOperationResult result = driverCodeRepository.deleteByProblemId(problemId);
         applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
         return result;
+    }
+
+    public void overrideProblemOfTheDay(Integer problemId) {
+        problemOfTheDayService.overrideProblemOfTheDay(problemId);
     }
 }
