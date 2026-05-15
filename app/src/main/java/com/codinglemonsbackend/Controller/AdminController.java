@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Controller;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.BadgeDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
@@ -152,6 +155,35 @@ public class AdminController {
     public ResponseEntity<String> overrideProblemOfTheDay(@PathVariable Integer problemId) {
         adminService.overrideProblemOfTheDay(problemId);
         return ResponseEntity.ok().body("Problem of the day set to problem " + problemId);
+    }
+
+    // --- Badge endpoints ---
+
+    @PostMapping(value = "/badge/create", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<BadgeDto> createBadge(
+        @Valid @RequestPart BadgeDto badge,
+        @RequestPart MultipartFile badgeImageFile
+    ) throws FileUploadFailureException, IOException
+    {
+        if (!isValidImageFile(badgeImageFile.getOriginalFilename())) {
+            throw new IllegalArgumentException(String.format("Unsupported file extension for file %s. Please upload one of %s", badgeImageFile.getOriginalFilename(), "jpg, png, jpeg"));
+        }
+        BadgeDto created = adminService.createBadge(badge, badgeImageFile);
+        return ResponseEntity.ok(created);
+    }
+
+    @GetMapping("/badges")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<Map<String, List<BadgeDto>>> getAllBadges() {
+        return ResponseEntity.ok(adminService.getAllBadges());
+    }
+
+    @DeleteMapping("/badge/delete/{badgeId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> deleteBadge(@PathVariable String badgeId) {
+        adminService.deleteBadge(badgeId);
+        return ResponseEntity.ok("Badge " + badgeId + " deleted");
     }
 
     @PostMapping("/topic/create")

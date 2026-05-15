@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import org.modelmapper.ModelMapper;
@@ -9,6 +10,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.BadgeDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
@@ -57,6 +59,9 @@ public class AdminServiceImpl {
 
     @Autowired
     private ProblemOfTheDayService problemOfTheDayService;
+
+    @Autowired
+    private BadgeService badgeService;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -146,5 +151,18 @@ public class AdminServiceImpl {
 
     public void overrideProblemOfTheDay(Integer problemId) {
         problemOfTheDayService.overrideProblemOfTheDay(problemId);
+    }
+
+    public BadgeDto createBadge(BadgeDto badgeDto, MultipartFile badgeImageFile) throws IOException, FileUploadFailureException {
+        byte[] imageBytes = ImageUtils.resizeImage(badgeImageFile, ImageDimension.SQUARE_SMALL);
+        return badgeService.createBadge(badgeDto, imageBytes);
+    }
+
+    public Map<String, List<BadgeDto>> getAllBadges() {
+        return badgeService.getAllBadges();
+    }
+
+    public void deleteBadge(String badgeId) {
+        badgeService.deleteBadge(badgeId);
     }
 }

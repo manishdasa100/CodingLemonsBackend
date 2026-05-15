@@ -55,6 +55,12 @@ public class UserProfileRepository {
         mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
     }
 
+    public void addEarnedBadge(String username, String badgeId) {
+        Query query = new Query(Criteria.where("username").is(username));
+        Update update = new Update().addToSet("earnedBadgeIds", badgeId);
+        mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
+    }
+
     public boolean updateUserProfile(String username, Map<String, Object> updatePropertiesMap) {
        
         Query query = new Query(Criteria.where("username").is(username));

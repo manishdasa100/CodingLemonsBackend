@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
@@ -192,5 +193,10 @@ public class MainController {
         UserStreakEntity userStreakEntity = mainService.getUserStreak();
         return ResponseEntity.ok().body(userStreakEntity);
     }
- 
+
+    @GetMapping("/user/{username}/badges")
+    public ResponseEntity<Map<String, List<EarnedBadgeDto>>> getUserBadges(@PathVariable String username) {
+        return ResponseEntity.ok(mainService.getUserBadges(username));
+    }
+
 }

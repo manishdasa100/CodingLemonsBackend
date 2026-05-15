@@ -16,7 +16,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.BadgeDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
+import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
@@ -39,6 +41,7 @@ import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
+import com.codinglemonsbackend.Repository.UserProfileRepository;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
@@ -101,10 +104,16 @@ public class MainServiceImpl{
     private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired
+    private BadgeService badgeService;
+
+    @Autowired
     private CompanyService companyService;
 
     @Autowired
     private TopicRepository topicRepository;
+
+    @Autowired
+    private UserProfileRepository userProfileRepository;
 
     @Autowired
     private RedisService redisService;
@@ -458,6 +467,13 @@ public class MainServiceImpl{
 
     public List<CompanyDto> getCompanies() {
         return companyService.getAllCompanies();
+    }
+
+    public Map<String, List<EarnedBadgeDto>> getUserBadges(String username) {
+        List<String> earnedBadgeIds = userProfileRepository.getUserProfile(username)
+                .map(p -> p.getEarnedBadgeIds())
+                .orElse(List.of());
+        return badgeService.getEarnedBadges(earnedBadgeIds);
     }
 
     public CompanyDto getCompanyDetails(String companySlug) {

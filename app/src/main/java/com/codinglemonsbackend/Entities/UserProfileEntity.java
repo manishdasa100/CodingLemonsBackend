@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.List;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -51,4 +53,6 @@ public class UserProfileEntity {
     private String jobTitle;
 
     private SkillTags[] skillTags;
+
+    private List<String> earnedBadgeIds;
 }

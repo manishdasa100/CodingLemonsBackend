@@ -5,11 +5,13 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Entities.UserStreakEntity;
+import com.codinglemonsbackend.Events.StreakUpdatedEvent;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Repository.UserStreakRepositoryService;
@@ -19,6 +21,9 @@ public class UserStreakService {
 
     @Autowired
     private UserStreakRepositoryService repositoryService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     public UserStreakEntity getStreak(String username) {
         UserStreakEntity streak = repositoryService.getUserStreak(username)
@@ -49,6 +54,7 @@ public class UserStreakService {
         }
 
         repositoryService.saveUserStreak(streak);
+        eventPublisher.publishEvent(new StreakUpdatedEvent(this, username, newStreakDays));
     }
 
     @Async("applicationAsyncExecutor")

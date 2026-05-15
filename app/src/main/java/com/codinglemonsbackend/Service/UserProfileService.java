@@ -261,4 +261,12 @@ public class UserProfileService {
 
     }
 
+    private String buildImageUrl(String imageId) {
+        return URIUtils.createURI(
+            ASSETS_DOMAIN, 
+            ASSETS_BASE_PATH, 
+            "default", 
+            imageId).toString();
+    }
+
 }
