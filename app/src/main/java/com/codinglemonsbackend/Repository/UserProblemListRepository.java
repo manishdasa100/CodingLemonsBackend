@@ -38,9 +38,19 @@ import com.mongodb.client.result.DeleteResult;
 
 @Repository
 public class UserProblemListRepository {
-    
+
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    public void saveProblemList(ProblemListEntity problemList) throws DuplicateResourceException{
+        try{
+            mongoTemplate.save(problemList);
+        } catch(DuplicateKeyException e) {
+            throw new DuplicateResourceException("Problem list with same name already exists");
+        } catch(Exception e) {
+            throw e;
+        }
+    }
 
     public Optional<ProblemListDto> getUserProblemListDetails(String creator, String name){
 
@@ -108,7 +118,7 @@ public class UserProblemListRepository {
 
     public List<ProblemListEntity> getAllProblemListsOfUser(String username){
 
-        UserEntity signedInUser= (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Criteria criteria = Criteria.where("creator").is(username);
 
@@ -124,16 +134,6 @@ public class UserProblemListRepository {
         List<ProblemListEntity> problemListEntities = mongoTemplate.find(query, ProblemListEntity.class);
 
         return problemListEntities;      
-    }
-
-    public void saveProblemList(ProblemListEntity problemList) throws DuplicateResourceException{
-        try{
-            mongoTemplate.save(problemList);
-        } catch(DuplicateKeyException e) {
-            throw new DuplicateResourceException("Problem list with same name already exists");
-        } catch(Exception e) {
-            throw e;
-        }
     }
 
     public Map<String, Object> updateProblemList(ObjectId listId, Map<String, Object> fieldsToUpdate, ProblemListEntity originalEntity) {

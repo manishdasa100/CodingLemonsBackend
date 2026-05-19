@@ -92,7 +92,7 @@ public class AdminController {
 
     // --- Testcase endpoints ---
 
-    @PatchMapping("/problem/{problemId}/testcases")
+    @PatchMapping("/testcases/{problemId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<RegistryOperationResult> syncTestcases(
         @PathVariable Integer problemId,
@@ -101,7 +101,7 @@ public class AdminController {
         return ResponseEntity.ok(adminService.syncTestcases(problemId, dto));
     }
 
-    @DeleteMapping("/problem/{problemId}/testcases")
+    @DeleteMapping("/testcases/{problemId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<RegistryOperationResult> deleteTestcaseRegistry(
         @PathVariable Integer problemId)
@@ -111,7 +111,7 @@ public class AdminController {
 
     // --- Driver code endpoints ---
 
-    @PatchMapping("/problem/{problemId}/driverCodes")
+    @PatchMapping("/driverCodes/{problemId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<RegistryOperationResult> syncDriverCodes(
         @PathVariable Integer problemId,
@@ -120,7 +120,7 @@ public class AdminController {
         return ResponseEntity.ok(adminService.syncDriverCodes(problemId, dto));
     }
 
-    @DeleteMapping("/problem/{problemId}/driverCodes")
+    @DeleteMapping("/driverCodes/{problemId}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<RegistryOperationResult> deleteDriverCodeRegistry(
         @PathVariable Integer problemId)

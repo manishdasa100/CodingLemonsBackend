@@ -45,6 +45,7 @@ import com.codinglemonsbackend.Repository.UserProfileRepository;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
+import com.codinglemonsbackend.Entities.UserSubmissionStatusEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -104,6 +105,9 @@ public class MainServiceImpl{
     private ProblemOfTheDayService problemOfTheDayService;
 
     @Autowired
+    private UserSubmissionStatusService userSubmissionStatusService;
+
+    @Autowired
     private BadgeService badgeService;
 
     @Autowired
@@ -133,23 +137,13 @@ public class MainServiceImpl{
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
-    private List<Set<Integer>> getAcceptedAndAttemptedProblemIdsOfUser(){
-        
-        UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
-
-        String username = currentSignedInUserEntity.getUsername();
-
-        ProblemListEntity acceptedProblemList = userProblemListRepositoryService.getUserProblemLists(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.SOLVED_PROBLEM_LIST)).findFirst().get();
-        ProblemListEntity atteptedProblemList = userProblemListRepositoryService.getUserProblemLists(username).stream().filter(problemList -> problemList.getName().equals(UserProblemListRepositoryService.ATTEMPTED_PROBLEM_LIST)).findFirst().get();
-        
-        return List.of(
-            acceptedProblemList.getProblemIds(), 
-            atteptedProblemList.getProblemIds()
-        );
-        // return userProblemListRepositoryService.getProblemList(
-        //     userProblemListRepositoryService.SOLVED_PROBLEM_LIST, 
-        //     currentSignedInUserEntity.getUsername()
-        // ).getProblemIds();
+    private List<Set<Integer>> getSubmissionStatusofUser(){
+        String username = getCurrentlySignedInUser().getUsername();
+        UserSubmissionStatusEntity submissionStatus = userSubmissionStatusService.getSubmissionStatus(username);
+        if (submissionStatus == null) {
+            return List.of(Set.of(), Set.of());
+        }
+        return List.of(submissionStatus.getSolvedProblemIds(), submissionStatus.getAttemptedProblemIds());
     }
 
     public ProblemsPage getProblemSet(String difficultyStr, String topicsStr, String companysStr, Integer pageNo, Integer size, Boolean isAdmin) {
@@ -163,7 +157,7 @@ public class MainServiceImpl{
         if (StringUtils.isBlank(difficultyStr) && StringUtils.isBlank(topicsStr) && StringUtils.isBlank(companysStr)) problemPage = problemRepositoryService.getAllProblems(pageNo, size, isAdmin);
         else problemPage = problemRepositoryService.getFilteredProblems(difficultyStr, topicsStr, companysStr, pageNo, size, isAdmin);
 
-        List<Set<Integer>> acceptedAndAttempted = getAcceptedAndAttemptedProblemIdsOfUser();
+        List<Set<Integer>> acceptedAndAttempted = getSubmissionStatusofUser();
         Set<Integer> acceptedIds = acceptedAndAttempted.get(0);
         Set<Integer> attemptedIds = acceptedAndAttempted.get(1);
 
@@ -182,7 +176,7 @@ public class MainServiceImpl{
     public ProblemDto getProblem(Integer id) {
         ProblemDto problemDto = problemRepositoryService.getProblemById(id);
 
-        List<Set<Integer>> acceptedAndAttempted = getAcceptedAndAttemptedProblemIdsOfUser();
+        List<Set<Integer>> acceptedAndAttempted = getSubmissionStatusofUser();
         Set<Integer> acceptedIds = acceptedAndAttempted.get(0);
         Set<Integer> attemptedIds = acceptedAndAttempted.get(1);
 
@@ -295,6 +289,7 @@ public class MainServiceImpl{
         }
          
     }
+
     public String submitCode(SubmitCodeRequestPayload payload) {
         ProblemDto problemDto = getProblem(payload.getProblemId());
         System.out.println("Problem status: " + problemDto.getStatus());
@@ -385,7 +380,15 @@ public class MainServiceImpl{
                 submissionService.saveSubmission(executionReport, submissionMetadata);
                 log.info("Persisted submission {} for user {}", submissionJobId,
                         submissionMetadata.getUsername());
-                eventPublisher.publishEvent(new SubmitCodeCompletedEvent(this, executionReport, submissionMetadata));
+                Boolean isNewSolve = false;
+                if (executionReport.status().equals(ExecutionStatus.ACC)) {
+                    isNewSolve = userSubmissionStatusService.addToSolvedAndRemoveFromAttempted(
+                            submissionMetadata.getUsername(), submissionMetadata.getProblemId());
+                } else {
+                    userSubmissionStatusService.addToAttemptedIfNotSolved(
+                            submissionMetadata.getUsername(), submissionMetadata.getProblemId());
+                }
+                eventPublisher.publishEvent(new SubmitCodeCompletedEvent(this, executionReport, submissionMetadata, isNewSolve));
             }
             redisService.deleteKey(redisKey);
             return new SubmissionResponsePayload(PendingOrdersStatus.COMPLETED, executionReport);

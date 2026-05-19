@@ -24,7 +24,7 @@ public class ProblemRegistryStatusListener {
     @Autowired
     private ProblemsRepository problemsRepository;
 
-    @Async("applicationTaskExecutor")
+    @Async("applicationAsyncExecutor")
     @EventListener
     public void onProblemRegistryUpdated(ProblemRegistryUpdatedEvent event) {
         Integer problemId = event.getProblemId();

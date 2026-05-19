@@ -25,7 +25,8 @@ public class DriverCodeRepository {
     private MongoTemplate mongoTemplate;
 
     public Optional<DriverCodeRegistry> getByProblemId(Integer problemId) {
-        return Optional.ofNullable(mongoTemplate.findById(problemId, DriverCodeRegistry.class));
+        Query query = new Query(Criteria.where("problemId").is(problemId));
+        return Optional.ofNullable(mongoTemplate.findOne(query, DriverCodeRegistry.class));
     }
 
     public RegistryOperationResult syncItems(Integer problemId, DriverCodeRegistryDto dto) {

@@ -1,9 +1,13 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.codinglemonsbackend.Dto.SubmissionStats;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,8 +18,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "UserProfiles")
+@Document(collection = "UserProfile")
 public class UserProfileEntity {
+
+    @Transient
+    public static final String ENTITY_COLLECTION_NAME = "UserProfile"; 
     
     @Id
     private String username;
@@ -54,5 +61,6 @@ public class UserProfileEntity {
 
     private SkillTags[] skillTags;
 
-    private List<String> earnedBadgeIds;
+    @Builder.Default
+    private List<String> earnedBadgeIds = new ArrayList<>();
 }

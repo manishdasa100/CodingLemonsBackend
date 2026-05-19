@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
+import com.codinglemonsbackend.Dto.SubmissionStats;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
@@ -49,6 +51,9 @@ public class UserProfileService {
     private UserRankService userRankService;
 
     @Autowired
+    private BadgeService badgeService;
+
+    @Autowired
     private CompanyService companyService;
 
     @Value("${assets.domain}")
@@ -57,24 +62,20 @@ public class UserProfileService {
     private static final String ASSETS_BASE_PATH = "users";
 
     public UserProfileDto getUserProfile(String username) {
-        Optional<UserProfileEntity> profile = userProfileRepository.getUserProfile(username);
-        if (profile.isEmpty()) throw new UsernameNotFoundException("User profile not found");
-        UserProfileEntity entity = profile.get();
+        UserProfileEntity entity = userProfileRepository.getUserProfile(username).orElseThrow(() -> new UsernameNotFoundException("User profile not found for username: " + username));
         UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class);
-        System.out.println("USER PROFILE: " + userProfile);
-        String path = "default";
-        String profilePictureId = "default_user_dp.jpg";
+        String path = "default/default_user_dp.jpg";
         if (entity.getProfilePictureId() != null) {
-            path = entity.getUsername();
-            profilePictureId = entity.getProfilePictureId();
+            path = "%s/%s".formatted(username, entity.getProfilePictureId());
         }
         String profilePictureUrl = URIUtils.createURI(
             ASSETS_DOMAIN, 
             ASSETS_BASE_PATH, 
-            path, 
-            profilePictureId).toString();
+            path).toString();
         userProfile.setProfilePictureUrl(profilePictureUrl);
         userProfile.setRank(userRankService.getRankByName(entity.getRank()).get());
+        List<String> earnedBadgeIds = entity.getEarnedBadgeIds() != null ? entity.getEarnedBadgeIds() : List.of();
+        userProfile.setEarnedBadges(badgeService.getEarnedBadges(earnedBadgeIds));
         return userProfile;
     }
 
@@ -259,14 +260,6 @@ public class UserProfileService {
             }
         }
 
-    }
-
-    private String buildImageUrl(String imageId) {
-        return URIUtils.createURI(
-            ASSETS_DOMAIN, 
-            ASSETS_BASE_PATH, 
-            "default", 
-            imageId).toString();
     }
 
 }

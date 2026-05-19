@@ -1,5 +1,8 @@
 package com.codinglemonsbackend.Dto;
 
+import java.util.List;
+import java.util.Map;
+
 import com.codinglemonsbackend.Entities.SkillTags;
 import com.codinglemonsbackend.Validation.CrossFieldValidation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -105,4 +108,10 @@ public class UserProfileDto {
 
     @JsonProperty(access = Access.READ_ONLY)
     private Boolean profileOwner;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Map<String, List<EarnedBadgeDto>> earnedBadges;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private SubmissionStats submissionStats;
 }
