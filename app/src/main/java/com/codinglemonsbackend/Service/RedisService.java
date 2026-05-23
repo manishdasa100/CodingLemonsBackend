@@ -25,6 +25,8 @@ public class RedisService {
 
     public static final String USER_LIKE_STATUS_CACHE_PREFIX = "LIKE_STATUS_CACHE:";
 
+    public static final String SUBMISSION_DEDUP_KEY = "submission:dedup:";
+
     private RedisTemplate<String, String> redisTemplate;
     
     private HashOperations<String, String, String> hashOperations;
@@ -68,6 +70,15 @@ public class RedisService {
     public void storeValue(String key, String value, long timeout) {
         stringOperations.set(key, value);
         redisTemplate.expire(key, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Atomically sets {@code key} to {@code value} with the given TTL only if the key
+     * does not already exist. Returns true if the key was set (new), false if it already
+     * existed (duplicate).
+     */
+    public Boolean setIfAbsent(String key, String value, long ttlSeconds) {
+        return stringOperations.setIfAbsent(key, value, ttlSeconds, TimeUnit.SECONDS);
     }
 
     public String getValue(String key) {

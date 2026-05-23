@@ -1,7 +1,8 @@
 package com.codinglemonsbackend.Dto;
 
 public enum BadgeRuleType {
-    STREAK_DAYS("Streak");
+    STREAK_DAYS("Streak"),
+    PROBLEMS_SOLVED("Problems Solved");
 
     private final String displayName;
 

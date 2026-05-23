@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 
+import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
 import com.codinglemonsbackend.Payloads.ExceptionMessage;
 
 import lombok.extern.slf4j.Slf4j;
@@ -86,6 +87,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<ExceptionMessage> resourceNotFound(NoSuchElementException e){
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DuplicateSubmissionException.class)
+    public ResponseEntity<ExceptionMessage> handleDuplicateSubmission(DuplicateSubmissionException e) {
+        return new ResponseEntity<>(new ExceptionMessage(e.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler(FailedSubmissionException.class)

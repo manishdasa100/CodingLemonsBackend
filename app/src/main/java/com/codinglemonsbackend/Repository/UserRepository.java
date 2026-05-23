@@ -38,7 +38,7 @@ public class UserRepository {
 
         update.set("password", newPassword);
 
-        update.set("passwordIssueDate", new Date(System.currentTimeMillis()));
+        update.set("passwordIssueDate", new Date((System.currentTimeMillis() / 1000) * 1000));
 
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, UserEntity.class);
 

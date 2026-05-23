@@ -60,7 +60,7 @@ public class AuthenticationService {
         UserEntity user = UserEntity.builder()
                             .username(userDto.getUsername())
                             .password(passwordEncoder.encode(userDto.getPassword()))
-                            .passwordIssueDate(new Date(System.currentTimeMillis()))
+                            .passwordIssueDate(new Date((System.currentTimeMillis() / 1000) * 1000))
                             .role((isAdmin)?Role.ADMIN:Role.USER)
                             .build();
 

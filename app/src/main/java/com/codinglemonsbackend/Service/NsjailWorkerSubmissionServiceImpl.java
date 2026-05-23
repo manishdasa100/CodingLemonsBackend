@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Service;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
+import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
 import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
@@ -48,6 +49,8 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
 
     private final ObjectMapper objectMapper;
 
+    private final RedisService redisService;
+
     private final Integer runCodeTestCaseCount;
 
     private final String pendingSubmissionsQueueUrl;
@@ -60,6 +63,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         TestcaseRepository testcaseRepository,
         SqsClient sqsClient,
         ObjectMapper objectMapper,
+        RedisService redisService,
         @Value("${testcase.runcode.count}") Integer runCodeTestCaseCount,
         @Value("${aws.sqs.queue.pending-submissions}") String pendingSubmissionsQueueUrl
     ) {
@@ -68,6 +72,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         this.testcaseRepository = testcaseRepository;
         this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
+        this.redisService = redisService;
         this.runCodeTestCaseCount = runCodeTestCaseCount;
         this.pendingSubmissionsQueueUrl = pendingSubmissionsQueueUrl;
     }
@@ -103,6 +108,16 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     submissionMetadata.getLanguage() +
                     submissionMetadata.getIsRunCode();
             String messageDeduplicationId = generateHash(hashInput);
+
+            Boolean isNew = redisService.setIfAbsent(
+                    RedisService.SUBMISSION_DEDUP_KEY,
+                    messageDeduplicationId,
+                    300
+            );
+            if (!isNew) {
+                throw new DuplicateSubmissionException(
+                        "A duplicate submission found. Please wait before resubmitting.");
+            }
 
             SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
                     .queueUrl(pendingSubmissionsQueueUrl)
