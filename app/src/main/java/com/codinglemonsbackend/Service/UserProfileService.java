@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.CurrentUserDto;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
@@ -61,13 +62,27 @@ public class UserProfileService {
 
     private static final String ASSETS_BASE_PATH = "users";
 
+    public CurrentUserDto getCurrentUserInfo(String username) {
+        UserProfileEntity entity = userProfileRepository.getCurrentUserInfo(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User profile not found for username: " + username));
+        String path = entity.getProfilePictureId() != null
+                ? "%s/%s".formatted(username, entity.getProfilePictureId())
+                : "default/default_user_dp.jpg";
+        String profilePictureUrl = URIUtils.createURI(ASSETS_DOMAIN, ASSETS_BASE_PATH, path).toString();
+        return CurrentUserDto.builder()
+                .username(username)
+                .firstName(entity.getFirstName())
+                .lastName(entity.getLastName())
+                .profilePictureUrl(profilePictureUrl)
+                .build();
+    }
+
     public UserProfileDto getUserProfile(String username) {
         UserProfileEntity entity = userProfileRepository.getUserProfile(username).orElseThrow(() -> new UsernameNotFoundException("User profile not found for username: " + username));
         UserProfileDto userProfile = mapper.map(entity, UserProfileDto.class);
-        String path = "default/default_user_dp.jpg";
-        if (entity.getProfilePictureId() != null) {
-            path = "%s/%s".formatted(username, entity.getProfilePictureId());
-        }
+        String path = entity.getProfilePictureId() != null
+                ? "%s/%s".formatted(username, entity.getProfilePictureId())
+                : "default/default_user_dp.jpg";
         String profilePictureUrl = URIUtils.createURI(
             ASSETS_DOMAIN, 
             ASSETS_BASE_PATH, 

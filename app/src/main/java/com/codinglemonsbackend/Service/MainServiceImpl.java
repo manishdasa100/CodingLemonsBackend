@@ -17,6 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.BadgeDto;
+import com.codinglemonsbackend.Dto.CurrentUserDto;
+import com.codinglemonsbackend.Dto.UserStreakDto;
+import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
@@ -317,6 +320,7 @@ public class MainServiceImpl{
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemId(payload.getProblemId())
                                                 .solutionPoints(problemDto.getDifficulty().getPoints())
+                                                .difficulty(problemDto.getDifficulty())
                                                 .executionDetails(executionDetails)
                                                 .language(payload.getLanguage())
                                                 .username(getCurrentlySignedInUser().getUsername())
@@ -383,7 +387,8 @@ public class MainServiceImpl{
                 Boolean isNewSolve = false;
                 if (executionReport.status().equals(ExecutionStatus.ACC)) {
                     isNewSolve = userSubmissionStatusService.addToSolvedAndRemoveFromAttempted(
-                            submissionMetadata.getUsername(), submissionMetadata.getProblemId());
+                            submissionMetadata.getUsername(), submissionMetadata.getProblemId(),
+                            submissionMetadata.getDifficulty().name());
                 } else {
                     userSubmissionStatusService.addToAttemptedIfNotSolved(
                             submissionMetadata.getUsername(), submissionMetadata.getProblemId());
@@ -453,6 +458,11 @@ public class MainServiceImpl{
         userProfileService.uploadUserProfilePicture(user.getUsername(), resizedImage);
     }
 
+    public CurrentUserDto getCurrentUserInfo() {
+        UserEntity user = getCurrentlySignedInUser();
+        return userProfileService.getCurrentUserInfo(user.getUsername());
+    }
+
     public UserProfileDto getUserProfile(String username) {
         UserProfileDto userProfileDto = userProfileService.getUserProfile(username);
         UserEntity currentlySignInUser = getCurrentlySignedInUser();
@@ -483,11 +493,29 @@ public class MainServiceImpl{
         return companyService.getCompanyDetailsBySlug(companySlug);
     }
 
-    public UserStreakEntity getUserStreak() {
+    public Map<String, Integer> getProblemCountByDifficulty() {
+        return problemRepositoryService.getPublishedProblemCountByDifficulty();
+    }
+
+    public UserSubmissionStatusDto getSubmissionStatusDto() {
+        String username = getCurrentlySignedInUser().getUsername();
+        return userSubmissionStatusService.getSubmissionStatusDto(username);
+    }
+
+    public UserStreakDto getUserStreak() {
         UserEntity currentSignedInUser = getCurrentlySignedInUser();
         String username = currentSignedInUser.getUsername();
-        UserStreakEntity userStreakEntity = userStreakService.getStreak(username);
-        return userStreakEntity;
+        UserStreakEntity streak = userStreakService.getStreak(username);
+        List<String> earnedBadgeIds = userProfileRepository.getEarnedBadgeIds(username);
+        BadgeDto highestStreakBadge = badgeService.getHighestStreakBadge(earnedBadgeIds);
+        return new UserStreakDto(
+                streak.getUsername(),
+                streak.getStreakDays(),
+                streak.getLastSubmissionDate(),
+                streak.getHighestStreakDays(),
+                streak.getHighestStreakDate(),
+                highestStreakBadge
+        );
     }
  
 }

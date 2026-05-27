@@ -7,7 +7,9 @@ import java.util.Map;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.BadgeDto;
@@ -38,6 +40,7 @@ public class AdminServiceImpl {
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
+
 
     @Autowired
     private TestcaseRepository testcaseRepository;
@@ -89,9 +92,10 @@ public class AdminServiceImpl {
         problemRepositoryService.removeAllProblems();
     }
 
+    @CacheEvict(cacheNames = RedisService.PROBLEM_COUNT_BY_DIFFICULTY_CACHE)
     public String publishProblem(Integer problemId) {
-        long updatedDocumentCount = problemRepositoryService.updateProblem(problemId, 
-        new ProblemUpdateDto(Map.of("status", ProblemStatus.PUBLISHED.name())));
+        long updatedDocumentCount = problemRepositoryService.updateProblem(problemId,
+                new ProblemUpdateDto(Map.of("status", ProblemStatus.PUBLISHED.name())));
         return updatedDocumentCount > 0 ? "Problem published successfully" : "Problem is already published";
     }
 

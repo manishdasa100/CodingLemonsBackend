@@ -118,7 +118,6 @@ public class ProblemRepositoryService {
         return problemsRepository.getProblemsByIds(problemIds, isAdmin);
     }
 
-
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public long updateProblem(Integer problemId, ProblemUpdateDto problemUpdateDto) {
         Map<String, Object> updatesMetadata = problemUpdateDto.getUpdates();
@@ -346,7 +345,12 @@ public class ProblemRepositoryService {
         problemsRepository.incrementProblemStats(problemId, accepted);
     }
 
-    @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
+    @Cacheable(cacheNames = RedisService.PROBLEM_COUNT_BY_DIFFICULTY_CACHE)
+    public Map<String, Integer> getPublishedProblemCountByDifficulty() {
+        return problemsRepository.getPublishedCountByDifficulty();
+    }
+
+    @CacheEvict(cacheNames = {RedisService.ALL_PROBLEMS_CACHE, RedisService.PROBLEM_COUNT_BY_DIFFICULTY_CACHE})
     public void deleteProblemById(Integer problemId){
 
         DeleteResult result = problemsRepository.removeProblemById(problemId);

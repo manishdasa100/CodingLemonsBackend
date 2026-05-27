@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.BadgeDto;
+import com.codinglemonsbackend.Dto.BadgeRuleType;
 import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Entities.BadgeEntity;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -102,6 +104,15 @@ public class BadgeService {
             }
             log.info("Badge '{}' deleted", badge.getName());
         }
+    }
+
+    public BadgeDto getHighestStreakBadge(List<String> earnedBadgeIds) {
+        if (earnedBadgeIds == null || earnedBadgeIds.isEmpty()) return null;
+        return badgeRepository.findAllByIds(earnedBadgeIds).stream()
+                .filter(b -> b.getRule().getType() == BadgeRuleType.STREAK_DAYS)
+                .max(Comparator.comparingInt(b -> b.getRule().getThreshold()))
+                .map(this::toDto)
+                .orElse(null);
     }
 
     public Map<String, List<EarnedBadgeDto>> getEarnedBadges(List<String> badgeIds) {

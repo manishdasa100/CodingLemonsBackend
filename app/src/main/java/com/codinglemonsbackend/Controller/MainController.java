@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.codinglemonsbackend.Dto.CurrentUserDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
@@ -30,7 +31,8 @@ import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
-import com.codinglemonsbackend.Entities.UserStreakEntity;
+import com.codinglemonsbackend.Dto.UserStreakDto;
+import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -145,6 +147,11 @@ public class MainController {
         return ResponseEntity.ok().body(problemOfTheDay);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<CurrentUserDto> getMe() {
+        return ResponseEntity.ok().body(mainService.getCurrentUserInfo());
+    }
+
     @GetMapping("/profile/{username}")
     public ResponseEntity<UserProfileDto> getUserProfile(@PathVariable String username) {
         UserProfileDto userProfile = mainService.getUserProfile(username);
@@ -188,10 +195,19 @@ public class MainController {
         return ResponseEntity.ok().body(companyDetails);
     }
 
+    @GetMapping("/problem/counts")
+    public ResponseEntity<Map<String, Integer>> getProblemCountByDifficulty() {
+        return ResponseEntity.ok().body(mainService.getProblemCountByDifficulty());
+    }
+
+    @GetMapping("/user/submission-status")
+    public ResponseEntity<UserSubmissionStatusDto> getSubmissionStatus() {
+        return ResponseEntity.ok().body(mainService.getSubmissionStatusDto());
+    }
+
     @GetMapping("/user/streak")
-    public ResponseEntity<UserStreakEntity> getUserStreak() {
-        UserStreakEntity userStreakEntity = mainService.getUserStreak();
-        return ResponseEntity.ok().body(userStreakEntity);
+    public ResponseEntity<UserStreakDto> getUserStreak() {
+        return ResponseEntity.ok().body(mainService.getUserStreak());
     }
 
     @GetMapping("/user/{username}/badges")

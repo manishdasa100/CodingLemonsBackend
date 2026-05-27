@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Base64;
 import java.util.Date;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -42,6 +43,9 @@ public class AuthenticationService {
 
     @Autowired
     private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserProfileService userProfileService;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;

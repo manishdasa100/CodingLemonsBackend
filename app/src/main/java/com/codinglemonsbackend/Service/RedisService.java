@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.redis.core.HashOperations;
@@ -26,6 +27,8 @@ public class RedisService {
     public static final String USER_LIKE_STATUS_CACHE_PREFIX = "LIKE_STATUS_CACHE:";
 
     public static final String SUBMISSION_DEDUP_KEY = "submission:dedup:";
+
+    public static final String PROBLEM_COUNT_BY_DIFFICULTY_CACHE = "PROBLEM:COUNT:BY:DIFFICULTY";
 
     private RedisTemplate<String, String> redisTemplate;
     
@@ -65,6 +68,10 @@ public class RedisService {
 
     public boolean hashKeyExists(String key, String hashKey){
         return hashOperations.hasKey(key, hashKey);
+    }
+
+    public Map<String, String> getHashEntries(String key) {
+        return hashOperations.entries(key);
     }
 
     public void storeValue(String key, String value, long timeout) {

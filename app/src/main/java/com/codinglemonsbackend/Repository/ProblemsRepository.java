@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Repository;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -244,6 +245,18 @@ public class ProblemsRepository {
     public ProblemEntity addProblem(ProblemEntity problemEntity) {
         ProblemEntity savedEntity = mongoTemplate.save(problemEntity);
         return savedEntity;
+    }
+
+    public Map<String, Integer> getPublishedCountByDifficulty() {
+        MatchOperation matchPublished = Aggregation.match(Criteria.where("status").is(ProblemStatus.PUBLISHED));
+        var groupByDifficulty = Aggregation.group("difficulty").count().as("count");
+        var aggregation = Aggregation.newAggregation(matchPublished, groupByDifficulty);
+        Map<String, Integer> counts = new HashMap<>();
+        for (Difficulty d : Difficulty.values()) counts.put(d.name(), 0);
+        mongoTemplate.aggregate(aggregation, ProblemEntity.class, Document.class)
+                .getMappedResults()
+                .forEach(doc -> counts.put(doc.getString("_id"), doc.getInteger("count")));
+        return counts;
     }
 
     public DeleteResult removeProblemById(Integer id) {

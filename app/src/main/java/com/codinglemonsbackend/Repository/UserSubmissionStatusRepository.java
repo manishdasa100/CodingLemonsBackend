@@ -24,16 +24,22 @@ public class UserSubmissionStatusRepository {
     }
 
     /**
-     * Atomically adds problemId to solvedProblemIds and removes it from
-     * attemptedProblemIds in a single DB round-trip.
+     * Atomically adds problemId to solvedProblemIds, removes it from attemptedProblemIds,
+     * and increments the per-difficulty counter — all in a single DB round-trip.
+     * The $ne guard ensures the update only fires when this is a genuinely new solve,
+     * so $inc never double-counts.
      *
      * @return true if the document was modified (i.e. this is a new solve)
      */
-    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId) {
-        Query query = Query.query(Criteria.where("username").is(username));
+    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty) {
+        Query query = Query.query(
+                Criteria.where("username").is(username)
+                        .and("solvedProblemIds").nin(problemId)
+        );
         Update update = new Update()
                 .addToSet("solvedProblemIds", problemId)
-                .pull("attemptedProblemIds", problemId);
+                .pull("attemptedProblemIds", problemId)
+                .inc("solvedCountByDifficulty." + difficulty, 1);
         UpdateResult result = mongoTemplate.updateFirst(query, update, UserSubmissionStatusEntity.class);
         return result.getModifiedCount() > 0;
     }
@@ -57,5 +63,11 @@ public class UserSubmissionStatusRepository {
                 Query.query(Criteria.where("username").is(username)),
                 UserSubmissionStatusEntity.class
         );
+    }
+
+    public UserSubmissionStatusEntity getSubmissionStatusDto(String username) {
+        Query query = Query.query(Criteria.where("username").is(username));
+        query.fields().include("solvedCountByDifficulty");
+        return mongoTemplate.findOne(query, UserSubmissionStatusEntity.class);
     }
 }

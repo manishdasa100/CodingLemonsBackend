@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Repository;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -21,6 +22,21 @@ public class UserProfileRepository {
 
     public Optional<UserProfileEntity> getUserProfile(String username) {
         UserProfileEntity userProfileEntity = mongoTemplate.findById(username, UserProfileEntity.class);
+        return Optional.ofNullable(userProfileEntity);
+    }
+
+    public List<String> getEarnedBadgeIds(String username) {
+        Query query = new Query(Criteria.where("_id").is(username));
+        query.fields().include("earnedBadgeIds");
+        UserProfileEntity entity = mongoTemplate.findOne(query, UserProfileEntity.class);
+        if (entity == null || entity.getEarnedBadgeIds() == null) return List.of();
+        return entity.getEarnedBadgeIds();
+    }
+
+    public Optional<UserProfileEntity> getCurrentUserInfo(String username) {
+        Query query = new Query(Criteria.where("_id").is(username));
+        query.fields().include("firstName").include("lastName").include("profilePictureId");
+        UserProfileEntity userProfileEntity = mongoTemplate.findOne(query, UserProfileEntity.class);
         return Optional.ofNullable(userProfileEntity);
     }
 

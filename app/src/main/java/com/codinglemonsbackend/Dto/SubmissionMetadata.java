@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Dto;
 
+import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -28,4 +30,6 @@ public class SubmissionMetadata {
     private Boolean isRunCode;
 
     private Boolean b64Encoded;
+
+    private Difficulty difficulty;
 }
