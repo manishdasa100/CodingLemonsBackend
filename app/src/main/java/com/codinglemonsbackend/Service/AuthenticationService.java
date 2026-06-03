@@ -12,10 +12,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.AuthProvider;
 import com.codinglemonsbackend.Dto.Role;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
@@ -65,6 +65,7 @@ public class AuthenticationService {
                             .username(userDto.getUsername())
                             .password(passwordEncoder.encode(userDto.getPassword()))
                             .passwordIssueDate(new Date((System.currentTimeMillis() / 1000) * 1000))
+                            .email(userDto.getEmail())
                             .role((isAdmin)?Role.ADMIN:Role.USER)
                             .build();
 
@@ -86,14 +87,20 @@ public class AuthenticationService {
 
     public String loginUser(LoginRequestPayload request){
 
+        UserEntity user = (UserEntity) userService.loadUserByUsername(request.getUsername());
+
+        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw new BadCredentialsException(
+                "This account is linked with " + user.getAuthProvider().name().toLowerCase() + ". Please sign in using that provider."
+            );
+        }
+
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                request.getUsername(), 
+                request.getUsername(),
                 request.getPassword()
             ));
 
         if (!authentication.isAuthenticated()) throw new BadCredentialsException("Username or password is incorrect");
-
-        UserDetails user = userService.loadUserByUsername(request.getUsername());
 
         // Track user login metrics
         // userLoginCounter.increment();
@@ -106,6 +113,13 @@ public class AuthenticationService {
     } 
 
     public boolean resetUserPassword(String username, String password) {
+        UserEntity user = (UserEntity) userService.loadUserByUsername(username);
+
+        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+            throw new BadCredentialsException(
+                "Password reset not allowed for this account. This account is linked with " + user.getAuthProvider().name().toLowerCase() + "."
+            );
+        }
         return userService.resetUserPassword(username, passwordEncoder.encode(password));
     }
 

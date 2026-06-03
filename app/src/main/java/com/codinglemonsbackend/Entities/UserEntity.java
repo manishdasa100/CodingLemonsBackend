@@ -5,11 +5,14 @@ import java.util.Date;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.codinglemonsbackend.Dto.AuthProvider;
 import com.codinglemonsbackend.Dto.Role;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -24,6 +27,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Document(collection = "Users")
 @JsonIgnoreProperties(value = {"password"}, allowSetters = true)
+@CompoundIndex(name = "auth_provider_lookup", def = "{'authProviderId': 1, 'authProvider': 1}")
 public class UserEntity implements UserDetails{
     
     @Id
@@ -35,7 +39,13 @@ public class UserEntity implements UserDetails{
 
     private Role role;
 
-    // private List<Submission> submissions;
+    @Indexed(unique = true)
+    private String email;
+
+    private String authProviderId;
+
+    @Builder.Default
+    private AuthProvider authProvider = AuthProvider.LOCAL;
  
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

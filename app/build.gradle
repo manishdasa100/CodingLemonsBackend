@@ -42,6 +42,9 @@ dependencies {
 	// Spring security dependency
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 
+	// OAuth2 client dependency
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
 	// Spring data validation
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 

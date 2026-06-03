@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
+import com.codinglemonsbackend.Dto.AuthProvider;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.mongodb.client.result.UpdateResult;
 
@@ -20,9 +21,15 @@ public class UserRepository {
     @Autowired
     private MongoTemplate mongoTemplate;
 
-    public Optional<UserEntity> getUser(String username){
+    public Optional<UserEntity> findUserByUsername(String username){
         System.out.println("Username: "+ username);
         UserEntity user = mongoTemplate.findById(username, UserEntity.class, "Users");
+        return Optional.ofNullable(user);
+    }
+
+    public Optional<UserEntity> findUserByEmail(String email) {
+        Query query = new Query(Criteria.where("email").is(email));
+        UserEntity user = mongoTemplate.findOne(query, UserEntity.class, "Users");
         return Optional.ofNullable(user);
     }
 
@@ -80,6 +87,12 @@ public class UserRepository {
         });
 
         UpdateResult updateResult = mongoTemplate.updateFirst(query, update, UserEntity.class);
+    }
+
+    public Optional<UserEntity> getUserbyAuthProviderIdAndProviderType(String id, AuthProvider provider) {
+        Query query = new Query(Criteria.where("authProviderId").is(id).and("authProvider").is(provider));
+        UserEntity user = mongoTemplate.findOne(query, UserEntity.class, "Users");
+        return Optional.ofNullable(user);
     }
 
     /*public void updateUserProfilePictureId(String username, String profilePictureId) {
