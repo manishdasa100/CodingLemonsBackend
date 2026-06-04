@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class UserSubmissionStatusDto {
     private String username;
     private Map<String, Integer> solvedCountByDifficulty;
+    private Map<String, Integer> solvedCountByLanguage;
 }

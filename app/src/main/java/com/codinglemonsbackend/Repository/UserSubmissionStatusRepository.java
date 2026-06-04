@@ -31,7 +31,7 @@ public class UserSubmissionStatusRepository {
      *
      * @return true if the document was modified (i.e. this is a new solve)
      */
-    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty) {
+    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty, String language) {
         Query query = Query.query(
                 Criteria.where("username").is(username)
                         .and("solvedProblemIds").nin(problemId)
@@ -39,7 +39,8 @@ public class UserSubmissionStatusRepository {
         Update update = new Update()
                 .addToSet("solvedProblemIds", problemId)
                 .pull("attemptedProblemIds", problemId)
-                .inc("solvedCountByDifficulty." + difficulty, 1);
+                .inc("solvedCountByDifficulty." + difficulty, 1)
+                .inc("solvedCountByLanguage." + language, 1);
         UpdateResult result = mongoTemplate.updateFirst(query, update, UserSubmissionStatusEntity.class);
         return result.getModifiedCount() > 0;
     }
@@ -67,7 +68,7 @@ public class UserSubmissionStatusRepository {
 
     public UserSubmissionStatusEntity getSubmissionStatusDto(String username) {
         Query query = Query.query(Criteria.where("username").is(username));
-        query.fields().include("solvedCountByDifficulty");
+        query.fields().include("solvedCountByDifficulty", "solvedCountByLanguage");
         return mongoTemplate.findOne(query, UserSubmissionStatusEntity.class);
     }
 }

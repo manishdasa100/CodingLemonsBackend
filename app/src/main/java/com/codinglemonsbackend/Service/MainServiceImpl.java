@@ -388,7 +388,8 @@ public class MainServiceImpl{
                 if (executionReport.status().equals(ExecutionStatus.ACC)) {
                     isNewSolve = userSubmissionStatusService.addToSolvedAndRemoveFromAttempted(
                             submissionMetadata.getUsername(), submissionMetadata.getProblemId(),
-                            submissionMetadata.getDifficulty().name());
+                            submissionMetadata.getDifficulty().name(),
+                            submissionMetadata.getLanguage().name().toLowerCase());
                 } else {
                     userSubmissionStatusService.addToAttemptedIfNotSolved(
                             submissionMetadata.getUsername(), submissionMetadata.getProblemId());

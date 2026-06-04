@@ -110,8 +110,8 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
             String messageDeduplicationId = generateHash(hashInput);
 
             Boolean isNew = redisService.setIfAbsent(
-                    RedisService.SUBMISSION_DEDUP_KEY,
-                    messageDeduplicationId,
+                    RedisService.SUBMISSION_DEDUP_KEY + messageDeduplicationId,
+                    submissionJobId,
                     300
             );
             if (!isNew) {

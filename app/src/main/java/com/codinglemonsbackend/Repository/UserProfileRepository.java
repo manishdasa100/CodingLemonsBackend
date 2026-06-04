@@ -41,7 +41,7 @@ public class UserProfileRepository {
 
     public Optional<UserProfileEntity> getCurrentUserInfo(String username) {
         Query query = new Query(Criteria.where("_id").is(username));
-        query.fields().include("firstName").include("lastName").include("profilePictureId");
+        query.fields().include("firstName", "lastName", "profilePictureId");
         UserProfileEntity userProfileEntity = mongoTemplate.findOne(query, UserProfileEntity.class);
         return Optional.ofNullable(userProfileEntity);
     }

@@ -37,4 +37,7 @@ public class UserSubmissionStatusEntity {
         Difficulty.MEDIUM.name(), 0,
         Difficulty.HARD.name(), 0
     ));
+
+    @Builder.Default
+    private Map<String, Integer> solvedCountByLanguage = new HashMap<>();
 }

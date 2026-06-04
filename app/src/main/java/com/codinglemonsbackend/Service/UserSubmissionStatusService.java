@@ -30,17 +30,20 @@ public class UserSubmissionStatusService {
      *
      * @return true if this is a new solve (problem was not previously in solved set)
      */
-    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty) {
-        return userSubmissionStatusRepository.addToSolvedAndRemoveFromAttempted(username, problemId, difficulty);
+    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty, String language) {
+        return userSubmissionStatusRepository.addToSolvedAndRemoveFromAttempted(username, problemId, difficulty, language);
     }
 
     public UserSubmissionStatusDto getSubmissionStatusDto(String username) {
         UserSubmissionStatusEntity entity = userSubmissionStatusRepository.getSubmissionStatusDto(username);
-        if (entity == null) return new UserSubmissionStatusDto(username, Map.of());
+        if (entity == null) return new UserSubmissionStatusDto(username, Map.of(), Map.of());
         Map<String, Integer> counts = entity.getSolvedCountByDifficulty() != null
                 ? entity.getSolvedCountByDifficulty()
                 : Map.of();
-        return new UserSubmissionStatusDto(username, counts);
+        Map<String, Integer> languageCounts = entity.getSolvedCountByLanguage() != null
+                ? entity.getSolvedCountByLanguage()
+                : Map.of();
+        return new UserSubmissionStatusDto(username, counts, languageCounts);
     }
 
     /**
