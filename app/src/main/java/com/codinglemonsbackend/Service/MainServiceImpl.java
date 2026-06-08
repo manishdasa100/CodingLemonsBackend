@@ -237,7 +237,7 @@ public class MainServiceImpl{
         userProblemListRepositoryService.saveProblemList(enitityToSave);
     }
 
-    public int addProblemToList(String listId, Set<Integer> problemIds) {
+    public Map<String, Object> addProblemToList(String listId, Set<Integer> problemIds) {
         Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds), false)
                                         .stream()
                                         .map(ProblemDto::getId)
@@ -255,16 +255,7 @@ public class MainServiceImpl{
     }
 
     public List<ProblemListDto> getUserFavorites(String username) {
-        List<ProblemListDto> userProblemListDtos =  userProblemListRepositoryService.getUserProblemLists(username)
-                .stream()
-                .map(entity -> modelMapper.map(entity, ProblemListDto.class))
-                .collect(Collectors.toList());
-
-        if (userProblemListDtos.isEmpty()) {
-            throw new NoSuchElementException("No problem lists found for user " + username);
-        }
-
-        return userProblemListDtos;
+        return userProblemListRepositoryService.getUserProblemLists(username);
     }
 
     public ProblemListDto getUserProblemList(String username, String name) {

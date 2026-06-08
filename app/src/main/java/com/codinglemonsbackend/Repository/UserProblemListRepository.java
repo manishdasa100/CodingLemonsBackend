@@ -21,6 +21,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.LookupOperation;
 import org.springframework.data.mongodb.core.aggregation.MatchOperation;
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation;
+import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
 import org.springframework.data.mongodb.core.aggregation.VariableOperators;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -83,13 +84,14 @@ public class UserProblemListRepository {
     
     
             ProjectionOperation projectFields = Aggregation.project()
-                .and( 
+                .and(
                     VariableOperators.Map.itemsOf("problemsData")
                         .as("e")
                         .andApply(ctx -> new Document("_id", "$$e._id")
                                             .append("title", "$$e.title")
                                             .append("difficulty", "$$e.difficulty")))
                 .as("problemsData")
+                .and(ArrayOperators.Size.lengthOfArray("problemsData")).as("totalProblems")
                 .andInclude("name", "description", "isPublic", "isPinned");
     
     
@@ -168,21 +170,13 @@ public class UserProblemListRepository {
         return updatedFields;
     }
 
-    public int addProblemToProblemList(String listId, Set<Integer> newProblemIds){
-
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(listId);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid problem list id");
-        }
+    public Map<String, Object> addProblemToProblemList(String listId, Set<Integer> newProblemIds){
 
         UserEntity signedInUser= (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         //Query query = new Query(Criteria.where("_id").is(objectId).and("creator").is(signedInUser.getUsername()));
    
-        Query query = new Query(Criteria.where("_id").is(objectId));
+        Query query = new Query(Criteria.where("_id").is(listId));
    
         ProblemListEntity listEntity = mongoTemplate.findOne(query, ProblemListEntity.class);
         
@@ -191,7 +185,7 @@ public class UserProblemListRepository {
         }
         
         if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
-            throw new AccessDeniedException("You are not allowed to update list this list.");
+            throw new AccessDeniedException("You are not allowed to update this list.");
         }
 
         if (listEntity.getProblemIds() != null) {
@@ -203,7 +197,7 @@ public class UserProblemListRepository {
             mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
         }
 
-        return newProblemIds.size();
+        return Map.of("addedProblemIds", newProblemIds, "listName", listEntity.getName());
     }
 
     public Boolean deleteProblemList(String id){

@@ -13,6 +13,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
@@ -132,6 +133,12 @@ public class GlobalExceptionHandler {
     // // public ResponseEntity<ExceptionMessage> handleDuplicateKeyException(DuplicateKeyException e) {
     // //     return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     // // }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ExceptionMessage> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+        logError("MissingServletRequestParameterException", e);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("You are missing a required parameter: " + e.getParameterName()), HttpStatus.BAD_REQUEST);
+    }
 }
     
 

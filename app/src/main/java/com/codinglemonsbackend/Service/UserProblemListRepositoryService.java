@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,8 +30,24 @@ public class UserProblemListRepositoryService {
     @Autowired
     private UserProblemListRepository userProblemListRepository;
 
-    public List<ProblemListEntity> getUserProblemLists(String username) {
-        return userProblemListRepository.getAllProblemListsOfUser(username);
+    @Autowired
+    private ModelMapper modelMapper;
+
+    public List<ProblemListDto> getUserProblemLists(String username) {
+        List<ProblemListEntity> userProblemListEntities = userProblemListRepository.getAllProblemListsOfUser(username);
+
+        List<ProblemListDto> userProblemListDtos = userProblemListEntities.stream()
+                .map(entity -> {
+                    ProblemListDto dto = modelMapper.map(entity, ProblemListDto.class);
+                    dto.setTotalProblems(entity.getProblemIds().size());
+                    return dto;    
+                })
+                .collect(Collectors.toList());
+
+        if (userProblemListDtos.isEmpty()) {
+            throw new NoSuchElementException("No problem lists found for user " + username);
+        }
+        return userProblemListDtos;
     }
 
     public ProblemListDto getUserProblemList(String creator, String name) {
@@ -41,7 +59,7 @@ public class UserProblemListRepositoryService {
         userProblemListRepository.saveProblemList(newProblemList);
     }
 
-    public int addProblemToProblemList(String listId, Set<Integer> validProblemIds) {
+    public Map<String, Object> addProblemToProblemList(String listId, Set<Integer> validProblemIds) {
         return userProblemListRepository.addProblemToProblemList(listId, validProblemIds);
     }
 

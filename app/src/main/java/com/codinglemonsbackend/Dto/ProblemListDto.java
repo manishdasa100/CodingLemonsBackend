@@ -31,12 +31,14 @@ public class ProblemListDto {
     @Size(max = 30)
     private String name;
 
-    @NotEmpty
-    @Size(min = 3, max = 100)
+    @Size(max = 100)
     private String description;
 
     @JsonProperty(access = Access.READ_ONLY)
     private List<ProblemDto> problemsData;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Integer totalProblems;
 
     @NotNull
     private Boolean isPublic;

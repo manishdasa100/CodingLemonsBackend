@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Controller;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
@@ -94,11 +95,13 @@ public class MainController {
 
     @PostMapping("list/add")
     public ResponseEntity<String> addProblemToList(@Valid @RequestBody AddProblemToListRequest request) {
-        int problemIdsAdded = mainService.addProblemToList(request.getId(), request.getProblemIds());
-        if (problemIdsAdded == 0) {
-            return ResponseEntity.badRequest().body("No new problem ids found to add to list " + request.getId());
+        Map<String, Object> result = mainService.addProblemToList(request.getId(), request.getProblemIds());
+        Set<Integer> problemIdsAdded = (Set<Integer>) result.get("addedProblemIds");
+        String listName = (String) result.get("listName");
+        if (problemIdsAdded == null || problemIdsAdded.isEmpty()) {
+            return ResponseEntity.ok().body("Problems already present in " + listName);
         } 
-        return ResponseEntity.ok().body(String.format("Added %d problems to list %s", problemIdsAdded, request.getId()));
+        return ResponseEntity.ok().body(String.format("Added %d new problems to list %s", problemIdsAdded.size(), listName));
     }
 
     @PutMapping("list/update/{id}")
@@ -116,8 +119,8 @@ public class MainController {
         return ResponseEntity.ok().body(userFavorites);
     }
 
-    @GetMapping("/lists/{username}/{name}")
-    public ResponseEntity<ProblemListDto> getUserFavorite(@PathVariable String username, @PathVariable String name) {
+    @GetMapping("/list/{username}")
+    public ResponseEntity<ProblemListDto> getUserFavorite(@PathVariable String username, @RequestParam String name) {
         ProblemListDto problemDto = mainService.getUserProblemList(username, name);
         return ResponseEntity.ok().body(problemDto);
     }
