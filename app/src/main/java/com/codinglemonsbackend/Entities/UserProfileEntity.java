@@ -23,7 +23,7 @@ public class UserProfileEntity {
 
     @Transient
     public static final String ENTITY_COLLECTION_NAME = "UserProfile"; 
-    
+
     @Id
     private String username;
 
@@ -51,15 +51,12 @@ public class UserProfileEntity {
 
     private String school;
 
-    private String city;
+    private UserLocation location;
 
-    private String country;
+    private List<UserWorkExperience> workExperience;
 
-    private String companySlug;
-
-    private String jobTitle;
-
-    private SkillTags[] skillTags;
+    @Builder.Default
+    private List<SkillTags> skillTags = new ArrayList<>();
 
     @Builder.Default
     private List<String> earnedBadgeIds = new ArrayList<>();

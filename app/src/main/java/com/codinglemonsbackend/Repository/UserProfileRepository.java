@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Entities.UserProfileEntity;
+import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.mongodb.client.result.UpdateResult;
 
 @Repository
@@ -84,19 +85,23 @@ public class UserProfileRepository {
     }
 
     public boolean updateUserProfile(String username, Map<String, Object> updatePropertiesMap) {
-       
         Query query = new Query(Criteria.where("username").is(username));
-
         Update update = new Update();
-
         updatePropertiesMap.entrySet().stream().forEach(e -> {
             update.set(e.getKey(), e.getValue());
         });
-
         UpdateResult result = mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
-        
         if (result.getModifiedCount() > 0) return true;
-
         return false;
+    }
+
+    public void upsertWorkExperience(String username, UserWorkExperience experience) {
+        Query query = new Query(Criteria.where("_id").is(username));
+        mongoTemplate.updateFirst(query,
+            new Update().pull("workExperience", new org.bson.Document("companySlug", experience.getCompanySlug())),
+            UserProfileEntity.class);
+        mongoTemplate.updateFirst(query,
+            new Update().push("workExperience", experience),
+            UserProfileEntity.class);
     }
 }

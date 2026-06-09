@@ -40,6 +40,7 @@ import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
 import com.codinglemonsbackend.Entities.SubmissionEntity;
 import com.codinglemonsbackend.Entities.Topic;
+import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
@@ -61,6 +62,7 @@ import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.slugify.Slugify;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -133,6 +135,9 @@ public class MainServiceImpl{
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private Slugify slugify;
 
     private final String PENDING_SUBMISSION_REDIS_KEY_PREFIX = "submission:report";
 
@@ -443,6 +448,12 @@ public class MainServiceImpl{
         //                                     modelMapper.map(user, UserDto.class));
         // }
     } 
+
+    public void addWorkExperience(UserWorkExperience experience) {
+        String username = getCurrentlySignedInUser().getUsername();
+        experience.setCompanySlug(slugify.slugify(experience.getCompanyName()));
+        userProfileService.addWorkExperience(username, experience);
+    }
 
     public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
         UserEntity user = getCurrentlySignedInUser();

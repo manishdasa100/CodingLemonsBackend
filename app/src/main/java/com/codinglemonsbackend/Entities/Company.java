@@ -16,11 +16,9 @@ public class Company {
     public static final String ENTITY_COLLECTION_NAME = "Company";
 
     @Id
-    private String id;
+    private String slug;;
 
     private String name;
-
-    private String slug;
 
     private String websiteLink;
 

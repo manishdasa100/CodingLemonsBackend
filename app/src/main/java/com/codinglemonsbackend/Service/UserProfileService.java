@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +15,16 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.CurrentUserDto;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
-import com.codinglemonsbackend.Entities.UserEntity;
+import com.codinglemonsbackend.Dto.UserWorkExperienceDto;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
+import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
-import com.codinglemonsbackend.Dto.SubmissionStats;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
-import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
@@ -91,7 +91,26 @@ public class UserProfileService {
         userProfile.setRank(userRankService.getRankByName(entity.getRank()).get());
         List<String> earnedBadgeIds = entity.getEarnedBadgeIds() != null ? entity.getEarnedBadgeIds() : List.of();
         userProfile.setEarnedBadges(badgeService.getEarnedBadges(earnedBadgeIds));
+        if (entity.getWorkExperience() != null && !entity.getWorkExperience().isEmpty()) {
+            userProfile.setWorkExperience(toWorkExperienceDtos(entity.getWorkExperience()));
+        }
         return userProfile;
+    }
+
+    private List<UserWorkExperienceDto> toWorkExperienceDtos(List<UserWorkExperience> experiences) {
+        List<String> slugs = experiences.stream()
+                .map(UserWorkExperience::getCompanySlug)
+                .collect(Collectors.toList());
+
+        Map<String, CompanyDto> companyMap = companyService.getCompaniesBySlugMap(slugs);
+
+        return experiences.stream().map(exp -> {
+            CompanyDto companyDto = companyMap.getOrDefault(
+                exp.getCompanySlug(),
+                new CompanyDto(exp.getCompanyName(), exp.getCompanySlug(), null)
+            );
+            return new UserWorkExperienceDto(companyDto, exp.getJobTitle(), exp.getStartYear(), exp.getEndYear());
+        }).collect(Collectors.toList());
     }
 
     @Async("applicationAsyncExecutor")
@@ -204,34 +223,8 @@ public class UserProfileService {
             updatePropertiesMap.put("school", newSchool);
         }
 
-        if (newProfile.getCity()!= null && !newProfile.getCity().equals(currentProfile.getCity())) {
-            System.out.println("CITY");
-            updatePropertiesMap.put("city", newProfile.getCity());
-        }
-
-        if (newProfile.getCountry()!= null && !newProfile.getCountry().equals(currentProfile.getCountry())) {
-            System.out.println("COUNTRY");
-            updatePropertiesMap.put("country", newProfile.getCountry());
-        }
-
-        if (newProfile.getCompanySlug() != null && !newProfile.getCompanySlug().equals(currentProfile.getCompanySlug())) {
-            System.out.println("COMPANY");
-            String companySlug = newProfile.getCompanySlug().trim();
-            if (companySlug.isEmpty()) {
-                companySlug = null; 
-            }else if (!companyService.isValidCompany(companySlug)) {
-                throw new IllegalArgumentException("Invalid company slug: " + companySlug);
-            }
-            updatePropertiesMap.put("companySlug", companySlug);
-        }
-
-        if (newProfile.getJobTitle() != null && !newProfile.getJobTitle().equals(currentProfile.getJobTitle())) {
-            System.out.println("JOB TITLE");
-            String newJobTitle = newProfile.getJobTitle().trim();
-            if (newJobTitle.isEmpty()) {
-                newJobTitle = null;
-            }
-            updatePropertiesMap.put("jobTitle", newProfile.getJobTitle());
+        if (newProfile.getLocation() != null && !newProfile.getLocation().equals(currentProfile.getLocation())) {
+            updatePropertiesMap.put("location", newProfile.getLocation());
         }
 
         if (newProfile.getSkillTags() != null && !Arrays.equals(newProfile.getSkillTags(), currentProfile.getSkillTags())) {
@@ -244,6 +237,10 @@ public class UserProfileService {
         }
 
         return userProfileRepository.updateUserProfile(username, updatePropertiesMap);
+    }
+
+    public void addWorkExperience(String username, UserWorkExperience experience) {
+        userProfileRepository.upsertWorkExperience(username, experience);
     }
 
     public void uploadUserProfilePicture(String username, byte[] imageFile) throws FileUploadFailureException{

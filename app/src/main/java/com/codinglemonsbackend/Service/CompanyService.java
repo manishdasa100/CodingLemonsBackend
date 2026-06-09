@@ -1,10 +1,11 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,6 +78,14 @@ public class CompanyService {
         return this.allCompanies.stream().anyMatch(company -> company.getSlug().equals(companySlug));
     }
 
+    public Map<String, CompanyDto> getCompaniesBySlugMap(List<String> slugs) {
+        if (this.allCompanies == null) loadAllCompanies();
+        Set<String> slugSet = new HashSet<>(slugs);
+        return this.allCompanies.stream()
+                .filter(c -> slugSet.contains(c.getSlug()))
+                .collect(Collectors.toMap(CompanyDto::getSlug, c -> c));
+    }
+
     public Set<CompanyDto> getValidTags(Set<String> companySlugs) {
         if (this.allCompanies == null) loadAllCompanies();
         // Return the matching tags
@@ -86,32 +95,33 @@ public class CompanyService {
         return matchingCompanies;
     }
 
-    public void addCompany(Company company) {
+    private void checkDuplicate(String companyName) {
         if (this.allCompanies == null) loadAllCompanies();
-        String companyName = company.getName();
-        Set<String> companyNamesList = allCompanies.stream().map(e -> e.getName()).collect(Collectors.toSet());
-
-        if (companyNamesList.contains(companyName)) {
-            throw new IllegalArgumentException("Company with same name already exist");
+        boolean exists = allCompanies.stream().anyMatch(c -> c.getName().equals(companyName));
+        if (exists) {
+            throw new IllegalArgumentException("Company with same name already exists");
         }
+    }
 
-        String slug = slugify.slugify(companyName);
-        company.setSlug(slug);
-
+    public void addCompany(Company company) {
+        checkDuplicate(company.getName());
+        company.setSlug(slugify.slugify(company.getName()));
         companyRepository.saveCompany(company);
     }
 
     public void addCompany(Company company, byte[] logoBytes) throws FileUploadFailureException {
 
-        String assetId = UUID.randomUUID().toString();
+        checkDuplicate(company.getName());
+
+        String assetId = slugify.slugify(company.getName());
         String s3Key = ASSET_BASE_PATH + "/" + assetId;
 
         Boolean s3Uploaded = false;
 
         try {
             s3Service.putObject(
-                s3Properties.getBucket(), 
-                s3Key, 
+                s3Properties.getBucket(),
+                s3Key,
                 logoBytes
             );
             s3Uploaded = true;
@@ -125,13 +135,13 @@ public class CompanyService {
                 try {
                     s3Service.deleteObject(s3Properties.getBucket(), s3Key);
                 } catch (Exception deleteException) {
-                    log.error("Failed to delete orphaned company logo with id {} from S3 with message", assetId, deleteException);
+                    log.error("Failed to delete orphaned company logo with id {} from S3", assetId, deleteException);
                 }
 
-                log.error("Failed to company {} to database with message:", company.getName(), exception);
+                log.error("Failed to save company {} to database", company.getName(), exception);
                 throw exception;
             } else {
-                log.error("Failed to upload rank badge to S3", exception);
+                log.error("Failed to upload company logo to S3", exception);
                 throw new FileUploadFailureException("Upload of company logo to S3 failed with message: " + exception.getMessage());
             }
         }

@@ -32,6 +32,7 @@ import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
+import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Dto.UserStreakDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
@@ -159,6 +160,12 @@ public class MainController {
     public ResponseEntity<UserProfileDto> getUserProfile(@PathVariable String username) {
         UserProfileDto userProfile = mainService.getUserProfile(username);
         return ResponseEntity.ok().body(userProfile);
+    }
+
+    @PostMapping("/user/work-experience")
+    public ResponseEntity<String> addWorkExperience(@Valid @RequestBody UserWorkExperience experience) {
+        mainService.addWorkExperience(experience);
+        return ResponseEntity.ok().body("Work experience added successfully");
     }
 
     @PutMapping("/user/update")
