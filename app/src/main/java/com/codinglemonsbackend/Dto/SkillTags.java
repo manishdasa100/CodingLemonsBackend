@@ -1,4 +1,4 @@
-package com.codinglemonsbackend.Entities;
+package com.codinglemonsbackend.Dto;
 
 public enum SkillTags {
 
@@ -15,9 +15,10 @@ public enum SkillTags {
     DESIGN("Design"),
     UIUXDESIGN("UI/UX"),
     TESTING("Testing"),
-    REACTJS("ReactJS"),
-    NODEJS("NodeJS"),
-    NEXTJS("NextJs"),
+    REACTJS("React"),
+    NODEJS("Node.js"),
+    NEXTJS("Next.js"),
+    ANGULAR("Angular"),
     PYTHON("Python"),
     JAVA("Java"),
     CSHARP("CSharp"),
@@ -36,7 +37,8 @@ public enum SkillTags {
     ARTIFICIALNEURALNETWORKS("Artificial Neural Network"),
     DOCKER("Docker"),
     KUBERNETES("Kubernetes"),
-    MICROSERVICES("Microservices");
+    MICROSERVICES("Microservices"),
+    OTHER("Other");
 
     private String skillName;
 

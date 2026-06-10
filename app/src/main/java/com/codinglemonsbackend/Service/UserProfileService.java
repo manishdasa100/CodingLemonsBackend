@@ -152,7 +152,6 @@ public class UserProfileService {
         Map<String, Object> updatePropertiesMap = new HashMap<>();
 
         if (newProfile.getFirstName() != null && !newProfile.getFirstName().equals(currentProfile.getFirstName())) {
-            System.out.println("FIRST NAME");
             String newFirstName = newProfile.getFirstName().trim();
             if (newFirstName.isEmpty()) {
                 throw new IllegalArgumentException("First name cannot be empty");
@@ -161,7 +160,6 @@ public class UserProfileService {
         }
 
         if (newProfile.getLastName() != null && !newProfile.getLastName().equals(currentProfile.getLastName())) {
-            System.out.println("LAST NAME");
             String newLastName = newProfile.getLastName().trim();
             if (newLastName.isEmpty()) {
                 newLastName = null; // Allow last name to be set to null
@@ -170,7 +168,6 @@ public class UserProfileService {
         }
 
         if (newProfile.getEmail() != null && !newProfile.getEmail().equals(currentProfile.getEmail())) {
-            System.out.println("EMAIL");
             String newEmail = newProfile.getEmail().trim();
             if (newEmail.isEmpty()) {
                 newEmail = null; // Allow email to be set to null
@@ -179,7 +176,6 @@ public class UserProfileService {
         }
 
         if (newProfile.getGithubUrl() != null && !newProfile.getGithubUrl().equals(currentProfile.getGithubUrl())) {
-            System.out.println("GUTHUB URL");
             String newGithubUrl = newProfile.getGithubUrl().trim();
             if (newGithubUrl.isEmpty()) {
                 newGithubUrl = null; // Allow GitHub URL to be set to null
@@ -188,7 +184,6 @@ public class UserProfileService {
         }
 
         if (newProfile.getTwitterUrl() != null && !newProfile.getTwitterUrl().equals(currentProfile.getTwitterUrl())) {
-            System.out.println("TWITTER URL");
             String newTwitterUrl = newProfile.getTwitterUrl().trim();
             if (newTwitterUrl.isEmpty()) {
                 newTwitterUrl = null; // Allow Twitter URL to be set to null
@@ -197,7 +192,6 @@ public class UserProfileService {
         }
 
         if (newProfile.getLinkedinUrl() != null && !newProfile.getLinkedinUrl().equals(currentProfile.getLinkedinUrl())) {
-            System.out.println("LINKEDIN URL");
             String newLinkedinUrl = newProfile.getLinkedinUrl().trim();
             if (newLinkedinUrl.isEmpty()) {
                 newLinkedinUrl = null; // Allow LinkedIn URL to be set to null
@@ -205,17 +199,15 @@ public class UserProfileService {
             updatePropertiesMap.put("linkedinUrl", newLinkedinUrl);
         }
 
-        if (newProfile.getAbout() != null && !newProfile.getAbout().equals(currentProfile.getAbout())) {
-            System.out.println("ABOUT ME");
-            String newAbout = newProfile.getAbout().trim();
-            if (newAbout.isEmpty()) {
-                newAbout = null; // Allow about section to be set to null
+        if (newProfile.getUserOccupation() != null && !newProfile.getUserOccupation().equals(currentProfile.getUserOccupation())) {
+            String newUserOccupation = newProfile.getUserOccupation().trim();
+            if (newUserOccupation.isEmpty()) {
+                newUserOccupation = null; // Allow user occupation to be set to null
             }
-            updatePropertiesMap.put("about", newAbout);
+            updatePropertiesMap.put("userOccupation", newUserOccupation);
         }
 
         if (newProfile.getSchool() != null && !newProfile.getSchool().equals(currentProfile.getSchool())) {
-            System.out.println("SCHOOL");
             String newSchool = newProfile.getSchool().trim();
             if (newSchool.isEmpty()) {
                 newSchool = null; // Allow school to be set to null
@@ -227,8 +219,7 @@ public class UserProfileService {
             updatePropertiesMap.put("location", newProfile.getLocation());
         }
 
-        if (newProfile.getSkillTags() != null && !Arrays.equals(newProfile.getSkillTags(), currentProfile.getSkillTags())) {
-            System.out.println("SKILL TAGS");
+        if (newProfile.getSkillTags() != null && !newProfile.getSkillTags().equals(currentProfile.getSkillTags())) {
             updatePropertiesMap.put("skillTags", newProfile.getSkillTags());
         }
         

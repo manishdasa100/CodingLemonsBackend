@@ -3,7 +3,6 @@ package com.codinglemonsbackend.Dto;
 import java.util.List;
 import java.util.Map;
 
-import com.codinglemonsbackend.Entities.SkillTags;
 import com.codinglemonsbackend.Entities.UserLocation;
 import com.codinglemonsbackend.Validation.CrossFieldValidation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -39,9 +38,9 @@ public class UserProfileDto {
     @Email(message = "Email must be a valid email address")
     private String email;
     
-    @Size(min = 20, max = 500, 
-    message = "About section must be between 20 and 500 characters")
-    private String about;
+    @Size(min = 5, max = 20, 
+    message = "User occupation must be between 5 and 20 characters")
+    private String userOccupation;
 
     @Pattern(regexp = "^https:\\/\\/(www\\.)?github\\.com\\/[a-zA-Z0-9_-]+\\/?$", message = "Github profile url not valid")
     private String githubUrl;
@@ -69,7 +68,7 @@ public class UserProfileDto {
     @JsonProperty(access = Access.READ_ONLY)
     private List<UserWorkExperienceDto> workExperience;
 
-    private SkillTags[] skillTags;
+    private List<String> skillTags;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Boolean profileOwner;

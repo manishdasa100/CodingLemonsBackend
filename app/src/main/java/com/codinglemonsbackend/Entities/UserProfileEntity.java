@@ -7,8 +7,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.codinglemonsbackend.Dto.SubmissionStats;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,7 +45,7 @@ public class UserProfileEntity {
 
     private String avatarUrl;
 
-    private String about;
+    private String userOccupation;
 
     private String school;
 
@@ -56,7 +54,7 @@ public class UserProfileEntity {
     private List<UserWorkExperience> workExperience;
 
     @Builder.Default
-    private List<SkillTags> skillTags = new ArrayList<>();
+    private List<String> skillTags = new ArrayList<>();
 
     @Builder.Default
     private List<String> earnedBadgeIds = new ArrayList<>();

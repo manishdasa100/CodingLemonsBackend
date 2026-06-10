@@ -1,9 +1,11 @@
 package com.codinglemonsbackend.Controller;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
@@ -30,6 +32,8 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemsPage;
+import com.codinglemonsbackend.Dto.SkillTags;
+import com.codinglemonsbackend.Dto.UserOccupation;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserWorkExperience;
@@ -184,6 +188,22 @@ public class MainController {
         }
         mainService.uploadUserProfilePicture(profilePictureImageFile);
         return ResponseEntity.ok().body("Profile picture uploaded successfully");
+    }
+
+    @GetMapping("/occupations")
+    public ResponseEntity<List<String>> getOccupations() {
+        List<String> labels = Arrays.stream(UserOccupation.values())
+                .map(UserOccupation::getLabel)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(labels);
+    }
+
+    @GetMapping("/skill-tags")
+    public ResponseEntity<List<String>> getSkillTags() {
+        List<String> labels = Arrays.stream(SkillTags.values())
+                .map(SkillTags::getSkillName)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(labels);
     }
 
     @GetMapping("/allTopics")
