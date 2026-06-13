@@ -23,8 +23,7 @@ public enum UserOccupation {
 
     // Other
     FREELANCER("Freelancer"),
-    CAREER_CHANGER("Career Changer"),
-    OTHER("Other");
+    CAREER_CHANGER("Career Changer");
 
     private final String label;
 

@@ -449,12 +449,6 @@ public class MainServiceImpl{
         // }
     } 
 
-    public void addWorkExperience(UserWorkExperience experience) {
-        String username = getCurrentlySignedInUser().getUsername();
-        experience.setCompanySlug(slugify.slugify(experience.getCompanyName()));
-        userProfileService.addWorkExperience(username, experience);
-    }
-
     public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
         UserEntity user = getCurrentlySignedInUser();
         byte[] resizedImage = ImageUtils.resizeImage(file, ImageDimension.SQUARE);

@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,7 +33,6 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemsPage;
-import com.codinglemonsbackend.Dto.SkillTags;
 import com.codinglemonsbackend.Dto.UserOccupation;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
@@ -166,12 +166,6 @@ public class MainController {
         return ResponseEntity.ok().body(userProfile);
     }
 
-    @PostMapping("/user/work-experience")
-    public ResponseEntity<String> addWorkExperience(@Valid @RequestBody UserWorkExperience experience) {
-        mainService.addWorkExperience(experience);
-        return ResponseEntity.ok().body("Work experience added successfully");
-    }
-
     @PutMapping("/user/update")
     public ResponseEntity<String> updateUserProfile(@Valid @RequestBody UserProfileDto newUserProfile) {
         Boolean updated = mainService.updateUserProfile(newUserProfile);
@@ -194,14 +188,6 @@ public class MainController {
     public ResponseEntity<List<String>> getOccupations() {
         List<String> labels = Arrays.stream(UserOccupation.values())
                 .map(UserOccupation::getLabel)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(labels);
-    }
-
-    @GetMapping("/skill-tags")
-    public ResponseEntity<List<String>> getSkillTags() {
-        List<String> labels = Arrays.stream(SkillTags.values())
-                .map(SkillTags::getSkillName)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(labels);
     }

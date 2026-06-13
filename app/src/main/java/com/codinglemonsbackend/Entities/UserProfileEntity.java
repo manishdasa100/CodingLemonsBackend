@@ -2,6 +2,8 @@ package com.codinglemonsbackend.Entities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -54,7 +56,7 @@ public class UserProfileEntity {
     private List<UserWorkExperience> workExperience;
 
     @Builder.Default
-    private List<String> skillTags = new ArrayList<>();
+    private Set<String> skillTags = new HashSet<>();
 
     @Builder.Default
     private List<String> earnedBadgeIds = new ArrayList<>();

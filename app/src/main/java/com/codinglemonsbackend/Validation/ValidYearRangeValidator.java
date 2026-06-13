@@ -1,14 +1,14 @@
 package com.codinglemonsbackend.Validation;
 
-import com.codinglemonsbackend.Entities.UserWorkExperience;
+import com.codinglemonsbackend.Dto.UserWorkExperienceDto;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
-public class ValidYearRangeValidator implements ConstraintValidator<ValidYearRange, UserWorkExperience> {
+public class ValidYearRangeValidator implements ConstraintValidator<ValidYearRange, UserWorkExperienceDto> {
 
     @Override
-    public boolean isValid(UserWorkExperience experience, ConstraintValidatorContext context) {
+    public boolean isValid(UserWorkExperienceDto experience, ConstraintValidatorContext context) {
         if (experience == null) return true;
         Integer start = experience.getStartYear();
         Integer end = experience.getEndYear();

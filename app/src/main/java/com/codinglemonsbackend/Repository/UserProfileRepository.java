@@ -72,9 +72,12 @@ public class UserProfileRepository {
     //     // }
     // }
 
-    public void incrementScore(String username, int points) {
+    public void incrementScoreAndAddLanguageSkill(String username, int points, String languageSkill) {
         Query query = new Query(Criteria.where("username").is(username));
         Update update = new Update().inc("score", points);
+        if (languageSkill != null && !languageSkill.isEmpty()) {
+            update.addToSet("skillTags", languageSkill);
+        }
         mongoTemplate.updateFirst(query, update, UserProfileEntity.class);
     }
 

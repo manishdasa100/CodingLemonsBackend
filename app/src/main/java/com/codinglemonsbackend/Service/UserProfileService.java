@@ -20,6 +20,7 @@ import com.codinglemonsbackend.Dto.CurrentUserDto;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserWorkExperienceDto;
+import com.codinglemonsbackend.Entities.UserLocation;
 import com.codinglemonsbackend.Entities.UserProfileEntity;
 import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
@@ -29,6 +30,7 @@ import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
 import com.codinglemonsbackend.Utils.URIUtils;
+import com.github.slugify.Slugify;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -56,6 +58,9 @@ public class UserProfileService {
 
     @Autowired
     private CompanyService companyService;
+
+    @Autowired
+    private Slugify slugify;
 
     @Value("${assets.domain}")
     private String ASSETS_DOMAIN;
@@ -116,10 +121,10 @@ public class UserProfileService {
     @Async("applicationAsyncExecutor")
     @EventListener
     public void onSubmitCodeCompleted(SubmitCodeCompletedEvent event) {
-        if (event.getExecutionReport().status() != ExecutionStatus.ACC) return;
+        if (event.getExecutionReport().status() != ExecutionStatus.ACC || !event.getIsNewSolve()) return;
         String username = event.getSubmissionMetadata().getUsername();
         Integer points = event.getSubmissionMetadata().getSolutionPoints();
-        userProfileRepository.incrementScore(username, points);
+        userProfileRepository.incrementScoreAndAddLanguageSkill(username, points, event.getSubmissionMetadata().getLanguage().name());
         log.info("Score updated for user {} by {} points", username, points);
     }
 
@@ -216,11 +221,26 @@ public class UserProfileService {
         }
 
         if (newProfile.getLocation() != null && !newProfile.getLocation().equals(currentProfile.getLocation())) {
-            updatePropertiesMap.put("location", newProfile.getLocation());
+            UserLocation newLocation = newProfile.getLocation().getCountry() == null
+                    ? null
+                    : newProfile.getLocation();
+            updatePropertiesMap.put("location", newLocation);
         }
 
         if (newProfile.getSkillTags() != null && !newProfile.getSkillTags().equals(currentProfile.getSkillTags())) {
             updatePropertiesMap.put("skillTags", newProfile.getSkillTags());
+        }
+
+        if (newProfile.getWorkExperience() != null) {
+            List<UserWorkExperience> newWorkExperience = newProfile.getWorkExperience().stream()
+                    .map(dto -> new UserWorkExperience(
+                            dto.getCompanyName().trim(),
+                            slugify.slugify(dto.getCompanyName().trim()),
+                            dto.getJobTitle().trim(),
+                            dto.getStartYear(),
+                            dto.getEndYear()
+                    )).collect(Collectors.toList());
+            updatePropertiesMap.put("workExperience", newWorkExperience);
         }
         
         if (updatePropertiesMap.isEmpty()){

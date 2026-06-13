@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Dto;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.codinglemonsbackend.Entities.UserLocation;
 import com.codinglemonsbackend.Validation.CrossFieldValidation;
@@ -65,10 +66,10 @@ public class UserProfileDto {
     @Valid
     private UserLocation location;
 
-    @JsonProperty(access = Access.READ_ONLY)
+    @Valid
     private List<UserWorkExperienceDto> workExperience;
 
-    private List<String> skillTags;
+    private Set<String> skillTags;
 
     @JsonProperty(access = Access.READ_ONLY)
     private Boolean profileOwner;
