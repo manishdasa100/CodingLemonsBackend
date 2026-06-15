@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Controller;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,14 @@ import com.codinglemonsbackend.Dto.BadgeDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.Topic;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
@@ -199,19 +202,18 @@ public class AdminController {
         @Valid @RequestPart UserRankDto rankDetails,
         @RequestPart MultipartFile rankBadgeImageFile) throws FileUploadFailureException, IOException
     {
-        // Validate the file extension
-        // List<String> validImageExtensions = ImageUtils.validImageUploadExtensions;
-        // String fileExtension = FilenameUtils.getExtension(rankBadgeImageFile.getOriginalFilename());
-
-        // if (fileExtension != null && !validImageExtensions.contains(fileExtension)) {
-        //     throw new IllegalArgumentException(String.format("Unsupported file extension: %s. Please upload one of %s", fileExtension, validImageExtensions));
-        // }
-
         if (!isValidImageFile(rankBadgeImageFile.getOriginalFilename())) {
             throw new IllegalArgumentException(String.format("Unsupported file extension for file %s. Please upload one of %s", rankBadgeImageFile.getOriginalFilename(), "jpg, png, jpeg"));
         }
         adminService.createUserRank(rankDetails, rankBadgeImageFile);
         return ResponseEntity.ok().body("User rank created");
+    }
+
+    @PostMapping("/publicProblemList/create")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> createPublicProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException {
+        adminService.createPublicProblemList(payload);
+        return ResponseEntity.ok().body("Public problem list created");
     }
 
     private Boolean isValidImageFile(String filename) {

@@ -42,7 +42,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ExceptionMessage> handleAccessDeniedException(AccessDeniedException e) {
         logError("AccessDeniedException", e);
-        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("Access denied"), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FORBIDDEN);
     }
     
     @ExceptionHandler(UserAlreadyExistException.class)

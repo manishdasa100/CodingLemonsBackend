@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class AddProblemToListRequest {
+public class ProblemListOperationRequest {
     
     @NotBlank
     private String id;

@@ -95,7 +95,7 @@ public class MainServiceImpl{
     private ProblemRepositoryService problemRepositoryService;
 
     @Autowired
-    private UserProblemListRepositoryService userProblemListRepositoryService;
+    private ProblemListRepositoryService problemListRepositoryService;
 
     @Autowired
     private UserStreakService userStreakService;
@@ -235,14 +235,14 @@ public class MainServiceImpl{
         return Integer.toString(likeCount/1000000) + "M";
     }
 
-    public void addProblemList(ProblemListDto problemListDto) throws DuplicateResourceException {
+    public void createProblemList(ProblemListDto problemListDto) throws DuplicateResourceException {
         UserEntity currentSignedInUserEntity = getCurrentlySignedInUser();
         ProblemListEntity enitityToSave = modelMapper.map(problemListDto, ProblemListEntity.class);
         enitityToSave.setCreator(currentSignedInUserEntity.getUsername());
-        userProblemListRepositoryService.saveProblemList(enitityToSave);
+        problemListRepositoryService.saveProblemList(enitityToSave);
     }
 
-    public Map<String, Object> addProblemToList(String listId, Set<Integer> problemIds) {
+    public void addProblemToList(String listId, Set<Integer> problemIds) throws DuplicateResourceException {
         Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds), false)
                                         .stream()
                                         .map(ProblemDto::getId)
@@ -252,19 +252,27 @@ public class MainServiceImpl{
             throw new IllegalArgumentException("No valid problem ids found");
         }
 
-        return userProblemListRepositoryService.addProblemToProblemList(listId, validProblemIds);
+        problemListRepositoryService.addProblemToProblemList(listId, validProblemIds);
+    }
+
+    public void removeProblemFromList(String listId, Set<Integer> problemIds) {
+        problemListRepositoryService.removeProblemFromProblemList(listId, problemIds);
     }
 
     public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest newListDetails) {
-        return userProblemListRepositoryService.updateProblemList(listId, newListDetails);
+        return problemListRepositoryService.updateProblemList(listId, newListDetails);
     }
 
     public List<ProblemListDto> getUserFavorites(String username) {
-        return userProblemListRepositoryService.getUserProblemLists(username);
+        return problemListRepositoryService.getUserProblemLists(username);
     }
 
     public ProblemListDto getUserProblemList(String username, String name) {
-        return userProblemListRepositoryService.getUserProblemList(username, name);
+        return problemListRepositoryService.getUserProblemList(username, name);
+    }
+
+    public List<ProblemListDto> getAllPublicProblemLists() {
+        return problemListRepositoryService.getAllPublicProblemLists();
     }
 
     public void likeProblem(LikeRequest request) throws DuplicateResourceException {

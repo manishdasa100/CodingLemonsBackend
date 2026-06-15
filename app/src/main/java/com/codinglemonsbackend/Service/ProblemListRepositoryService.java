@@ -21,20 +21,32 @@ import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
-import com.codinglemonsbackend.Repository.UserProblemListRepository;
+import com.codinglemonsbackend.Repository.ProblemListRepository;
 
 
 @Service
-public class UserProblemListRepositoryService {
+public class ProblemListRepositoryService {
 
     @Autowired
-    private UserProblemListRepository userProblemListRepository;
+    private ProblemListRepository problemListRepository;
 
     @Autowired
     private ModelMapper modelMapper;
 
+    public List<ProblemListDto> getAllPublicProblemLists() {
+        return getUserProblemLists("public");
+    }
+
     public List<ProblemListDto> getUserProblemLists(String username) {
-        List<ProblemListEntity> userProblemListEntities = userProblemListRepository.getAllProblemListsOfUser(username);
+        List<ProblemListEntity> userProblemListEntities = problemListRepository.getAllProblemListsOfUser(username);
+
+        if (userProblemListEntities.isEmpty()) {
+            String message = "No problem lists found for user " + username;
+            if (username.equals("public")) {
+                message = "No public problem lists found";
+            }
+            throw new NoSuchElementException(message);
+        }
 
         List<ProblemListDto> userProblemListDtos = userProblemListEntities.stream()
                 .map(entity -> {
@@ -44,23 +56,24 @@ public class UserProblemListRepositoryService {
                 })
                 .collect(Collectors.toList());
 
-        if (userProblemListDtos.isEmpty()) {
-            throw new NoSuchElementException("No problem lists found for user " + username);
-        }
         return userProblemListDtos;
     }
 
     public ProblemListDto getUserProblemList(String creator, String name) {
-        return userProblemListRepository.getUserProblemListDetails(creator, name)
+        return problemListRepository.getUserProblemListDetails(creator, name)
             .orElseThrow(() -> new NoSuchElementException(String.format("The list with name %s does not exist!!", name)));
     }
 
     public void saveProblemList(ProblemListEntity newProblemList) throws DuplicateResourceException {
-        userProblemListRepository.saveProblemList(newProblemList);
+        problemListRepository.saveProblemList(newProblemList);
     }
 
-    public Map<String, Object> addProblemToProblemList(String listId, Set<Integer> validProblemIds) {
-        return userProblemListRepository.addProblemToProblemList(listId, validProblemIds);
+    public void addProblemToProblemList(String listId, Set<Integer> validProblemIds) throws DuplicateResourceException {
+        problemListRepository.addProblemToProblemList(listId, validProblemIds);
+    }
+
+    public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
+        problemListRepository.removeProblemFromProblemList(listId, problemIdsToRemove);
     }
 
     public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest newListDetails) {
@@ -72,7 +85,7 @@ public class UserProblemListRepositoryService {
             throw new IllegalArgumentException("Invalid problem list id");
         }
 
-        ProblemListEntity listEntity = userProblemListRepository.getUserProblemListEntityById(objectId)
+        ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(objectId)
             .orElseThrow(() -> new NoSuchElementException(String.format("The requested list id %s not found!!", listId)));
 
         UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -100,7 +113,7 @@ public class UserProblemListRepositoryService {
         }
 
         if (!fieldsToUpdate.isEmpty()) {
-            return userProblemListRepository.updateProblemList(objectId, fieldsToUpdate, listEntity);
+            return problemListRepository.updateProblemList(objectId, fieldsToUpdate, listEntity);
         }
 
         return new HashMap<>();

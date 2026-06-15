@@ -38,7 +38,7 @@ import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.mongodb.client.result.DeleteResult;
 
 @Repository
-public class UserProblemListRepository {
+public class ProblemListRepository {
 
     @Autowired
     private MongoTemplate mongoTemplate;
@@ -170,9 +170,9 @@ public class UserProblemListRepository {
         return updatedFields;
     }
 
-    public Map<String, Object> addProblemToProblemList(String listId, Set<Integer> newProblemIds){
+    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) throws DuplicateResourceException{
 
-        UserEntity signedInUser= (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         //Query query = new Query(Criteria.where("_id").is(objectId).and("creator").is(signedInUser.getUsername()));
    
@@ -183,8 +183,16 @@ public class UserProblemListRepository {
         if (listEntity == null) {
             throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
         }
-        
-        if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
+
+        boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
+
+        boolean isPublicList = "public".equals(listEntity.getCreator());
+
+        if (isPublicList) {
+            if (!isAdmin) {
+                throw new AccessDeniedException("Only admins can add problems to public lists.");
+            }
+        } else if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
             throw new AccessDeniedException("You are not allowed to update this list.");
         }
 
@@ -192,12 +200,37 @@ public class UserProblemListRepository {
             newProblemIds.removeAll(listEntity.getProblemIds());
         }
         
-        if (newProblemIds.size() > 0) {
-            Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
-            mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
+        if (newProblemIds.isEmpty()) {
+            throw new DuplicateResourceException("The provided problem ids are already present in " + listEntity.getName());
         }
 
-        return Map.of("addedProblemIds", newProblemIds, "listName", listEntity.getName());
+        Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
+        mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
+    }
+
+    public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
+        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Query query = new Query(Criteria.where("_id").is(listId));
+        ProblemListEntity listEntity = mongoTemplate.findOne(query, ProblemListEntity.class);
+
+        if (listEntity == null) {
+            throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
+        }
+
+        boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
+        boolean isPublicList = "public".equals(listEntity.getCreator());
+
+        if (isPublicList) {
+            if (!isAdmin) {
+                throw new AccessDeniedException("Only admins can remove problems from public lists.");
+            }
+        } else if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
+            throw new AccessDeniedException("You are not allowed to update this list.");
+        }
+
+        Update update = new Update().pullAll("problemIds", problemIdsToRemove.toArray());
+        mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
     }
 
     public Boolean deleteProblemList(String id){

@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,7 +43,7 @@ import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
-import com.codinglemonsbackend.Payloads.AddProblemToListRequest;
+import com.codinglemonsbackend.Payloads.ProblemListOperationRequest;
 import com.codinglemonsbackend.Payloads.LikeRequest;
 import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
@@ -93,20 +94,25 @@ public class MainController {
     } 
 
     @PostMapping("/list/create")
-    public ResponseEntity<String> addProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException{
-        mainService.addProblemList(payload);
+    public ResponseEntity<String> createProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException{
+        mainService.createProblemList(payload);
         return ResponseEntity.ok().body("List added");
     }
 
-    @PostMapping("list/add")
-    public ResponseEntity<String> addProblemToList(@Valid @RequestBody AddProblemToListRequest request) {
-        Map<String, Object> result = mainService.addProblemToList(request.getId(), request.getProblemIds());
-        Set<Integer> problemIdsAdded = (Set<Integer>) result.get("addedProblemIds");
-        String listName = (String) result.get("listName");
-        if (problemIdsAdded == null || problemIdsAdded.isEmpty()) {
-            return ResponseEntity.ok().body("Problems already present in " + listName);
-        } 
-        return ResponseEntity.ok().body(String.format("Added %d new problems to list %s", problemIdsAdded.size(), listName));
+    @PutMapping("list/add")
+    public ResponseEntity<String> addProblemToList(@Valid @RequestBody ProblemListOperationRequest request) {
+        try {
+            mainService.addProblemToList(request.getId(), request.getProblemIds());
+        } catch (DuplicateResourceException e) {
+            return ResponseEntity.ok().body(e.getMessage());
+        }
+        return ResponseEntity.ok().body("Problems added successfully");
+    }
+
+    @DeleteMapping("list/remove")
+    public ResponseEntity<String> removeProblemFromList(@Valid @RequestBody ProblemListOperationRequest request) {
+        mainService.removeProblemFromList(request.getId(), request.getProblemIds());
+        return ResponseEntity.ok().body("Problems removed successfully");
     }
 
     @PutMapping("list/update/{id}")
@@ -120,8 +126,10 @@ public class MainController {
 
     @GetMapping("/lists/{username}")
     public ResponseEntity<List<ProblemListDto>> getUserFavorites(@PathVariable String username){
-        List<ProblemListDto> userFavorites = mainService.getUserFavorites(username);
-        return ResponseEntity.ok().body(userFavorites);
+        if (username.equals("public")) {
+            return ResponseEntity.ok().body(mainService.getAllPublicProblemLists());
+        } 
+        return ResponseEntity.ok().body(mainService.getUserFavorites(username));
     }
 
     @GetMapping("/list/{username}")

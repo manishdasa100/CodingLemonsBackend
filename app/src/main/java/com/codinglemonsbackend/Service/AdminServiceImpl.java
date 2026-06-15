@@ -16,6 +16,7 @@ import com.codinglemonsbackend.Dto.BadgeDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
+import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
@@ -23,9 +24,11 @@ import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
 import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
+import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.TestcaseRepository;
@@ -34,13 +37,11 @@ import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.github.slugify.Slugify;
 
-
 @Service
 public class AdminServiceImpl {
 
     @Autowired
     private ProblemRepositoryService problemRepositoryService;
-
 
     @Autowired
     private TestcaseRepository testcaseRepository;
@@ -62,6 +63,9 @@ public class AdminServiceImpl {
 
     @Autowired
     private ProblemOfTheDayService problemOfTheDayService;
+
+    @Autowired
+    private ProblemListRepositoryService problemListRepositoryService;
 
     @Autowired
     private BadgeService badgeService;
@@ -168,5 +172,12 @@ public class AdminServiceImpl {
 
     public void deleteBadge(String badgeId) {
         badgeService.deleteBadge(badgeId);
+    }
+
+    public void createPublicProblemList(ProblemListDto payload) throws DuplicateResourceException {
+        ProblemListEntity problemListEntity = moddModelMapper.map(payload, ProblemListEntity.class);
+        problemListEntity.setCreator("public");
+        problemListEntity.setIsPublic(true);
+        problemListRepositoryService.saveProblemList(problemListEntity);
     }
 }

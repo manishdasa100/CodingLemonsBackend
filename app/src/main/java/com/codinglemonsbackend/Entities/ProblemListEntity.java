@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -18,12 +19,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(collection = "UserProblemList")
+@Document(collection = "ProblemList")
 @CompoundIndex(name = "unique_name_creator",def = "{'creator':1, 'name':1}", unique = true)
 public class ProblemListEntity {
 
     @Transient
-    public static final String ENTITY_COLLECTION_NAME = "UserProblemList";
+    public static final String ENTITY_COLLECTION_NAME = "ProblemList";
     
     @Id
     private String id;
@@ -32,7 +33,8 @@ public class ProblemListEntity {
 
     private String description;
 
-    private Set<Integer> problemIds;
+    @Builder.Default
+    private Set<Integer> problemIds = new HashSet<>();
 
     private Boolean isPublic;
     
