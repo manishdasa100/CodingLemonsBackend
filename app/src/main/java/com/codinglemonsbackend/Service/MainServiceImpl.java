@@ -242,7 +242,7 @@ public class MainServiceImpl{
         problemListRepositoryService.saveProblemList(enitityToSave);
     }
 
-    public void addProblemToList(String listId, Set<Integer> problemIds) throws DuplicateResourceException {
+    public void addProblemToList(String listId, Set<Integer> problemIds) {
         Set<Integer> validProblemIds = problemRepositoryService.getProblemsByIds(new ArrayList<>(problemIds), false)
                                         .stream()
                                         .map(ProblemDto::getId)
@@ -264,15 +264,15 @@ public class MainServiceImpl{
     }
 
     public List<ProblemListDto> getUserFavorites(String username) {
-        return problemListRepositoryService.getUserProblemLists(username);
+        return problemListRepositoryService.getProblemLists(username);
     }
 
-    public ProblemListDto getUserProblemList(String username, String name) {
-        return problemListRepositoryService.getUserProblemList(username, name);
+    public ProblemListDto getAProblemList(String username, String name) {
+        return problemListRepositoryService.getAProblemList(username, name);
     }
 
-    public List<ProblemListDto> getAllPublicProblemLists() {
-        return problemListRepositoryService.getAllPublicProblemLists();
+    public List<ProblemListDto> getAllGlobalProblemLists() {
+        return problemListRepositoryService.getAllGlobalProblemLists();
     }
 
     public void likeProblem(LikeRequest request) throws DuplicateResourceException {

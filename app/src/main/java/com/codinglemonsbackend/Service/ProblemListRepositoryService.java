@@ -33,17 +33,17 @@ public class ProblemListRepositoryService {
     @Autowired
     private ModelMapper modelMapper;
 
-    public List<ProblemListDto> getAllPublicProblemLists() {
-        return getUserProblemLists("public");
+    public List<ProblemListDto> getAllGlobalProblemLists() {
+        return getProblemLists("global");
     }
 
-    public List<ProblemListDto> getUserProblemLists(String username) {
+    public List<ProblemListDto> getProblemLists(String username) {
         List<ProblemListEntity> userProblemListEntities = problemListRepository.getAllProblemListsOfUser(username);
 
         if (userProblemListEntities.isEmpty()) {
             String message = "No problem lists found for user " + username;
-            if (username.equals("public")) {
-                message = "No public problem lists found";
+            if (username.equals("global")) {
+                message = "No global problem lists found";
             }
             throw new NoSuchElementException(message);
         }
@@ -59,7 +59,7 @@ public class ProblemListRepositoryService {
         return userProblemListDtos;
     }
 
-    public ProblemListDto getUserProblemList(String creator, String name) {
+    public ProblemListDto getAProblemList(String creator, String name) {
         return problemListRepository.getUserProblemListDetails(creator, name)
             .orElseThrow(() -> new NoSuchElementException(String.format("The list with name %s does not exist!!", name)));
     }
@@ -68,7 +68,7 @@ public class ProblemListRepositoryService {
         problemListRepository.saveProblemList(newProblemList);
     }
 
-    public void addProblemToProblemList(String listId, Set<Integer> validProblemIds) throws DuplicateResourceException {
+    public void addProblemToProblemList(String listId, Set<Integer> validProblemIds) {
         problemListRepository.addProblemToProblemList(listId, validProblemIds);
     }
 

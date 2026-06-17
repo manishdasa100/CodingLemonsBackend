@@ -3,13 +3,20 @@ package com.codinglemonsbackend.Service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.MethodParameter;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.codinglemonsbackend.Dto.BadgeDto;
@@ -174,9 +181,9 @@ public class AdminServiceImpl {
         badgeService.deleteBadge(badgeId);
     }
 
-    public void createPublicProblemList(ProblemListDto payload) throws DuplicateResourceException {
+    public void createGlobalProblemList(ProblemListDto payload) throws DuplicateResourceException, MethodArgumentNotValidException {
         ProblemListEntity problemListEntity = moddModelMapper.map(payload, ProblemListEntity.class);
-        problemListEntity.setCreator("public");
+        problemListEntity.setCreator("global");
         problemListEntity.setIsPublic(true);
         problemListRepositoryService.saveProblemList(problemListEntity);
     }

@@ -14,7 +14,6 @@ import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.AuthenticationResponse;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;
-import com.codinglemonsbackend.Payloads.ResetPasswordRequestPayload;
 import com.codinglemonsbackend.Service.AuthenticationService;
 
 import io.micrometer.core.instrument.Counter;
@@ -64,19 +63,19 @@ public class AuthenticationController {
         return ResponseEntity.ok().body(response);
     }
 
-    @PostMapping("/resetpassword")
-    public ResponseEntity<String> resetUserPassword(@Valid @RequestBody ResetPasswordRequestPayload resetPasswordRequestPayload){
-        boolean updateStatus = authService.resetUserPassword(resetPasswordRequestPayload.getUsername(), 
-                                        resetPasswordRequestPayload.getNewPassword());
-        Counter resetPasswordCounter = counters.computeIfAbsent("user.reset-password", key -> 
-            Counter.builder("user.reset-password.total")
-                .description("Total number of user password resets")
-                .tag("type", "password-reset")
-                .register(meterRegistry)
-        );
-        resetPasswordCounter.increment();
+    // @PostMapping("/resetPassword")
+    // public ResponseEntity<String> resetUserPassword(@Valid @RequestBody ResetPasswordRequestPayload resetPasswordRequestPayload){
+    //     boolean updateStatus = authService.resetUserPassword(resetPasswordRequestPayload.getUsername(), 
+    //                                     resetPasswordRequestPayload.getNewPassword());
+    //     Counter resetPasswordCounter = counters.computeIfAbsent("user.reset-password", key -> 
+    //         Counter.builder("user.reset-password.total")
+    //             .description("Total number of user password resets")
+    //             .tag("type", "password-reset")
+    //             .register(meterRegistry)
+    //     );
+    //     resetPasswordCounter.increment();
 
-        return ResponseEntity.ok().body(updateStatus?"Password updated successfully":"Password not updated");
-    }
+    //     return ResponseEntity.ok().body(updateStatus?"Password updated successfully":"Password not updated");
+    // }
     
 }

@@ -96,16 +96,13 @@ public class MainController {
     @PostMapping("/list/create")
     public ResponseEntity<String> createProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException{
         mainService.createProblemList(payload);
-        return ResponseEntity.ok().body("List added");
+        String listType = payload.getIsStudyPlan() ? "study plan" : "problem list";
+        return ResponseEntity.ok().body(String.format("%s created", listType));
     }
 
     @PutMapping("list/add")
     public ResponseEntity<String> addProblemToList(@Valid @RequestBody ProblemListOperationRequest request) {
-        try {
-            mainService.addProblemToList(request.getId(), request.getProblemIds());
-        } catch (DuplicateResourceException e) {
-            return ResponseEntity.ok().body(e.getMessage());
-        }
+        mainService.addProblemToList(request.getId(), request.getProblemIds());
         return ResponseEntity.ok().body("Problems added successfully");
     }
 
@@ -126,15 +123,15 @@ public class MainController {
 
     @GetMapping("/lists/{username}")
     public ResponseEntity<List<ProblemListDto>> getUserFavorites(@PathVariable String username){
-        if (username.equals("public")) {
-            return ResponseEntity.ok().body(mainService.getAllPublicProblemLists());
+        if (username.equals("global")) {
+            return ResponseEntity.ok().body(mainService.getAllGlobalProblemLists());
         } 
         return ResponseEntity.ok().body(mainService.getUserFavorites(username));
     }
 
     @GetMapping("/list/{username}")
     public ResponseEntity<ProblemListDto> getUserFavorite(@PathVariable String username, @RequestParam String name) {
-        ProblemListDto problemDto = mainService.getUserProblemList(username, name);
+        ProblemListDto problemDto = mainService.getAProblemList(username, name);
         return ResponseEntity.ok().body(problemDto);
     }
 
@@ -150,12 +147,6 @@ public class MainController {
         SubmissionResponsePayload reponse = mainService.check(submissionId);
         return ResponseEntity.accepted().body(reponse);
     }
-
-    // @GetMapping("/submission/get/{submissionId}")
-    // public ResponseEntity<SubmissionResponsePayload<?>> getSubmission(@PathVariable String submissionId) throws FailedSubmissionException{
-    //     SubmissionResponsePayload<?> payload = mainService.getSubmission(submissionId);
-    //     return ResponseEntity.ok().body(payload);
-    // }
 
     @GetMapping("/problem/today")
     public ResponseEntity<ProblemOfTheDayDto> getProblemOfTheDay(){

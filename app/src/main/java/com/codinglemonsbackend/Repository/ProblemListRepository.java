@@ -170,7 +170,7 @@ public class ProblemListRepository {
         return updatedFields;
     }
 
-    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) throws DuplicateResourceException{
+    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) {
 
         UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -186,11 +186,11 @@ public class ProblemListRepository {
 
         boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
 
-        boolean isPublicList = "public".equals(listEntity.getCreator());
+        boolean isPublicList = "global".equals(listEntity.getCreator());
 
         if (isPublicList) {
             if (!isAdmin) {
-                throw new AccessDeniedException("Only admins can add problems to public lists.");
+                throw new AccessDeniedException("Only admins can add problems to global lists.");
             }
         } else if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
             throw new AccessDeniedException("You are not allowed to update this list.");
@@ -200,12 +200,11 @@ public class ProblemListRepository {
             newProblemIds.removeAll(listEntity.getProblemIds());
         }
         
-        if (newProblemIds.isEmpty()) {
-            throw new DuplicateResourceException("The provided problem ids are already present in " + listEntity.getName());
+        if (!newProblemIds.isEmpty()) {
+            Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
+            mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
         }
 
-        Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
-        mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
     }
 
     public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
@@ -219,7 +218,7 @@ public class ProblemListRepository {
         }
 
         boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
-        boolean isPublicList = "public".equals(listEntity.getCreator());
+        boolean isPublicList = "global".equals(listEntity.getCreator());
 
         if (isPublicList) {
             if (!isAdmin) {

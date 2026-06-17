@@ -40,5 +40,11 @@ public class ProblemListEntity {
     
     private Boolean isPinned;
 
+    private Boolean isStudyPlan;
+
+    private StudyPlanDifficultyTier difficultyTier;
+
+    private Integer timelineDays;
+
     private String creator;
 }

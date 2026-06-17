@@ -39,6 +39,7 @@ import com.codinglemonsbackend.Service.AdminServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
 
 import jakarta.validation.Valid;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 @RestController
 @RequestMapping(value = "/api/v1/admin")
@@ -209,11 +210,12 @@ public class AdminController {
         return ResponseEntity.ok().body("User rank created");
     }
 
-    @PostMapping("/publicProblemList/create")
+    @PostMapping("/globalProblemList/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> createPublicProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException {
-        adminService.createPublicProblemList(payload);
-        return ResponseEntity.ok().body("Public problem list created");
+    public ResponseEntity<String> createGlobalProblemList(@Valid @RequestBody ProblemListDto payload) throws DuplicateResourceException, MethodArgumentNotValidException {
+        adminService.createGlobalProblemList(payload);
+        String listType = payload.getIsStudyPlan() ? "study plan" : "problem list";
+        return ResponseEntity.ok().body(String.format("Global %s created", listType));
     }
 
     private Boolean isValidImageFile(String filename) {
