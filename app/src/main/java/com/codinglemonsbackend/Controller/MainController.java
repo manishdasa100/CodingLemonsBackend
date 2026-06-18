@@ -112,13 +112,10 @@ public class MainController {
         return ResponseEntity.ok().body("Problems removed successfully");
     }
 
-    @PutMapping("list/update/{id}")
-    public ResponseEntity<Object> updateProblemList(@PathVariable String id, @Valid @RequestBody UpdateProblemListRequest request) {
-        Map<String, Object> updatedFields = mainService.updateProblemList(id, request);
-        if (updatedFields.size() == 0) {
-            return ResponseEntity.ok().body("Nothing to update for list id " + id);
-        }
-        return ResponseEntity.ok().body(updatedFields);
+    @PutMapping("list/update")
+    public ResponseEntity<Object> updateProblemList(@Valid @RequestBody UpdateProblemListRequest request) {
+        mainService.updateProblemList(request);
+        return ResponseEntity.ok().body("List updated");
     }
 
     @GetMapping("/lists/{username}")

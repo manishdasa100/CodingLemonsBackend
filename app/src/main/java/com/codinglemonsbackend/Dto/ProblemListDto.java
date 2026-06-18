@@ -67,9 +67,7 @@ public class ProblemListDto {
     @PositiveOrZero
     private Integer timelineDays;
 
-    @NotNull
-    private Boolean isPublic;
+    private Boolean isPublic = false;
     
-    @NotNull
-    private Boolean isPinned;
+    private Boolean isPinned = false;
 }

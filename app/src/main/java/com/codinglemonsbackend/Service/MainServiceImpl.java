@@ -259,8 +259,8 @@ public class MainServiceImpl{
         problemListRepositoryService.removeProblemFromProblemList(listId, problemIds);
     }
 
-    public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest newListDetails) {
-        return problemListRepositoryService.updateProblemList(listId, newListDetails);
+    public void updateProblemList(UpdateProblemListRequest newListDetails) {
+        problemListRepositoryService.updateProblemList(newListDetails);
     }
 
     public List<ProblemListDto> getUserFavorites(String username) {

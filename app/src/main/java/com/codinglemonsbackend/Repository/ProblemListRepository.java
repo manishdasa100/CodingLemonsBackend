@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Repository;
 import java.lang.reflect.Field;
 import java.lang.NoSuchFieldException;
 import java.lang.IllegalAccessException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.UpdateResult;
 
 @Repository
 public class ProblemListRepository {
@@ -113,7 +115,7 @@ public class ProblemListRepository {
         return Optional.ofNullable(userProblemList);
     }
 
-    public Optional<ProblemListEntity> getUserProblemListEntityById(ObjectId id) {
+    public Optional<ProblemListEntity> getUserProblemListEntityById(String id) {
         ProblemListEntity entity =  mongoTemplate.findById(id, ProblemListEntity.class);
         return Optional.ofNullable(entity);
     }
@@ -138,62 +140,36 @@ public class ProblemListRepository {
         return problemListEntities;      
     }
 
-    public Map<String, Object> updateProblemList(ObjectId listId, Map<String, Object> fieldsToUpdate, ProblemListEntity originalEntity) {
-        Update update = new Update();
-        fieldsToUpdate.entrySet().stream().forEach(e -> update.set(e.getKey(), e.getValue()));
-        ProblemListEntity updatedEntity = mongoTemplate.findAndModify(
-                                        new Query(Criteria.where("_id").is(listId)), 
-                                        update, 
-                                        FindAndModifyOptions.options().returnNew(true),
-                                        ProblemListEntity.class);
+    public void updateProblemList(String listId, Map<String, Object> fieldsToUpdate) {
+        ProblemListEntity originalEntity = this.getUserProblemListEntityById(listId).orElseThrow(
+            () -> new NoSuchElementException(String.format("The requested list id %s not found!!", listId))
+        );
 
-        // Optional<ProblemListEntity> updatedEntity = getUserProblemListEntityById(listId);
-
-        Map<String, Object> updatedFields = new HashMap<>();
-
-        for (Map.Entry<String, Object> entry : fieldsToUpdate.entrySet()) {
-            String key = entry.getKey();
-            try {
-                Field field = ProblemListEntity.class.getDeclaredField(key);
-                field.setAccessible(true);
-                Object originalValue = field.get(originalEntity);
-                Object updatedValue = field.get(updatedEntity);
-                if (!Objects.equals(originalValue, updatedValue)) {
-                    updatedFields.put(key, updatedValue);
-                }
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                // Log the exception or handle it as needed
-                e.printStackTrace();
-            }
+        if (!isUserAuthorizedToModifyList(originalEntity)) {
+            throw new AccessDeniedException("You are not authorized to update this list");
         }
 
-        return updatedFields;
+        Update update = new Update();
+        fieldsToUpdate.entrySet().stream().forEach(
+            e -> update.set(e.getKey(), e.getValue())
+        );
+        UpdateResult updateResult = mongoTemplate.updateFirst(
+                                        new Query(Criteria.where("_id").is(listId)), 
+                                        update,
+                                        ProblemListEntity.class);
+
+        
     }
 
-    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) {
-
-        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        //Query query = new Query(Criteria.where("_id").is(objectId).and("creator").is(signedInUser.getUsername()));
-   
-        Query query = new Query(Criteria.where("_id").is(listId));
-   
-        ProblemListEntity listEntity = mongoTemplate.findOne(query, ProblemListEntity.class);
+    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) {   
+        ProblemListEntity listEntity = mongoTemplate.findById(listId, ProblemListEntity.class);
         
         if (listEntity == null) {
             throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
         }
 
-        boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
-
-        boolean isPublicList = "global".equals(listEntity.getCreator());
-
-        if (isPublicList) {
-            if (!isAdmin) {
-                throw new AccessDeniedException("Only admins can add problems to global lists.");
-            }
-        } else if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
-            throw new AccessDeniedException("You are not allowed to update this list.");
+        if (!isUserAuthorizedToModifyList(listEntity)) {
+            throw new AccessDeniedException("You are not authorized to modify this list.");
         }
 
         if (listEntity.getProblemIds() != null) {
@@ -202,31 +178,25 @@ public class ProblemListRepository {
         
         if (!newProblemIds.isEmpty()) {
             Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
-            mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
+            mongoTemplate.updateFirst(
+                new Query(Criteria.where("_id").is(listId)), 
+                update, 
+                ProblemListEntity.class);
         }
 
     }
 
     public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
-        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
         Query query = new Query(Criteria.where("_id").is(listId));
-        ProblemListEntity listEntity = mongoTemplate.findOne(query, ProblemListEntity.class);
+        ProblemListEntity listEntity = mongoTemplate.findById(listId, ProblemListEntity.class);
 
         if (listEntity == null) {
             throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
         }
 
-        boolean isAdmin = signedInUser.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
-        boolean isPublicList = "global".equals(listEntity.getCreator());
-
-        if (isPublicList) {
-            if (!isAdmin) {
-                throw new AccessDeniedException("Only admins can remove problems from public lists.");
-            }
-        } else if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
-            throw new AccessDeniedException("You are not allowed to update this list.");
-        }
+        if (!isUserAuthorizedToModifyList(listEntity)) {
+            throw new AccessDeniedException("You are not authorized to modify this list.");
+        } 
 
         Update update = new Update().pullAll("problemIds", problemIdsToRemove.toArray());
         mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
@@ -236,5 +206,18 @@ public class ProblemListRepository {
         Query query = new Query(Criteria.where("_id").is(id));
         DeleteResult result = mongoTemplate.remove(query, ProblemListEntity.class);
         return result.getDeletedCount()>0;
+    }
+
+    private boolean isUserAuthorizedToModifyList(ProblemListEntity listEntity) {
+        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        boolean isAdmin = signedInUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
+        boolean isPublicList = "global".equals(listEntity.getCreator());
+
+        if (isPublicList) {
+            return isAdmin;
+        } else {
+            return listEntity.getCreator().equals(signedInUser.getUsername());
+        }
     }
 }

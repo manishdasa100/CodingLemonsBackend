@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
+import com.codinglemonsbackend.Entities.StudyPlanDifficultyTier;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
@@ -76,47 +77,41 @@ public class ProblemListRepositoryService {
         problemListRepository.removeProblemFromProblemList(listId, problemIdsToRemove);
     }
 
-    public Map<String, Object> updateProblemList(String listId, UpdateProblemListRequest newListDetails) {
-        ObjectId objectId;
-
-        try {
-            objectId = new ObjectId(listId);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid problem list id");
-        }
-
-        ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(objectId)
-            .orElseThrow(() -> new NoSuchElementException(String.format("The requested list id %s not found!!", listId)));
-
-        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        if (!listEntity.getCreator().equals(signedInUser.getUsername())) {
-            throw new AccessDeniedException("You are not allowed to update this list.");
-        }
+    public void updateProblemList(UpdateProblemListRequest newListDetails) {
 
         Map<String, Object> fieldsToUpdate = new HashMap<>();
 
-        if (StringUtils.isNotBlank(newListDetails.getName()) && !newListDetails.getName().equals(listEntity.getName())) {
+        if (StringUtils.isNotBlank(newListDetails.getName())) {
             fieldsToUpdate.put("name", newListDetails.getName());
         }
 
-        if (StringUtils.isNotBlank(newListDetails.getDescription()) && !newListDetails.getDescription().equals(listEntity.getDescription())) {
+        if (StringUtils.isNotBlank(newListDetails.getDescription())) {
             fieldsToUpdate.put("description", newListDetails.getDescription());
         }
 
-        if (Objects.nonNull(newListDetails.getIsPublic()) && !newListDetails.getIsPublic().equals(listEntity.getIsPublic())) {
+        if (Objects.nonNull(newListDetails.getIsStudyPlan())) {
+            StudyPlanDifficultyTier difficultyTier = null;
+            Integer timelineDays = null;
+            if (newListDetails.getIsStudyPlan()) {
+                difficultyTier = newListDetails.getDifficultyTier();
+                timelineDays = newListDetails.getTimelineDays();
+            }
+            fieldsToUpdate.put("isStudyPlan", newListDetails.getIsStudyPlan());
+            fieldsToUpdate.put("difficultyTier", difficultyTier);
+            fieldsToUpdate.put("timelineDays", timelineDays);
+        }
+
+        if (Objects.nonNull(newListDetails.getIsPublic())) {
             fieldsToUpdate.put("isPublic", newListDetails.getIsPublic());
         }
 
-        if (Objects.nonNull(newListDetails.getIsPinned()) && !newListDetails.getIsPinned().equals(listEntity.getIsPinned())) {
+        if (Objects.nonNull(newListDetails.getIsPinned())) {
             fieldsToUpdate.put("isPinned", newListDetails.getIsPinned());
         }
 
         if (!fieldsToUpdate.isEmpty()) {
-            return problemListRepository.updateProblemList(objectId, fieldsToUpdate, listEntity);
+            problemListRepository.updateProblemList(newListDetails.getId(), fieldsToUpdate);
         }
-
-        return new HashMap<>();
     }
 
     public Boolean deleteProblemList(String id) {
