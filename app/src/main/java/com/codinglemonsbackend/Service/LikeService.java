@@ -2,6 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,8 +11,6 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.codinglemonsbackend.Dto.LikeEvent;
 import com.codinglemonsbackend.Entities.UserLike;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -28,13 +27,10 @@ public class LikeService {
     private RedisService redisService;
 
     @Autowired
-    private SqsClient sqsClient;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${aws.sqs.queue.like-events}")
-    private String likeEventsQueueUrl;
+    @Value("${queue.like-events.stream}")
+    private String likeEventsStream;
 
     /*
      * When this function is called
@@ -60,13 +56,9 @@ public class LikeService {
 
         try {
             String messageBody = objectMapper.writeValueAsString(likeEvent);
-            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
-                    .queueUrl(likeEventsQueueUrl)
-                    .messageBody(messageBody)
-                    .build();
-            sqsClient.sendMessage(sendMessageRequest);
+            redisService.addToStream(likeEventsStream, Map.of("body", messageBody));
         } catch (Exception e) {
-            System.err.println("Error sending like event to SQS: " + e.getMessage());
+            System.err.println("Error sending like event to stream: " + e.getMessage());
             throw new RuntimeException("Failed to send like event to queue", e);
         }
 
@@ -97,13 +89,9 @@ public class LikeService {
 
         try {
             String messageBody = objectMapper.writeValueAsString(likeEvent);
-            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
-                    .queueUrl(likeEventsQueueUrl)
-                    .messageBody(messageBody)
-                    .build();
-            sqsClient.sendMessage(sendMessageRequest);
+            redisService.addToStream(likeEventsStream, Map.of("body", messageBody));
         } catch (Exception e) {
-            System.err.println("Error sending dislike event to SQS: " + e.getMessage());
+            System.err.println("Error sending dislike event to stream: " + e.getMessage());
             throw new RuntimeException("Failed to send dislike event to queue", e);
         }
 

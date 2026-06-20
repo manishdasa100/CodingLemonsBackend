@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Service;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
@@ -110,5 +111,10 @@ public class RedisService {
 
     public void deleteKey(String key) {
         redisTemplate.delete(key);
+    }
+
+    public String addToStream(String streamKey, Map<String, String> fields) {
+        RecordId recordId = redisTemplate.opsForStream().add(streamKey, fields);
+        return recordId == null ? null : recordId.getValue();
     }
 }

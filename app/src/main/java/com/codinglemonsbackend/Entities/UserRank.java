@@ -17,11 +17,9 @@ import lombok.NoArgsConstructor;
 public class UserRank {
     
     @Id
-    private String id;
-
-    @Indexed(unique = true)
     private String rankName;
 
+    @Indexed(unique = true)
     private Integer milestonePoints;
 
     private String rankBadgeId;

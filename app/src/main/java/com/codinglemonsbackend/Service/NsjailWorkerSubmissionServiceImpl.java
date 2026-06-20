@@ -20,14 +20,12 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import lombok.extern.slf4j.Slf4j;
 
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.modelmapper.ModelMapper;
@@ -45,15 +43,13 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
 
     private final TestcaseRepository testcaseRepository;
 
-    private final SqsClient sqsClient;
-
     private final ObjectMapper objectMapper;
 
     private final RedisService redisService;
 
     private final Integer runCodeTestCaseCount;
 
-    private final String pendingSubmissionsQueueUrl;
+    private final String pendingSubmissionsStream;
 
     @Autowired
     public NsjailWorkerSubmissionServiceImpl(
@@ -61,20 +57,18 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         ModelMapper modelMapper,
         DriverCodeRepository driverCodeRepository,
         TestcaseRepository testcaseRepository,
-        SqsClient sqsClient,
         ObjectMapper objectMapper,
         RedisService redisService,
         @Value("${testcase.runcode.count}") Integer runCodeTestCaseCount,
-        @Value("${aws.sqs.queue.pending-submissions}") String pendingSubmissionsQueueUrl
+        @Value("${queue.pending-submissions.stream}") String pendingSubmissionsStream
     ) {
         super(submissionRepository, modelMapper);
         this.driverCodeRepository = driverCodeRepository;
         this.testcaseRepository = testcaseRepository;
-        this.sqsClient = sqsClient;
         this.objectMapper = objectMapper;
         this.redisService = redisService;
         this.runCodeTestCaseCount = runCodeTestCaseCount;
-        this.pendingSubmissionsQueueUrl = pendingSubmissionsQueueUrl;
+        this.pendingSubmissionsStream = pendingSubmissionsStream;
     }
 
     private record SubmissionJob(
@@ -97,9 +91,11 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String submissionJobId = UUID.randomUUID().toString();
         submissionMetadata.setSubmissionJobId(submissionJobId);
 
+        String messageBody;
+        String messageDeduplicationId;
         try {
             SubmissionJob submissionJob = createSubmissionJob(submissionMetadata);
-            String messageBody = objectMapper.writeValueAsString(submissionJob);
+            messageBody = objectMapper.writeValueAsString(submissionJob);
 
             // Create hash based on content that should trigger deduplication (excluding jobId)
             String hashInput = submissionMetadata.getUsername() +
@@ -107,28 +103,25 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     submissionMetadata.getUserCode() +
                     submissionMetadata.getLanguage() +
                     submissionMetadata.getIsRunCode();
-            String messageDeduplicationId = generateHash(hashInput);
-
-            Boolean isNew = redisService.setIfAbsent(
-                    RedisService.SUBMISSION_DEDUP_KEY + messageDeduplicationId,
-                    submissionJobId,
-                    300
-            );
-            if (!isNew) {
-                throw new DuplicateSubmissionException(
-                        "A duplicate submission found. Please wait before resubmitting.");
-            }
-
-            SendMessageRequest sendMessageRequest = SendMessageRequest.builder()
-                    .queueUrl(pendingSubmissionsQueueUrl)
-                    .messageBody(messageBody)
-                    .messageGroupId(submissionMetadata.getUsername())
-                    .messageDeduplicationId(messageDeduplicationId)
-                    .build();
-
-            sqsClient.sendMessage(sendMessageRequest);
-            log.info("Successfully sent submission {} to SQS queue", submissionJobId);
+            messageDeduplicationId = generateHash(hashInput);
         } catch (Exception e) {
+            log.error("Failed to prepare submission {} for queueing", submissionJobId, e);
+            throw new RuntimeException("Failed to prepare submission for queue", e);
+        }
+
+        String dedupKey = RedisService.SUBMISSION_DEDUP_KEY + messageDeduplicationId;
+
+        Boolean isNew = redisService.setIfAbsent(dedupKey, submissionJobId, 300);
+        if (!isNew) {
+            throw new DuplicateSubmissionException("A duplicate submission found. Please wait before resubmitting.");
+        }
+
+        try {
+            redisService.addToStream(pendingSubmissionsStream, Map.of("body", messageBody));
+            log.info("Successfully queued submission {} to stream {}", submissionJobId, pendingSubmissionsStream);
+        } catch (Exception e) {
+            // Roll back the dedup key so the user can retry immediately after a transient failure
+            redisService.deleteKey(dedupKey);
             log.error("Failed to send submission {} to queue", submissionJobId, e);
             throw new RuntimeException("Failed to send submission to queue", e);
         }

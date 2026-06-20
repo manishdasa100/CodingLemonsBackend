@@ -299,7 +299,6 @@ public class MainServiceImpl{
 
     public String submitCode(SubmitCodeRequestPayload payload) {
         ProblemDto problemDto = getProblem(payload.getProblemId());
-        System.out.println("Problem status: " + problemDto.getStatus());
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
             return "Problem is not published";
         }
@@ -341,7 +340,7 @@ public class MainServiceImpl{
             redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "status", PendingOrdersStatus.QUEUED.name(), 3600);
             redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "submissionMetadata", metadataJson, 3600);
         } catch (JsonProcessingException e) {
-            log.error("Failed to serialize submission metadata for job {}", submissionJobId, e);
+            log.error("Failed to serialize submission metadata for job {}. Error: {}", submissionJobId, e);
             throw new RuntimeException("Failed to store submission metadata in Redis", e);
         }
 
