@@ -94,7 +94,7 @@ public class ProblemListRepository {
                                             .append("difficulty", "$$e.difficulty")))
                 .as("problemsData")
                 .and(ArrayOperators.Size.lengthOfArray("problemsData")).as("totalProblems")
-                .andInclude("name", "description", "isPublic", "isPinned");
+                .andInclude("name", "description", "isStudyPlan", "difficultyTier", "timelineDays", "isPublic", "isPinned");
     
     
             Aggregation aggregation = Aggregation.newAggregation(

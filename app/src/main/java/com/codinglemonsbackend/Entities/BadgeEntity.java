@@ -32,5 +32,6 @@ public class BadgeEntity {
 
     private String imageId;
 
+    @Indexed(unique = true)
     private BadgeRule rule;
 }

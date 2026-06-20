@@ -67,6 +67,9 @@ public class ProblemListDto {
     @PositiveOrZero
     private Integer timelineDays;
 
+    @JsonProperty(access = Access.READ_ONLY)
+    private String creator;
+
     private Boolean isPublic = false;
     
     private Boolean isPinned = false;
