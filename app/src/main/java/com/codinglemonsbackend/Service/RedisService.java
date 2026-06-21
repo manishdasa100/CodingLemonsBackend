@@ -31,6 +31,8 @@ public class RedisService {
 
     public static final String PROBLEM_COUNT_BY_DIFFICULTY_CACHE = "PROBLEM:COUNT:BY:DIFFICULTY";
 
+    public static final String USER_RANKS = "USER_RANKS";
+
     private RedisTemplate<String, String> redisTemplate;
     
     private HashOperations<String, String, String> hashOperations;

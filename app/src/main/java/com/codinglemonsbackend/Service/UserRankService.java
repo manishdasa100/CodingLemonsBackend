@@ -2,12 +2,14 @@ package com.codinglemonsbackend.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.UserRankDto;
@@ -37,36 +39,28 @@ public class UserRankService {
 
     private static final String ASSET_BASE_PATH = "static/rankBadges";
     
-    private List<UserRankDto> ranks = null;
-
-    private void loadAllRanks() {
-        if (ranks == null) {
-            ranks = userRankRepository.getAllRanks().stream().map(rank -> new UserRankDto(
-                rank.getRankName(),
-                rank.getMilestonePoints(),
-                URIUtils.createURI(ASSETS_DOMAIN, ASSET_BASE_PATH, rank.getRankBadgeId()).toString()
-            )).sorted(Comparator.comparing(UserRankDto::getMilestonePoints))
-            .collect(Collectors.toList());
-        }
+    @Cacheable(cacheNames = RedisService.USER_RANKS)
+    private List<UserRankDto> loadAllRanks() {
+        return userRankRepository.getAllRanks().stream().map(rank -> new UserRankDto(
+            rank.getRankName(),
+            rank.getMilestonePoints(),
+            URIUtils.createURI(ASSETS_DOMAIN, ASSET_BASE_PATH, rank.getRankBadgeId()).toString()
+        )).sorted(Comparator.comparing(UserRankDto::getMilestonePoints))
+        .collect(Collectors.toList());
     }
 
     public UserRankDto getInitialRank() {
-        // Getting the first/rank with the least milestone points
-        // Lazy loading of ranks
-        // CHECK WHAT WILL HAPPEN IF NO RANKS ARE THERE IN DB
-        if (ranks == null) loadAllRanks();
-        if (ranks.isEmpty()) throw new RuntimeException("No ranks found. Check database for rank availability"); 
-        return ranks.get(0);
+        List<UserRankDto> availableUserRanks = loadAllRanks();
+        if (availableUserRanks.isEmpty()) throw new RuntimeException("No ranks found!!"); 
+        return availableUserRanks.get(0);
     }
     
     public Optional<UserRankDto> getRankByName(String name) {
-        if (ranks == null) loadAllRanks();
-        return ranks.stream().filter(rank -> rank.getRankName().equals(name)).findFirst();
+        return loadAllRanks().stream().filter(rank -> rank.getRankName().equals(name)).findFirst();
     }
 
     public Optional<UserRankDto> getRankByMilestonePoints(Integer points) {
-        if (ranks == null) loadAllRanks();
-        return ranks.stream().filter(rank -> rank.getMilestonePoints().equals(points)).findFirst();
+        return loadAllRanks().stream().filter(rank -> rank.getMilestonePoints().equals(points)).findFirst();
     }
 
     public UserRank createUserRank(UserRankDto newRankDetails, byte[] badgeImageFile) throws FileUploadFailureException  {
@@ -121,7 +115,7 @@ public class UserRankService {
     }
 
     public String getUserRank(Integer points) {
-        if (ranks == null) loadAllRanks();
+        List<UserRankDto> ranks = loadAllRanks();
         for (UserRankDto rank : ranks) {
             if (rank.getMilestonePoints() <= points) {
                 return rank.getRankName();
@@ -130,11 +124,11 @@ public class UserRankService {
         return null;
     }
 
-    public void updateUserRank() {
-        //TODO: Implement updateUserRank
+    public void updateUserRank(String rankName, Map<String, Object> updateProperties) {
+        userRankRepository.updateUserRank(rankName, updateProperties);
     }
 
-    public Long deleteUserRank(String rankId) {
-        return userRankRepository.deleteUserRank(null);
+    public Long deleteUserRank(String rankName) {
+        return userRankRepository.deleteUserRank(rankName);
     }
 }

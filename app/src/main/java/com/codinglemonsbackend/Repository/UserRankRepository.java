@@ -1,11 +1,13 @@
 package com.codinglemonsbackend.Repository;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Entities.UserRank;
@@ -32,12 +34,16 @@ public class UserRankRepository {
         return savedUserRank;
     }
 
-    public void updateUserRank(String rankID) {
-        // Implement the update logic here
+    public void updateUserRank(String rankName, Map<String, Object> updateProperies) {
+        Update update = new Update();
+        for (String key : updateProperies.keySet()) {
+            update.set(key, updateProperies.get(key));
+        }
+        mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(rankName)), update, UserRank.class);
     }
 
-    public Long deleteUserRank(String rankId) {
-        Query query = new Query(Criteria.where("id").is(rankId));
+    public Long deleteUserRank(String rankName) {
+        Query query = new Query(Criteria.where("_sid").is(rankName));
         return mongoTemplate.remove(query, UserRank.class).getDeletedCount();
     }
 
