@@ -55,11 +55,9 @@ public class ProblemListRepository {
         }
     }
 
-    public Optional<ProblemListDto> getUserProblemListDetails(String creator, String name){
+    public Optional<ProblemListDto> getUserProblemListDetails(String creator, String name, Boolean publicOnly){
 
         ProblemListDto userProblemList = null;
-
-        UserEntity signedInUser= (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Criteria criteria = new Criteria().andOperator(
             Criteria.where("creator").is(creator),
@@ -72,7 +70,7 @@ public class ProblemListRepository {
 
         if (problemListEntity != null) {
 
-            if (!creator.equals(signedInUser.getUsername())) {
+            if (publicOnly) {
                 criteria = criteria.and("isPublic").is(true);
             }
             
@@ -120,13 +118,11 @@ public class ProblemListRepository {
         return Optional.ofNullable(entity);
     }
 
-    public List<ProblemListEntity> getAllProblemListsOfUser(String username){
-
-        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public List<ProblemListEntity> getAllProblemListsOfUser(String username, Boolean publicOnly){
 
         Criteria criteria = Criteria.where("creator").is(username);
 
-        if (!username.equals(signedInUser.getUsername())) {
+        if (publicOnly) {
             criteria = new Criteria().andOperator(
                 criteria,
                 Criteria.where("isPublic").is(true) 
@@ -141,14 +137,6 @@ public class ProblemListRepository {
     }
 
     public void updateProblemList(String listId, Map<String, Object> fieldsToUpdate) {
-        ProblemListEntity originalEntity = this.getUserProblemListEntityById(listId).orElseThrow(
-            () -> new NoSuchElementException(String.format("The requested list id %s not found!!", listId))
-        );
-
-        if (!isUserAuthorizedToModifyList(originalEntity)) {
-            throw new AccessDeniedException("You are not authorized to update this list");
-        }
-
         Update update = new Update();
         fieldsToUpdate.entrySet().stream().forEach(
             e -> update.set(e.getKey(), e.getValue())
@@ -161,21 +149,7 @@ public class ProblemListRepository {
         
     }
 
-    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) {   
-        ProblemListEntity listEntity = mongoTemplate.findById(listId, ProblemListEntity.class);
-        
-        if (listEntity == null) {
-            throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
-        }
-
-        if (!isUserAuthorizedToModifyList(listEntity)) {
-            throw new AccessDeniedException("You are not authorized to modify this list.");
-        }
-
-        if (listEntity.getProblemIds() != null) {
-            newProblemIds.removeAll(listEntity.getProblemIds());
-        }
-        
+    public void addProblemToProblemList(String listId, Set<Integer> newProblemIds) {
         if (!newProblemIds.isEmpty()) {
             Update update = new Update().addToSet("problemIds").each(newProblemIds.toArray());
             mongoTemplate.updateFirst(
@@ -187,19 +161,17 @@ public class ProblemListRepository {
     }
 
     public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
-        Query query = new Query(Criteria.where("_id").is(listId));
-        ProblemListEntity listEntity = mongoTemplate.findById(listId, ProblemListEntity.class);
-
-        if (listEntity == null) {
-            throw new NoSuchElementException(String.format("The requested list id %s not found!!", listId));
-        }
-
-        if (!isUserAuthorizedToModifyList(listEntity)) {
-            throw new AccessDeniedException("You are not authorized to modify this list.");
-        } 
-
         Update update = new Update().pullAll("problemIds", problemIdsToRemove.toArray());
-        mongoTemplate.updateFirst(query, update, ProblemListEntity.class);
+        mongoTemplate.updateFirst(new Query(Criteria.where("_id").is(listId)), update, ProblemListEntity.class);
+    }
+
+    public void activateOrDeactivateStudyPlan(String listId, Boolean activate) {
+        Update update = new Update().set("isActive", activate);
+        mongoTemplate.updateFirst(
+            new Query(Criteria.where("_id").is(listId).andOperator(Criteria.where("isStudyPlan").is(true))), 
+            update, 
+            ProblemListEntity.class
+        );
     }
 
     public Boolean deleteProblemList(String id){
@@ -208,16 +180,4 @@ public class ProblemListRepository {
         return result.getDeletedCount()>0;
     }
 
-    private boolean isUserAuthorizedToModifyList(ProblemListEntity listEntity) {
-        UserEntity signedInUser = (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        boolean isAdmin = signedInUser.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
-        boolean isPublicList = "global".equals(listEntity.getCreator());
-
-        if (isPublicList) {
-            return isAdmin;
-        } else {
-            return listEntity.getCreator().equals(signedInUser.getUsername());
-        }
-    }
 }

@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -138,6 +140,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionMessage> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         logError("MissingServletRequestParameterException", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("You are missing a required parameter: " + e.getParameterName()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OperationNotSupportedException.class)
+    public ResponseEntity<ExceptionMessage> handleOperationNotSupportedExcpetion(OperationNotSupportedException e) {
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     }
 }
     

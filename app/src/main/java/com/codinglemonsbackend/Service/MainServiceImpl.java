@@ -8,9 +8,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,7 @@ import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemsPage;
+import com.codinglemonsbackend.Dto.StudyPlanOperation;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserDto;
@@ -43,6 +45,7 @@ import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
+import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
@@ -64,80 +67,62 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.slugify.Slugify;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.validation.constraints.NotBlank;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class MainServiceImpl{
 
     private static final Integer MAX_PROBLEMSET_SIZE = 100;
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
 
-    @Autowired
-    private MeterRegistry meterRegistry;
+    private final MeterRegistry meterRegistry;
 
-    @Autowired
-    private Counter codeExecutionCounter;
+    private final Counter codeExecutionCounter;
 
-    @Autowired
-    private Counter problemSubmissionCounter;
+    private final Counter problemSubmissionCounter;
 
-    @Autowired
-    private LikeService likeService;
+    private final LikeService likeService;
 
-    @Autowired
-    private UserProfileService userProfileService;
+    private final UserProfileService userProfileService;
 
-    @Autowired
-    private ProblemRepositoryService problemRepositoryService;
+    private final ProblemRepositoryService problemRepositoryService;
 
-    @Autowired
-    private ProblemListRepositoryService problemListRepositoryService;
+    private final ProblemListRepositoryService problemListRepositoryService;
 
-    @Autowired
-    private UserStreakService userStreakService;
+    private final StudyPlanRepositoryService studyPlanRepositoryService;
 
-    @Autowired
-    private SubmissionService submissionService;
+    private final UserStreakService userStreakService;
 
-    @Autowired
-    private SubmissionServiceRegistry submissionServiceRegistry;
+    private final SubmissionService submissionService;
 
-    @Autowired
-    private ProblemOfTheDayService problemOfTheDayService;
+    private final SubmissionServiceRegistry submissionServiceRegistry;
 
-    @Autowired
-    private UserSubmissionStatusService userSubmissionStatusService;
+    private final ProblemOfTheDayService problemOfTheDayService;
 
-    @Autowired
-    private BadgeService badgeService;
+    private final UserSubmissionStatusService userSubmissionStatusService;
 
-    @Autowired
-    private CompanyService companyService;
+    private final BadgeService badgeService;
 
-    @Autowired
-    private TopicRepository topicRepository;
+    private final CompanyService companyService;
 
-    @Autowired
-    private UserProfileRepository userProfileRepository;
+    private final TopicRepository topicRepository;
 
-    @Autowired
-    private RedisService redisService;
+    private final UserProfileRepository userProfileRepository;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final RedisService redisService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ObjectMapper objectMapper;
 
-    @Autowired
-    private Slugify slugify;
+    private final ModelMapper modelMapper;
 
     private final String PENDING_SUBMISSION_REDIS_KEY_PREFIX = "submission:report";
 
@@ -439,21 +424,6 @@ public class MainServiceImpl{
         eventPublisher.publishEvent(profileUpdateEvent);
 
         return profileUpdated;
-
-        // UserProfileDto userProfile = userProfileService.getUserProfile(user.getUsername());
-
-        // Boolean updateStatus = userProfileService.updateUserProfile(userProfile, newUserProfile);
-
-        // if (newUserProfile.getFirstName() != null || newUserProfile.getLastName() != null || newUserProfile.getEmail() != null) {
-        //     System.out.println("UPDATING USER DETAILS");
-        //     userService.updateUserDetails(UserDto.builder()
-        //                                     .username(user.getUsername())
-        //                                     .firstName(newUserProfile.getFirstName())
-        //                                     .lastName(newUserProfile.getLastName())
-        //                                     .email(newUserProfile.getEmail())
-        //                                     .build(),
-        //                                     modelMapper.map(user, UserDto.class));
-        // }
     } 
 
     public void uploadUserProfilePicture(MultipartFile file) throws IOException, FileUploadFailureException {
@@ -521,5 +491,57 @@ public class MainServiceImpl{
                 highestStreakBadge
         );
     }
+
+    public void performStudyPlanOperation(String listId, StudyPlanOperation operation) throws OperationNotSupportedException {
+        
+        UserEntity signedInUser = (UserEntity)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        ProblemListDto listDto = problemListRepositoryService.getProblemListById(listId);
+        
+        if (!isStudyPlanOperationAllowed(listDto, operation, signedInUser.getUsername())) {
+            throw new OperationNotSupportedException(String.format("The study plan you are tying to %s is not allowed", operation.name().toLowerCase()));    
+        }
+
+        switch (operation) {
+            case ACTIVATE:
+                studyPlanRepositoryService.createProgress(listId, signedInUser.getUsername());
+                break;
+            case DEACTIVATE:
+                studyPlanRepositoryService.deleteProgress(listId, signedInUser.getUsername());
+                break;
+            case RESET:
+                studyPlanRepositoryService.resetProgress(listId, signedInUser.getUsername());
+                break;
+            default:
+                break;
+        }
+    }
+
+    public UserStudyPlanProgress getStudyPlanProgress(String listId) {
+        UserEntity signedInUser = getCurrentlySignedInUser();
+        return studyPlanRepositoryService.getStudyPlanProgress(listId, signedInUser.getUsername());
+    }
  
+    private Boolean isStudyPlanOperationAllowed(ProblemListDto listdto, StudyPlanOperation operation, String signedInUser) throws OperationNotSupportedException {
+        boolean isStudyPlan = listdto.getIsStudyPlan();
+        if (!isStudyPlan) return false;
+
+        boolean isActive;
+        try{
+            studyPlanRepositoryService.getStudyPlanProgress(listdto.getId(), signedInUser);
+            isActive = true;
+        } catch (NoSuchElementException e) {
+            isActive = false;
+        }
+
+        boolean isPublic = listdto.getIsPublic();
+
+        if (operation == StudyPlanOperation.ACTIVATE) {
+            if (isActive) return false;
+            else return isPublic || listdto.getCreator().equals(signedInUser);
+        }
+
+        return isActive;
+    }
+
 }

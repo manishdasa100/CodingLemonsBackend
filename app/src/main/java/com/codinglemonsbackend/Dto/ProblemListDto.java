@@ -3,6 +3,7 @@ package com.codinglemonsbackend.Dto;
 import java.util.List;
 
 import com.codinglemonsbackend.Entities.StudyPlanDifficultyTier;
+import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
 import com.codinglemonsbackend.Validation.CrossFieldValidation;
 import com.codinglemonsbackend.Validation.CrossFieldValidation.ValidationType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -61,11 +62,20 @@ public class ProblemListDto {
     private Integer totalProblems;
 
     private Boolean isStudyPlan = false;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private Boolean isActiveIfStudyPlan;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private UserStudyPlanProgress studyPlanProgress;
     
     private StudyPlanDifficultyTier difficultyTier;
 
     @PositiveOrZero
     private Integer timelineDays;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private List<Integer> solvedProblemIds;
 
     @JsonProperty(access = Access.READ_ONLY)
     private String creator;

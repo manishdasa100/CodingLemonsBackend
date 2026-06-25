@@ -8,6 +8,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.modelmapper.ModelMapper;
@@ -17,6 +19,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.ProblemListDto;
+import com.codinglemonsbackend.Dto.StudyPlanOperation;
+import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.StudyPlanDifficultyTier;
 import com.codinglemonsbackend.Entities.UserEntity;
@@ -39,7 +43,16 @@ public class ProblemListRepositoryService {
     }
 
     public List<ProblemListDto> getProblemLists(String username) {
-        List<ProblemListEntity> userProblemListEntities = problemListRepository.getAllProblemListsOfUser(username);
+
+        UserEntity signedInUser = getCurrentlySignedInUser();
+
+        Boolean publicOnlyList = false;
+
+        if (!username.equals(signedInUser.getUsername())) {
+            publicOnlyList = true;
+        }
+
+        List<ProblemListEntity> userProblemListEntities = problemListRepository.getAllProblemListsOfUser(username, publicOnlyList);
 
         if (userProblemListEntities.isEmpty()) {
             String message = "No problem lists found for user " + username;
@@ -61,8 +74,21 @@ public class ProblemListRepositoryService {
     }
 
     public ProblemListDto getAProblemList(String creator, String name) {
-        return problemListRepository.getUserProblemListDetails(creator, name)
+        UserEntity signedInUser = getCurrentlySignedInUser();
+        
+        Boolean publicOnlyList = false;
+
+        if (!creator.equals(signedInUser.getUsername())) {
+            publicOnlyList = true;
+        }
+        return problemListRepository.getUserProblemListDetails(creator, name, publicOnlyList)
             .orElseThrow(() -> new NoSuchElementException(String.format("The list with name %s does not exist!!", name)));
+    }
+
+    public ProblemListDto getProblemListById(String listId) {
+        ProblemListEntity listDto = problemListRepository.getUserProblemListEntityById(listId)
+                                .orElseThrow(()-> new NoSuchElementException(String.format("The list with id {} not found", listId)));
+        return modelMapper.map(listDto, ProblemListDto.class);
     }
 
     public void saveProblemList(ProblemListEntity newProblemList) throws DuplicateResourceException {
@@ -70,51 +96,117 @@ public class ProblemListRepositoryService {
     }
 
     public void addProblemToProblemList(String listId, Set<Integer> validProblemIds) {
+        ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(listId)
+                                        .orElseThrow(()->new NoSuchElementException(String.format("List with id {} not found", listId)));
+        
+        if(!isUserAuthorizedToModifyList(listEntity)) {
+            throw new AccessDeniedException("You are not authorized to update this list");
+        }
+
         problemListRepository.addProblemToProblemList(listId, validProblemIds);
     }
 
     public void removeProblemFromProblemList(String listId, Set<Integer> problemIdsToRemove) {
+        ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(listId)
+                                            .orElseThrow(()->new NoSuchElementException(String.format("List with id {} not found", listId)));
+
+        if (!isUserAuthorizedToModifyList(listEntity)) {
+            throw new AccessDeniedException("You are not authorized to modify this list.");
+        }
+
         problemListRepository.removeProblemFromProblemList(listId, problemIdsToRemove);
     }
 
-    public void updateProblemList(UpdateProblemListRequest newListDetails) {
+    public void updateProblemList(UpdateProblemListRequest listUpdaterequest) {
+
+        String listId = listUpdaterequest.getId();
+
+        ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(listId)
+                                        .orElseThrow(()->new NoSuchElementException(String.format("List with id {} not found", listId)));
+
+        if(!isUserAuthorizedToModifyList(listEntity)) {
+            throw new AccessDeniedException("You are not authorized to update this list");
+        } 
 
         Map<String, Object> fieldsToUpdate = new HashMap<>();
 
-        if (StringUtils.isNotBlank(newListDetails.getName())) {
-            fieldsToUpdate.put("name", newListDetails.getName());
+        if (StringUtils.isNotBlank(listUpdaterequest.getName())) {
+            fieldsToUpdate.put("name", listUpdaterequest.getName());
         }
 
-        if (StringUtils.isNotBlank(newListDetails.getDescription())) {
-            fieldsToUpdate.put("description", newListDetails.getDescription());
+        if (StringUtils.isNotBlank(listUpdaterequest.getDescription())) {
+            fieldsToUpdate.put("description", listUpdaterequest.getDescription());
         }
 
-        if (Objects.nonNull(newListDetails.getIsStudyPlan())) {
+        if (Objects.nonNull(listUpdaterequest.getIsStudyPlan())) {
             StudyPlanDifficultyTier difficultyTier = null;
             Integer timelineDays = null;
-            if (newListDetails.getIsStudyPlan()) {
-                difficultyTier = newListDetails.getDifficultyTier();
-                timelineDays = newListDetails.getTimelineDays();
+            if (listUpdaterequest.getIsStudyPlan()) {
+                difficultyTier = listUpdaterequest.getDifficultyTier();
+                timelineDays = listUpdaterequest.getTimelineDays();
             }
-            fieldsToUpdate.put("isStudyPlan", newListDetails.getIsStudyPlan());
+            fieldsToUpdate.put("isStudyPlan", listUpdaterequest.getIsStudyPlan());
             fieldsToUpdate.put("difficultyTier", difficultyTier);
             fieldsToUpdate.put("timelineDays", timelineDays);
         }
 
-        if (Objects.nonNull(newListDetails.getIsPublic())) {
-            fieldsToUpdate.put("isPublic", newListDetails.getIsPublic());
+        if (Objects.nonNull(listUpdaterequest.getIsPublic())) {
+            fieldsToUpdate.put("isPublic", listUpdaterequest.getIsPublic());
         }
 
-        if (Objects.nonNull(newListDetails.getIsPinned())) {
-            fieldsToUpdate.put("isPinned", newListDetails.getIsPinned());
+        if (Objects.nonNull(listUpdaterequest.getIsPinned())) {
+            fieldsToUpdate.put("isPinned", listUpdaterequest.getIsPinned());
         }
 
         if (!fieldsToUpdate.isEmpty()) {
-            problemListRepository.updateProblemList(newListDetails.getId(), fieldsToUpdate);
+            problemListRepository.updateProblemList(listUpdaterequest.getId(), fieldsToUpdate);
         }
     }
+
+    // public void activateOrDeactivateStudyPlan(String listId, StudyPlanOperation operation) throws OperationNotSupportedException {
+    //     ProblemListEntity listEntity = problemListRepository.getUserProblemListEntityById(listId)
+    //                                                        .orElseThrow(() -> new NoSuchElementException(String.format("List with id {} not found", listId)));
+        
+    //     if (!isStudyPlanOperationAllowed(listEntity, operation)) {
+    //         throw new OperationNotSupportedException(String.format("The study plan you are tying to {} is not allowed", operation.name().toLowerCase()));    
+    //     } 
+    //     problemListRepository.activateOrDeactivateStudyPlan(listId, operation.equals(StudyPlanOperation.ACTIVATE));
+    // }
 
     public Boolean deleteProblemList(String id) {
         return true;
     }
+
+    private boolean isUserAuthorizedToModifyList(ProblemListEntity listEntity) {
+        UserEntity signedInUser = getCurrentlySignedInUser();
+        boolean isAdmin = signedInUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
+        boolean isPublicList = "global".equals(listEntity.getCreator());
+
+        if (isPublicList) {
+            return isAdmin;
+        } else {
+            return listEntity.getCreator().equals(signedInUser.getUsername());
+        }
+    }
+
+    // private Boolean isStudyPlanOperationAllowed(ProblemListEntity listEntity, StudyPlanOperation operation) throws OperationNotSupportedException {
+    //     UserEntity signedInUser = getCurrentlySignedInUser();
+
+    //     boolean isStudyPlan = listEntity.getIsStudyPlan();
+    //     boolean isAleadyActive = listEntity.getIsActive();
+    //     boolean isOwner = listEntity.getCreator().equals(signedInUser.getUsername());
+        
+    //     if (isStudyPlan) {
+    //         if (operation.equals(StudyPlanOperation.ACTIVATE)) return isOwner && !isAleadyActive;
+    //         return isOwner && isAleadyActive;
+    //     }
+
+    //     return false;
+    // }
+
+    private UserEntity getCurrentlySignedInUser() {
+        return (UserEntity)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
 }
