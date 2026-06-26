@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
@@ -41,5 +42,18 @@ public class StudyPlanProgressRepository {
         Query query = new Query(criteria);
         UserStudyPlanProgress progress = mongoTemplate.findOne(query, UserStudyPlanProgress.class);
         return Optional.ofNullable(progress);
+    }
+
+    public void addProblemIdToProgress(String listId, String owner, Integer problemId) {
+        Criteria criteria = new Criteria().andOperator(
+            Criteria.where("owner").is(owner),
+            Criteria.where("listId").is(listId)
+        );
+
+        Query query = new Query(criteria);
+
+        Update update = new Update().addToSet("solvedProblemIds", problemId);
+
+        mongoTemplate.updateFirst(query, update, UserStudyPlanProgress.class);
     }
 }

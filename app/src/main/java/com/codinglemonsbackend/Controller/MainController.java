@@ -4,13 +4,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.io.FilenameUtils;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -34,17 +31,14 @@ import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
-import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.StudyPlanOperation;
 import com.codinglemonsbackend.Dto.UserOccupation;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
-import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Dto.UserStreakDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
-import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.ProblemListOperationRequest;
@@ -57,7 +51,6 @@ import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Service.MainServiceImpl;
 import com.codinglemonsbackend.Utils.ImageUtils;
 
-import io.micrometer.core.ipc.http.HttpSender.Response;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -140,8 +133,8 @@ public class MainController {
     }
 
     @PostMapping("/submission/submit")
-    public ResponseEntity<?> submit(@Valid @RequestBody SubmitCodeRequestPayload payload){
-        String submissionId = mainService.submitCode(payload);
+    public ResponseEntity<SubmitCodeResponsePayload> submit(@Valid @RequestBody SubmitCodeRequestPayload payload, @RequestParam(required = false) String listId){
+        String submissionId = mainService.submitCode(payload, listId);
         SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);
         return ResponseEntity.accepted().body(responsePayload);
     }
@@ -235,13 +228,13 @@ public class MainController {
     }
 
     @GetMapping("/studyPlan/set")
-    public ResponseEntity<String> activateStudyPlan(@RequestParam @NotNull StudyPlanOperation operation, @RequestParam @NotBlank String listId) throws OperationNotSupportedException {
+    public ResponseEntity<String> activateStudyPlan(@RequestParam StudyPlanOperation operation, @RequestParam @NotBlank String listId) throws OperationNotSupportedException {
         mainService.performStudyPlanOperation(listId, operation);
         return ResponseEntity.ok("Study plan operation succeeded");
     }
 
     @GetMapping("/studyPlan/get")
-    public ResponseEntity<UserStudyPlanProgress> getUserStudyPlanProgress(String listId) {
+    public ResponseEntity<UserStudyPlanProgress> getUserStudyPlanProgress(@RequestParam String listId) {
         UserStudyPlanProgress progress = mainService.getStudyPlanProgress(listId);
         return ResponseEntity.ok(progress);
     }

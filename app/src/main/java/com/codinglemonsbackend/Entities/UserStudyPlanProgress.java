@@ -1,7 +1,7 @@
 package com.codinglemonsbackend.Entities;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -29,7 +29,7 @@ public class UserStudyPlanProgress {
 
     private String owner;
 
-    private List<Integer> solvedProblemIds = new ArrayList<>();
+    private Set<Integer> solvedProblemIds = new HashSet<>();
 
     public UserStudyPlanProgress(String listId, String owner) {
         this.listId = listId;

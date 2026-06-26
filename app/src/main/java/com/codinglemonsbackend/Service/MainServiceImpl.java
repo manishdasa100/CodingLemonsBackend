@@ -282,7 +282,7 @@ public class MainServiceImpl{
          
     }
 
-    public String submitCode(SubmitCodeRequestPayload payload) {
+    public String submitCode(SubmitCodeRequestPayload payload, String listId) {
         ProblemDto problemDto = getProblem(payload.getProblemId());
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
             return "Problem is not published";
@@ -315,6 +315,7 @@ public class MainServiceImpl{
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
                                                 .b64Encoded(payload.getB64Encoded())
+                                                .listId(listId)
                                                 .build();
 
         String submissionJobId = submissionService.queueSubmission(submissionMetadata);

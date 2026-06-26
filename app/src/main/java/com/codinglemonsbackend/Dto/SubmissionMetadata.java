@@ -32,4 +32,6 @@ public class SubmissionMetadata {
     private Boolean b64Encoded;
 
     private Difficulty difficulty;
+
+    private String listId;
 }
