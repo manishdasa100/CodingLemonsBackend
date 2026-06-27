@@ -227,7 +227,7 @@ public class MainController {
         return ResponseEntity.ok(mainService.getUserBadges(username));
     }
 
-    @GetMapping("/studyPlan/set")
+    @PostMapping("/studyPlan/set")
     public ResponseEntity<String> activateStudyPlan(@RequestParam StudyPlanOperation operation, @RequestParam @NotBlank String listId) throws OperationNotSupportedException {
         mainService.performStudyPlanOperation(listId, operation);
         return ResponseEntity.ok("Study plan operation succeeded");

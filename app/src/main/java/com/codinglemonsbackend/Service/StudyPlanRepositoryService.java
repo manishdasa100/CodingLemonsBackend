@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -28,13 +29,18 @@ public class StudyPlanRepositoryService {
 
     public void createProgress(String listId, String owner) {
         if (listId == null || listId.isEmpty() || owner == null || owner.isEmpty()) return;
-        UserStudyPlanProgress studyPlanProgress = new UserStudyPlanProgress(listId, owner);
+        UserStudyPlanProgress studyPlanProgress = new UserStudyPlanProgress(
+            listId, 
+            owner,
+            LocalDate.now()
+        );
         studyPlanRepository.saveStudyPlanprogress(studyPlanProgress);
     }
 
     public void resetProgress(String listId, String owner) {
         UserStudyPlanProgress userStudyPlanProgress = this.getStudyPlanProgress(listId, owner);
         userStudyPlanProgress.setSolvedProblemIds(Collections.emptySet());
+        userStudyPlanProgress.setDateOfActivation(LocalDate.now());
         studyPlanRepository.saveStudyPlanprogress(userStudyPlanProgress);
     }
 

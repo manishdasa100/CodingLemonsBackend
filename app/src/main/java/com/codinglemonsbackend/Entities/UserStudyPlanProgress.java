@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Entities;
 
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,10 +30,13 @@ public class UserStudyPlanProgress {
 
     private String owner;
 
+    private LocalDate dateOfActivation;
+
     private Set<Integer> solvedProblemIds = new HashSet<>();
 
-    public UserStudyPlanProgress(String listId, String owner) {
+    public UserStudyPlanProgress(String listId, String owner, LocalDate dateOfActivation) {
         this.listId = listId;
         this.owner = owner;
+        this.dateOfActivation = dateOfActivation;
     }
 }
