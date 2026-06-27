@@ -89,7 +89,9 @@ public class ProblemListRepository {
                         .as("e")
                         .andApply(ctx -> new Document("_id", "$$e._id")
                                             .append("title", "$$e.title")
-                                            .append("difficulty", "$$e.difficulty")))
+                                            .append("difficulty", "$$e.difficulty")
+                                            .append("topics", "$$e.topics")
+                                        ))
                 .as("problemsData")
                 .and(ArrayOperators.Size.lengthOfArray("problemsData")).as("totalProblems")
                 .andInclude("name", "description", "isStudyPlan", "difficultyTier", "timelineDays", "isPublic", "isPinned");
