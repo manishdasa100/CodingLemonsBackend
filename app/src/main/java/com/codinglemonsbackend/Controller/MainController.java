@@ -55,6 +55,8 @@ import com.codinglemonsbackend.Utils.ImageUtils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 @RestController
 @RequestMapping(value = "/api/v1")
@@ -159,7 +161,7 @@ public class MainController {
     }
 
     @GetMapping("/submissions/recent")
-    public ResponseEntity<List<SubmissionDto>> getRecentUserSubmissions(@RequestParam Integer limit) {
+    public ResponseEntity<List<SubmissionDto>> getRecentUserSubmissions(@RequestParam(required = false) @Positive Integer limit) {
         List<SubmissionDto> submissions = mainService.getRecentSubmissions(limit);
         return ResponseEntity.ok(submissions);
     }

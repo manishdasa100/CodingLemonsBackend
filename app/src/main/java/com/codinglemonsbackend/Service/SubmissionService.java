@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -23,8 +24,6 @@ public abstract class SubmissionService {
 
     private final ModelMapper modelMapper;
 
-    private final Integer DEFAULT_RECENT_SUBMISSION_LIMIT = 10;
-
     public SubmissionService(SubmissionRepository submissionRepository, ModelMapper modelMapper) {
         this.submissionRepository = submissionRepository;
         this.modelMapper = modelMapper;
@@ -43,7 +42,7 @@ public abstract class SubmissionService {
                         .problemId(submissionMetadata.getProblemId())
                         .language(submissionMetadata.getLanguage())
                         .userCode(submissionMetadata.getUserCode())
-                        .dateOfSubmission(LocalDate.now().toString())
+                        .dateOfSubmission(LocalDateTime.now(ZoneId.of("Asia/Kolkata")).toString())
                         .runSucccess(!EnumSet.of(ExecutionStatus.CE, ExecutionStatus.RE, ExecutionStatus.IE).contains(executionReport.status()))
                         .totalTestCases(executionReport.totalTestcases())
                         .totalCorrectOutput(executionReport.totalCorrect())
@@ -72,9 +71,7 @@ public abstract class SubmissionService {
 
     public List<SubmissionDto> getRecentUserSubmission(Integer limit) {
         UserEntity signedInUser = (UserEntity)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (limit == null || limit < 0) limit = DEFAULT_RECENT_SUBMISSION_LIMIT;  
-        List<SubmissionEntity> recentSubmissions = submissionRepository.getRecentUserSubmissions(signedInUser.getUsername(), limit);
-        List<SubmissionDto> submissionDtos = recentSubmissions.stream().map((e) -> modelMapper.map(e, SubmissionDto.class)).toList();
-        return submissionDtos;
+        if (limit == null || limit < 0) limit = -1;
+        return submissionRepository.getRecentUserSubmissions(signedInUser.getUsername(), limit);
     }
 }

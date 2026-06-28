@@ -20,13 +20,13 @@ public class SubmissionDto {
     private String submissionId;
     private String username;
     private Integer problemId;
+    private ProblemDto problemData;
     private ProgrammingLanguage language;
     private String userCode;
-    private Integer runtime;
     private String dateOfSubmission;
     private Boolean runSucccess;
-    private int runtimeMs;
-    private int memoryMb;
+    private Integer runtimeMs;
+    private Integer memoryMb;
     private String error;
     private Integer totalTestCases;
     private Integer totalCorrectOutput;

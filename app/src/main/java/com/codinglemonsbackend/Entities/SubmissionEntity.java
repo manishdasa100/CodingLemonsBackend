@@ -18,7 +18,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "Submissions")
-@CompoundIndex(def = "{'username':1, problemId:1}")
+@CompoundIndex(def = "{'username':1, 'problemId':1}")
 public class SubmissionEntity {
     @Id
     private String submissionId;
