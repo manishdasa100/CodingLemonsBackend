@@ -396,14 +396,19 @@ public class MainServiceImpl{
             redisService.deleteKey(redisKey);
         }
             
-        // QUEUED — tell the caller to poll again
         return new SubmissionResponsePayload(status, null);
-    
     }
 
-    public SubmissionDto getSubmission(String submissionId) throws FailedSubmissionException {
-        SubmissionDto submissionDto = submissionService.getSubmission(submissionId);
-        return submissionDto;
+    public SubmissionDto getSubmission(String submissionId) {
+        return submissionService.getUserSubmission(submissionId);
+    }
+
+    public List<SubmissionDto> getSubmissionsOfUserForProblem(Integer problemId){
+        return submissionService.getUserSubmissions(problemId);
+    }
+
+    public List<SubmissionDto> getRecentSubmissions(Integer limit) {
+        return submissionService.getRecentUserSubmission(limit);
     }
 
     public ProblemOfTheDayDto getProblemOfTheDay() {

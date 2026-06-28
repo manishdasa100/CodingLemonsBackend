@@ -33,6 +33,7 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.StudyPlanOperation;
+import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.UserOccupation;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.Topic;
@@ -143,6 +144,24 @@ public class MainController {
     public ResponseEntity<SubmissionResponsePayload> check(@PathVariable String submissionId) {
         SubmissionResponsePayload reponse = mainService.check(submissionId);
         return ResponseEntity.accepted().body(reponse);
+    }
+
+    @GetMapping("/submission/{submissionId}")
+    public ResponseEntity<SubmissionDto> getSubmission(@PathVariable String submissionId) {
+        SubmissionDto submission = mainService.getSubmission(submissionId);
+        return ResponseEntity.ok(submission);
+    }
+
+    @GetMapping("/submissions")
+    public ResponseEntity<List<SubmissionDto>> getUserSubmissionsForAProblem(@RequestParam Integer problemId) {
+        List<SubmissionDto> submissions = mainService.getSubmissionsOfUserForProblem(problemId);
+        return ResponseEntity.ok(submissions);
+    }
+
+    @GetMapping("/submissions/recent")
+    public ResponseEntity<List<SubmissionDto>> getRecentUserSubmissions(@RequestParam Integer limit) {
+        List<SubmissionDto> submissions = mainService.getRecentSubmissions(limit);
+        return ResponseEntity.ok(submissions);
     }
 
     @GetMapping("/problem/today")
