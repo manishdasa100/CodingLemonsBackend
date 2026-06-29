@@ -57,9 +57,8 @@ public abstract class SubmissionService {
 
     public SubmissionDto getUserSubmission(String submissionId){
         UserEntity signedInUser = (UserEntity)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        SubmissionEntity submissionEntity = submissionRepository.getUserSubmissionById(signedInUser.getUsername(),submissionId)
-                                                        .orElseThrow(() -> new NoSuchElementException(String.format("No user submission found with id %s", submissionId)));
-        return modelMapper.map(submissionEntity, SubmissionDto.class);        
+        return submissionRepository.getUserSubmissionById(signedInUser.getUsername(), submissionId)
+                                        .orElseThrow(() -> new NoSuchElementException(String.format("No user submission found with id %s", submissionId)));
     }
 
     public List<SubmissionDto> getUserSubmissions(Integer problemId) {
@@ -69,9 +68,8 @@ public abstract class SubmissionService {
         return submissionDtos;
     }
 
-    public List<SubmissionDto> getRecentUserSubmission(Integer limit) {
-        UserEntity signedInUser = (UserEntity)SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public List<SubmissionDto> getRecentUserSubmission(String username, Integer limit) {
         if (limit == null || limit < 0) limit = -1;
-        return submissionRepository.getRecentUserSubmissions(signedInUser.getUsername(), limit);
+        return submissionRepository.getRecentUserSubmissions(username, limit);
     }
 }

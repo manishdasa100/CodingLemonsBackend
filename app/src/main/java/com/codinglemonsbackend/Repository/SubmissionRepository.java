@@ -8,6 +8,7 @@ import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.AddFieldsOperation;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.data.mongodb.core.aggregation.ArrayOperators;
@@ -37,16 +38,42 @@ public class SubmissionRepository {
         return savedSubmission.getSubmissionId();
     }
 
-    public Optional<SubmissionEntity> getUserSubmissionById(String username, String submissionId){
+    public Optional<SubmissionDto> getUserSubmissionById(String username, String submissionId){
 
-        Criteria criteria = new Criteria().andOperator(
-            Criteria.where("submissionId").is(submissionId),
-            Criteria.where("username").is(username)
+        MatchOperation matchOperation = Aggregation.match(
+            new Criteria().andOperator(
+                Criteria.where("submissionId").is(submissionId),
+                Criteria.where("username").is(username)
+            )
         );
-        
-        Query query = new Query(criteria);
 
-        SubmissionEntity submission = mongoTemplate.findOne(query, SubmissionEntity.class);
+        LookupOperation lookupOperation = LookupOperation.newLookup()
+            .from(ProblemEntity.ENTITY_COLLECTION_NAME)
+            .localField("problemId")
+            .foreignField("_id")
+            .as("problemData");
+
+        AddFieldsOperation addProblemData = Aggregation.addFields()
+            .addField("problemData")
+            .withValueOf(
+                ArrayOperators.ArrayElemAt.arrayOf(
+                    VariableOperators.Map.itemsOf("problemData")
+                        .as("e")
+                        .andApply(ctx -> new Document("_id", "$$e._id")
+                                            .append("title", "$$e.title")
+                                            .append("difficulty", "$$e.difficulty")
+                                        ))
+                    .elementAt(0)
+            )
+            .build();
+
+        Aggregation aggregation = Aggregation.newAggregation(
+            matchOperation,
+            lookupOperation,
+            addProblemData
+        );
+
+        SubmissionDto submission = mongoTemplate.aggregate(aggregation, SubmissionEntity.class, SubmissionDto.class).getUniqueMappedResult();
 
         return Optional.ofNullable(submission);
     }
@@ -88,7 +115,7 @@ public class SubmissionRepository {
                                         ))
                     .elementAt(0)
             ).as("problemData")
-            .andInclude("problemId", "language", "dateOfSubmission", "status");
+            .andInclude("submissionId","problemId", "language", "dateOfSubmission", "status");
 
         List<AggregationOperation> operations = new ArrayList<>();
         operations.add(matchOperation);

@@ -407,8 +407,8 @@ public class MainServiceImpl{
         return submissionService.getUserSubmissions(problemId);
     }
 
-    public List<SubmissionDto> getRecentSubmissions(Integer limit) {
-        return submissionService.getRecentUserSubmission(limit);
+    public List<SubmissionDto> getRecentSubmissions(String username, Integer limit) {
+        return submissionService.getRecentUserSubmission(username, limit);
     }
 
     public ProblemOfTheDayDto getProblemOfTheDay() {

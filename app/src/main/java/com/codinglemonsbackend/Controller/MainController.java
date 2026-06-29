@@ -161,8 +161,8 @@ public class MainController {
     }
 
     @GetMapping("/submissions/recent")
-    public ResponseEntity<List<SubmissionDto>> getRecentUserSubmissions(@RequestParam(required = false) @Positive Integer limit) {
-        List<SubmissionDto> submissions = mainService.getRecentSubmissions(limit);
+    public ResponseEntity<List<SubmissionDto>> getRecentUserSubmissions(@RequestParam String username, @RequestParam(required = false) @Positive Integer limit) {
+        List<SubmissionDto> submissions = mainService.getRecentSubmissions(username, limit);
         return ResponseEntity.ok(submissions);
     }
 
