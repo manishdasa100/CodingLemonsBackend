@@ -22,7 +22,7 @@ public class UserRepository {
     private MongoTemplate mongoTemplate;
 
     public Optional<UserEntity> findUserByUsername(String username){
-        System.out.println("Username: "+ username);
+        if (username == null) return Optional.empty();
         UserEntity user = mongoTemplate.findById(username, UserEntity.class, "Users");
         return Optional.ofNullable(user);
     }
@@ -57,30 +57,6 @@ public class UserRepository {
         Query query = new Query(Criteria.where("username").is(username));
 
         Update update = new Update();
-        
-        /*if (updateRequest.getFirstName() != null && !updateRequest.getFirstName().equals(user.getFirstName())) {
-            update.set("firstName", updateRequest.getFirstName());
-        }
-
-        if (updateRequest.getLastName() != null && !updateRequest.getLastName().equals(user.getLastName())) {
-            update.set("lastName", updateRequest.getLastName());
-        }
-
-        if (updateRequest.getEmail() != null && !updateRequest.getEmail().equals(user.getEmail())) {
-            update.set("email", updateRequest.getEmail());
-        }
-
-        if (updateRequest.getPassword() != null && !passwordEncoder.matches(updateRequest.getPassword(), user.getPassword())) {
-            update.set("password", passwordEncoder.encode(updateRequest.getPassword()));
-        }
-
-        if (!update.getUpdateObject().isEmpty()) {
-            System.out.println("THERE IS SOMETHING IN UPDATE");
-            UpdateResult updateResult = mongoTemplate.updateFirst(query, update, UserEntity.class);
-            if (updateResult.getModifiedCount()>0) return true;            
-        } else {
-            System.out.println("THERE IS NOTHING TO UPDATE");
-        }*/
 
         updatePropertiesMap.entrySet().stream().forEach(e -> {
             update.set(e.getKey(), e.getValue());

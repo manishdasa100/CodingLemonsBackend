@@ -1,7 +1,6 @@
 package com.codinglemonsbackend.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -42,7 +41,7 @@ public abstract class SubmissionService {
                         .problemId(submissionMetadata.getProblemId())
                         .language(submissionMetadata.getLanguage())
                         .userCode(submissionMetadata.getUserCode())
-                        .dateOfSubmission(LocalDateTime.now(ZoneId.of("Asia/Kolkata")).toString())
+                        .dateOfSubmission(Instant.now().toString())
                         .runSucccess(!EnumSet.of(ExecutionStatus.CE, ExecutionStatus.RE, ExecutionStatus.IE).contains(executionReport.status()))
                         .totalTestCases(executionReport.totalTestcases())
                         .totalCorrectOutput(executionReport.totalCorrect())

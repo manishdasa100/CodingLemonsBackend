@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Dto;
 
+import java.time.ZoneId;
+
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 
 import lombok.AllArgsConstructor;
@@ -34,4 +36,6 @@ public class SubmissionMetadata {
     private Difficulty difficulty;
 
     private String listId;
+
+    private ZoneId resolvedZoneId;
 }

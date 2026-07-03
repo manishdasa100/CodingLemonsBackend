@@ -54,7 +54,7 @@ public class UserService implements UserDetailsService{
     // }
     @Async("applicationAsyncExecutor")
     @EventListener
-    public void updateUserDetails(UserProfileUpdateEvent updateEvent) {
+    public void updateUserEmail(UserProfileUpdateEvent updateEvent) {
 
         String username = updateEvent.getUsername();
 
@@ -62,16 +62,10 @@ public class UserService implements UserDetailsService{
 
         Map<String, Object> updatePropertiesMap = new HashMap<>();
         
-        if (newUserDetails.getFirstName()!= null && !newUserDetails.getFirstName().trim().isEmpty()) {
-            updatePropertiesMap.put("firstName", newUserDetails.getFirstName());
-        }
-        if (newUserDetails.getLastName() != null && !newUserDetails.getLastName().trim().isEmpty()) {
-            updatePropertiesMap.put("lastName", newUserDetails.getLastName());
-        }
         if (newUserDetails.getEmail() !=  null && !newUserDetails.getEmail().trim().isEmpty()) {
             updatePropertiesMap.put("email", newUserDetails.getEmail());
         }
-
+        
         if (updatePropertiesMap.isEmpty()) return; 
 
         userRepository.updateUserDetails(username, updatePropertiesMap);

@@ -41,6 +41,8 @@ public class UserEntity implements UserDetails{
 
     @Indexed(unique = true)
     private String email;
+    
+    private String zoneId;
 
     private String authProviderId;
 

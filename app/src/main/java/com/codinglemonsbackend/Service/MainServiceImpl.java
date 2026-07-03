@@ -63,6 +63,7 @@ import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Utils.ImageUtils;
 import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
+import com.codinglemonsbackend.Utils.ZoneUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.slugify.Slugify;
@@ -119,6 +120,8 @@ public class MainServiceImpl{
     private final RedisService redisService;
 
     private final ApplicationEventPublisher eventPublisher;
+
+    private final ZoneUtils zoneUtils;
 
     private final ObjectMapper objectMapper;
 
@@ -282,7 +285,7 @@ public class MainServiceImpl{
          
     }
 
-    public String submitCode(SubmitCodeRequestPayload payload, String listId) {
+    public String submitCode(SubmitCodeRequestPayload payload, String listId, String timeZone) {
         ProblemDto problemDto = getProblem(payload.getProblemId());
         if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
             return "Problem is not published";
@@ -298,6 +301,8 @@ public class MainServiceImpl{
             log.info("Problem submission tracked for user: {} problem: {}", 
                     getCurrentlySignedInUser().getUsername(), payload.getProblemId());
         }
+
+        UserEntity currentUser = getCurrentlySignedInUser();
         
         ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
                                                 .cpuTimeLimit(problemDto.getCpuTimeLimit())
@@ -311,10 +316,11 @@ public class MainServiceImpl{
                                                 .difficulty(problemDto.getDifficulty())
                                                 .executionDetails(executionDetails)
                                                 .language(payload.getLanguage())
-                                                .username(getCurrentlySignedInUser().getUsername())
+                                                .username(currentUser.getUsername())
                                                 .userCode(payload.getUserCode())
                                                 .isRunCode(payload.getIsRunCode())
                                                 .b64Encoded(payload.getB64Encoded())
+                                                .resolvedZoneId(zoneUtils.resolveZone(currentUser.getUsername(), timeZone))
                                                 .listId(listId)
                                                 .build();
 
@@ -482,10 +488,10 @@ public class MainServiceImpl{
         return userSubmissionStatusService.getSubmissionStatusDto(username);
     }
 
-    public UserStreakDto getUserStreak() {
+    public UserStreakDto getUserStreak(String zoneId) {
         UserEntity currentSignedInUser = getCurrentlySignedInUser();
         String username = currentSignedInUser.getUsername();
-        UserStreakEntity streak = userStreakService.getStreak(username);
+        UserStreakEntity streak = userStreakService.getStreak(username, zoneId);
         List<String> earnedBadgeIds = userProfileRepository.getEarnedBadgeIds(username);
         BadgeDto highestStreakBadge = badgeService.getHighestStreakBadge(earnedBadgeIds);
         return new UserStreakDto(

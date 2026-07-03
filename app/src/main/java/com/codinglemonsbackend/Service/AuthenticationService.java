@@ -23,41 +23,35 @@ import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Payloads.LoginRequestPayload;
 import com.codinglemonsbackend.Utils.JwtUtils;
+import com.codinglemonsbackend.Utils.ZoneUtils;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AuthenticationService {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
 
-    @Autowired
-    private JwtUtils jwtUtils; 
+    private final JwtUtils jwtUtils; 
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-    @Autowired
-    private UserProfileService userProfileService;
+    private final ZoneUtils zoneUtils;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
-    // @Autowired
-    // private MeterRegistry meterRegistry;
+    // private final MeterRegistry meterRegistry;
 
-    // @Autowired
-    // private Counter userRegistrationCounter;
+    // private final Counter userRegistrationCounter;
 
-    // @Autowired
-    // private Counter userLoginCounter;
+    // private final Counter userLoginCounter;
     
     public String registerUser(UserDto userDto, Boolean isAdmin) throws UserAlreadyExistException{
         
@@ -66,6 +60,7 @@ public class AuthenticationService {
                             .password(passwordEncoder.encode(userDto.getPassword()))
                             .passwordIssueDate(new Date((System.currentTimeMillis() / 1000) * 1000))
                             .email(userDto.getEmail())
+                            .zoneId(zoneUtils.resolveZone(null, userDto.getZoneId()).getId())
                             .role((isAdmin)?Role.ADMIN:Role.USER)
                             .build();
 
@@ -122,12 +117,5 @@ public class AuthenticationService {
         }
         return userService.resetUserPassword(username, passwordEncoder.encode(password));
     }
-
-    // private String getRandomPassKey() {
-    //     Random random = ThreadLocalRandom.current();
-    //     byte[] r = new byte[64]; //64 bytes
-    //     random.nextBytes(r);
-    //     return Base64.getEncoder().encodeToString(r);
-    // }
 }
 

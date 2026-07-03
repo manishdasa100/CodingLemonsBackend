@@ -43,4 +43,5 @@ public class UserDto {
     @JsonProperty(access = Access.WRITE_ONLY)
     private String password;
 
+    private String zoneId;
 }

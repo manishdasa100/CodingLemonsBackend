@@ -2,9 +2,7 @@ package com.codinglemonsbackend.Service;
 
 import java.time.LocalDate;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
@@ -15,19 +13,33 @@ import com.codinglemonsbackend.Events.StreakUpdatedEvent;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Repository.UserStreakRepositoryService;
+import com.codinglemonsbackend.Utils.ZoneUtils;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class UserStreakService {
 
-    @Autowired
-    private UserStreakRepositoryService repositoryService;
+    private final UserStreakRepositoryService repositoryService;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserStreakEntity getStreak(String username) {
+    private final ZoneUtils zoneUtils;
+
+    public UserStreakEntity getStreak(String username, String zoneId) {
         UserStreakEntity streak = repositoryService.getUserStreak(username)
                 .orElseThrow(() -> new NoSuchElementException("User streak not found for user: " + username));
+        
+        LocalDate today = LocalDate.now(zoneUtils.resolveZone(username, zoneId));
+        LocalDate last = streak.getLastSubmissionDate();
+
+        boolean streakBroken = last == null || last.isBefore(today.minusDays(1));
+        if (streakBroken && streak.getStreakDays() != 0) {
+            streak.setStreakDays(0);
+            repositoryService.saveUserStreak(streak);
+        }
+
         return streak;
     }
 
@@ -39,10 +51,10 @@ public class UserStreakService {
         UserStreakEntity streak = repositoryService.getUserStreak(username)
         .orElseThrow(() -> new NoSuchElementException("User streak not found for user: " + username));
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(event.getSubmissionMetadata().getResolvedZoneId());
         if (today.equals(streak.getLastSubmissionDate())) return;
 
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = today.minusDays(1);
         int newStreakDays = yesterday.equals(streak.getLastSubmissionDate()) ? streak.getStreakDays() + 1: 1;
 
         streak.setStreakDays(newStreakDays);

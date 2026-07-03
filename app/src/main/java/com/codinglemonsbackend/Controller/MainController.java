@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -136,8 +137,12 @@ public class MainController {
     }
 
     @PostMapping("/submission/submit")
-    public ResponseEntity<SubmitCodeResponsePayload> submit(@Valid @RequestBody SubmitCodeRequestPayload payload, @RequestParam(required = false) String listId){
-        String submissionId = mainService.submitCode(payload, listId);
+    public ResponseEntity<SubmitCodeResponsePayload> submit(
+        @Valid @RequestBody SubmitCodeRequestPayload payload,
+        @RequestParam(required = false) String listId,
+        @RequestHeader(value = "X-Timezone", required = false) String zoneId)
+    {
+        String submissionId = mainService.submitCode(payload, listId, zoneId);
         SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);
         return ResponseEntity.accepted().body(responsePayload);
     }
@@ -239,8 +244,8 @@ public class MainController {
     }
 
     @GetMapping("/user/streak")
-    public ResponseEntity<UserStreakDto> getUserStreak() {
-        return ResponseEntity.ok().body(mainService.getUserStreak());
+    public ResponseEntity<UserStreakDto> getUserStreak(@RequestHeader(value = "X-Timezone", required = false) String timezone) {
+        return ResponseEntity.ok().body(mainService.getUserStreak(timezone));
     }
 
     @GetMapping("/user/{username}/badges")
