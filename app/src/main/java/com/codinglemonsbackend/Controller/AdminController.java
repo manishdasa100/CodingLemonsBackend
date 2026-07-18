@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,9 +30,10 @@ import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
-import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
+import com.codinglemonsbackend.Dto.TestcaseOperations;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
@@ -56,9 +58,9 @@ public class AdminController {
         // TODO: implement add admin method
     }
 
-    @PostMapping("/problem/add")
+    @PostMapping("/problem/create")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> addProblem(@Valid @RequestBody ProblemDto payload) throws Exception{
+    public ResponseEntity<String> createProblem(@Valid @RequestBody ProblemDto payload) throws Exception{
         ProblemEntity savedEntity = adminService.addProblem(payload);
         return ResponseEntity.ok().body(String.format("Problem created with id %d", savedEntity.getId()));
     }
@@ -87,6 +89,13 @@ public class AdminController {
         return ResponseEntity.ok().body("All problems deleted");
     }
 
+    @PostMapping("/problem/calibrate")
+    @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
+    public ResponseEntity<String> calibrateProblem(@RequestParam Integer problemId, @Valid @RequestBody ProblemExecutionLimits executionLimits){
+        adminService.calibrateProblem(problemId, executionLimits);
+        return ResponseEntity.ok().body(String.format("Problem %d calibrated", problemId));
+    }
+
     @PutMapping("/problem/publish/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<String> publishProblem(@PathVariable Integer id){
@@ -100,7 +109,7 @@ public class AdminController {
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<RegistryOperationResult> syncTestcases(
         @PathVariable Integer problemId,
-        @RequestBody TestcaseRegistryDto dto)
+        @RequestBody TestcaseOperations dto)
     {
         return ResponseEntity.ok(adminService.syncTestcases(problemId, dto));
     }

@@ -17,7 +17,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
-import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
+import com.codinglemonsbackend.Dto.TestcaseOperations;
+import com.codinglemonsbackend.Dto.TestcaseType;
 import com.codinglemonsbackend.Entities.TestcaseRegistry;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
 
@@ -31,10 +32,11 @@ public class TestcaseRepository {
         return Optional.ofNullable(mongoTemplate.findById(problemId, TestcaseRegistry.class));
     }
 
-    public RegistryOperationResult syncItems(Integer problemId, TestcaseRegistryDto dto) {
+    public RegistryOperationResult syncItems(Integer problemId, TestcaseOperations dto) {
         Set<String> deletions = dto.getDeletions();
         List<TestcasePair> updates = dto.getUpdates();
         List<TestcasePair> additions = dto.getAdditions();
+        TestcaseType testcaseType = dto.getTestcaseType();
 
         boolean hasAnyOperation =
                 (deletions != null && !deletions.isEmpty()) ||
@@ -43,6 +45,10 @@ public class TestcaseRepository {
 
         if (!hasAnyOperation) {
             throw new IllegalArgumentException("No operations provided. Supply at least one of: additions, updates, deletions");
+        }
+
+        if (testcaseType == null) {
+            throw new IllegalArgumentException("Testcase type must be one of: " + java.util.Arrays.toString(TestcaseType.values()));
         }
 
         if (additions != null) additions.forEach(this::validateTestcasePair);
@@ -57,18 +63,18 @@ public class TestcaseRepository {
         // 1. Additions
         if (additions != null && !additions.isEmpty()) {
             if (registry == null) {
-                registry = new TestcaseRegistry(problemId, new ArrayList<>(additions));
-            } else {
-                Set<String> existingInputs = registry.getTestcases().stream()
-                        .map(TestcasePair::getInput).collect(Collectors.toSet());
-                additions.stream()
-                        .filter(e -> existingInputs.contains(e.getInput()))
-                        .map(TestcasePair::getInput)
-                        .forEach(ignoredAdditions::add);
-                additions.stream()
-                        .filter(e -> !existingInputs.contains(e.getInput()))
-                        .forEach(registry.getTestcases()::add);
+                registry = TestcaseRegistry.builder().problemId(problemId).build();
             }
+            List<TestcasePair> target = getTargetList(registry, testcaseType);
+            Set<String> existingInputs = target.stream()
+                    .map(TestcasePair::getInput).collect(Collectors.toSet());
+            additions.stream()
+                    .filter(e -> existingInputs.contains(e.getInput()))
+                    .map(TestcasePair::getInput)
+                    .forEach(ignoredAdditions::add);
+            additions.stream()
+                    .filter(e -> !existingInputs.contains(e.getInput()))
+                    .forEach(target::add);
         }
 
         // 2. Updates
@@ -79,7 +85,7 @@ public class TestcaseRepository {
                 Map<String, TestcasePair> updatesMap = updates.stream()
                         .collect(Collectors.toMap(TestcasePair::getInput, Function.identity()));
                 Set<String> notFound = new HashSet<>(updatesMap.keySet());
-                registry.getTestcases().stream()
+                getTargetList(registry, testcaseType).stream()
                         .filter(tc -> updatesMap.containsKey(tc.getInput()))
                         .forEach(tc -> {
                             tc.setExpectedOutput(updatesMap.get(tc.getInput()).getExpectedOutput());
@@ -94,7 +100,7 @@ public class TestcaseRepository {
             if (registry == null) {
                 ignoredDeletions.addAll(deletions);
             } else {
-                List<TestcasePair> current = registry.getTestcases();
+                List<TestcasePair> current = getTargetList(registry, testcaseType);
                 Set<String> existingInputs = current.stream().map(TestcasePair::getInput).collect(Collectors.toSet());
                 deletions.stream().filter(k -> !existingInputs.contains(k)).forEach(ignoredDeletions::add);
                 current.removeIf(e -> deletions.contains(e.getInput()));
@@ -102,7 +108,7 @@ public class TestcaseRepository {
         }
 
         if (registry != null) {
-            if (registry.getTestcases().isEmpty()) {
+            if (isEmpty(registry.getJudgeTestcases()) && isEmpty(registry.getCalibrationTestcases())) {
                 mongoTemplate.remove(new Query(Criteria.where("_id").is(problemId)), TestcaseRegistry.class);
             } else {
                 mongoTemplate.save(registry);
@@ -120,6 +126,23 @@ public class TestcaseRepository {
         }
         mongoTemplate.remove(query, TestcaseRegistry.class);
         return new RegistryOperationResult(problemId, true, null, null, null);
+    }
+
+    private List<TestcasePair> getTargetList(TestcaseRegistry registry, TestcaseType testcaseType) {
+        if (testcaseType == TestcaseType.JUDGE) {
+            if (registry.getJudgeTestcases() == null) {
+                registry.setJudgeTestcases(new ArrayList<>());
+            }
+            return registry.getJudgeTestcases();
+        }
+        if (registry.getCalibrationTestcases() == null) {
+            registry.setCalibrationTestcases(new ArrayList<>());
+        }
+        return registry.getCalibrationTestcases();
+    }
+
+    private boolean isEmpty(List<TestcasePair> testcases) {
+        return testcases == null || testcases.isEmpty();
     }
 
     private void validateTestcasePair(TestcasePair testcase) {

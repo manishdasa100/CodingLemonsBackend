@@ -34,6 +34,7 @@ import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
@@ -106,12 +107,9 @@ public class ProblemRepositoryService {
     }
 
     public ProblemDto getProblemById(Integer id) {
-        
-        Optional<ProblemDto> probEntity = problemsRepository.getProblemById(id);
-
-        if(probEntity.isEmpty()) throw new NoSuchElementException("Problem Id "+ id + " does not exist");
-
-        return probEntity.get();
+        return problemsRepository.getProblemById(id).orElseThrow(
+            () -> new NoSuchElementException("Problem Id "+ id + " does not exist")
+        );
     }
 
     public List<ProblemDto> getProblemsByIds(List<Integer> problemIds, Boolean isAdmin) {
@@ -120,6 +118,11 @@ public class ProblemRepositoryService {
 
     @CacheEvict(cacheNames = RedisService.ALL_PROBLEMS_CACHE)
     public long updateProblem(Integer problemId, ProblemUpdateDto problemUpdateDto) {
+        
+        if (!problemsRepository.problemExists(problemId)) {
+            throw new NoSuchElementException("Problem Id "+ problemId + " does not exist");
+        }
+        
         Map<String, Object> updatesMetadata = problemUpdateDto.getUpdates();
         if (updatesMetadata == null) {
             throw new IllegalArgumentException("No updates provided");
@@ -278,45 +281,6 @@ public class ProblemRepositoryService {
             }
         }
 
-        if (updatesMetadata.containsKey("cpuTimeLimit")) {
-            Object cpuTimeLimitObj = updatesMetadata.get("cpuTimeLimit");
-            if (cpuTimeLimitObj instanceof Number) {
-                float cpuTimeLimit = ((Number) cpuTimeLimitObj).floatValue();
-                if (cpuTimeLimit < 0.1f || cpuTimeLimit > 5.0f) {
-                    throw new IllegalArgumentException("CPU time limit must be between 0.1 and 5.0 seconds");
-                }
-                validUpdates.put("cpuTimeLimit", cpuTimeLimit);
-            } else {
-                throw new IllegalArgumentException("CPU time limit must be a number");
-            }
-        }
-
-        if (updatesMetadata.containsKey("memoryLimit")) {
-            Object memoryLimitObj = updatesMetadata.get("memoryLimit");
-            if (memoryLimitObj instanceof Number) {
-                float memoryLimit = ((Number) memoryLimitObj).floatValue();
-                if (memoryLimit < 100.0f || memoryLimit > 128000.0f) {
-                    throw new IllegalArgumentException("Memory limit must be between 100.0 and 128000.0 MB");
-                }
-                validUpdates.put("memoryLimit", memoryLimit);
-            } else {
-                throw new IllegalArgumentException("Memory limit must be a number");
-            }
-        }
-
-        if (updatesMetadata.containsKey("stackLimit")) {
-            Object stackLimitObj = updatesMetadata.get("stackLimit");
-            if (stackLimitObj instanceof Number) {
-                int stackLimit = ((Number) stackLimitObj).intValue();
-                if (stackLimit < 1024 || stackLimit > 40000) {
-                    throw new IllegalArgumentException("Stack limit must be between 1024 and 40000 KB");
-                }
-                validUpdates.put("stackLimit", stackLimit);
-            } else {
-                throw new IllegalArgumentException("Stack limit must be a number");
-            }
-        }
-
         if (updatesMetadata.containsKey("status")) {
             Object statusObj = updatesMetadata.get("status");
             if (statusObj instanceof String) {
@@ -335,6 +299,19 @@ public class ProblemRepositoryService {
         }
 
         return problemsRepository.updateProblemProperties(problemId, validUpdates);
+    }
+
+    public void calibrateProblem(Integer problemId, ProblemExecutionLimits executionLimits) {
+        if (!problemsRepository.problemExists(problemId)) {
+            throw new NoSuchElementException("Problem Id "+ problemId + " does not exist");
+        }
+        problemsRepository.updateProblemProperties(
+            problemId, 
+            Map.of(
+                "executionLimits", executionLimits,
+                "status", ProblemStatus.CALIBRATED
+            )
+        );
     }
 
     @Async("applicationAsyncExecutor")

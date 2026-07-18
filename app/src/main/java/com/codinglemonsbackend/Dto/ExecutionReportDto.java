@@ -1,6 +1,7 @@
 package com.codinglemonsbackend.Dto;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Builder;
 
@@ -13,10 +14,12 @@ public record ExecutionReportDto(
     Integer totalCorrect,
     ExecutionStatus status,
     String statusMsg,
-    int runtimeMs,
-    int memoryMb,
+    Integer runtimeMs,
+    Integer memoryMb,
     List<TestcaseResult> testcaseResults,
     TestcaseResult failedTestcase,
     String compileError,
-    String runtimeError
+    String runtimeError,
+    String internalError,
+    Map<String, Object> calibrationReport
 ) {}

@@ -140,7 +140,7 @@ public class MainController {
     public ResponseEntity<SubmitCodeResponsePayload> submit(
         @Valid @RequestBody SubmitCodeRequestPayload payload,
         @RequestParam(required = false) String listId,
-        @RequestHeader(value = "X-Timezone", required = false) String zoneId)
+        @RequestHeader(value = "X-Timezone", required = false) String zoneId) throws OperationNotSupportedException
     {
         String submissionId = mainService.submitCode(payload, listId, zoneId);
         SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);

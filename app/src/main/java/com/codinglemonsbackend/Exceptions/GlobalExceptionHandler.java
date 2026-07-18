@@ -8,6 +8,7 @@ import javax.naming.OperationNotSupportedException;
 
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -145,6 +146,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(OperationNotSupportedException.class)
     public ResponseEntity<ExceptionMessage> handleOperationNotSupportedExcpetion(OperationNotSupportedException e) {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ExceptionMessage> handleIllegalStateException(IllegalStateException e) {
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.CONFLICT);
     }
 }
     

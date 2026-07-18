@@ -42,9 +42,7 @@ public class ProblemEntity {
     private Map<ProgrammingLanguage, String> codeSnippets;
     private Set<String> topics;
     private Set<String> companies;
-    private Float cpuTimeLimit;
-    private Float memoryLimit;
-    private Integer stackLimit;
+    private ProblemExecutionLimits executionLimits;
     private Integer likes;
     private Integer previousProblemId;
     private Integer nextProblemId;

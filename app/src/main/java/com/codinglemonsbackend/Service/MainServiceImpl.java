@@ -28,7 +28,6 @@ import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
-import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
 import com.codinglemonsbackend.Dto.ProblemSet;
@@ -59,6 +58,7 @@ import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Payloads.LikeRequest;
 import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Payloads.SubmissionResponsePayload;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.codinglemonsbackend.Payloads.SubmitCodeRequestPayload;
 import com.codinglemonsbackend.Payloads.UpdateProblemListRequest;
 import com.codinglemonsbackend.Utils.ImageUtils;
@@ -285,14 +285,13 @@ public class MainServiceImpl{
          
     }
 
-    public String submitCode(SubmitCodeRequestPayload payload, String listId, String timeZone) {
+    public String submitCode(SubmitCodeRequestPayload payload, String listId, String timeZone) throws OperationNotSupportedException {
         ProblemDto problemDto = getProblem(payload.getProblemId());
-        if (problemDto.getStatus() != ProblemStatus.PUBLISHED) {
-            return "Problem is not published";
-        }
+
+        this.checkIfSubmissionAuthorised(problemDto, payload.getSubmissionType());
         
         // Track code execution metrics
-        if (payload.getIsRunCode()) {
+        if (payload.getSubmissionType() == SubmissionType.RUN_CODE) {
             codeExecutionCounter.increment();
             log.info("Code execution tracked for user: {} problem: {}", 
                     getCurrentlySignedInUser().getUsername(), payload.getProblemId());
@@ -304,21 +303,15 @@ public class MainServiceImpl{
 
         UserEntity currentUser = getCurrentlySignedInUser();
         
-        ProblemExecutionDetails executionDetails = ProblemExecutionDetails.builder()
-                                                .cpuTimeLimit(problemDto.getCpuTimeLimit())
-                                                .memoryLimit(problemDto.getMemoryLimit())
-                                                .stackLimit(problemDto.getStackLimit())
-                                                .build();
-
         SubmissionMetadata submissionMetadata = SubmissionMetadata.builder()
                                                 .problemId(payload.getProblemId())
                                                 .solutionPoints(problemDto.getDifficulty().getPoints())
                                                 .difficulty(problemDto.getDifficulty())
-                                                .executionDetails(executionDetails)
+                                                .executionLimits(problemDto.getExecutionLimits())
                                                 .language(payload.getLanguage())
                                                 .username(currentUser.getUsername())
                                                 .userCode(payload.getUserCode())
-                                                .isRunCode(payload.getIsRunCode())
+                                                .submissionType(payload.getSubmissionType())
                                                 .b64Encoded(payload.getB64Encoded())
                                                 .resolvedZoneId(zoneUtils.resolveZone(currentUser.getUsername(), timeZone))
                                                 .listId(listId)
@@ -337,6 +330,34 @@ public class MainServiceImpl{
         }
 
         return submissionJobId;
+    }
+
+    private void checkIfSubmissionAuthorised(ProblemDto problemDto, SubmissionType submissionType) throws OperationNotSupportedException {
+        UserEntity signedInUser = getCurrentlySignedInUser();
+
+        boolean isAdmin = signedInUser.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ADMIN") || auth.getAuthority().equals("SUPERADMIN"));
+        
+
+        ProblemStatus status = problemDto.getStatus();
+
+        boolean trailRunPossible = status.equals(ProblemStatus.READY) || status.equals(ProblemStatus.PUBLISHED);
+
+        if (submissionType.equals(SubmissionType.CALIBRATE)) {
+            if(!isAdmin) {
+                throw new OperationNotSupportedException("CALIBRATE submissions are only allowed for admins");
+            } else return;
+        }
+
+        if (submissionType.equals(SubmissionType.TRIAL_RUN)) {
+            if(!(isAdmin && trailRunPossible)) {
+                throw new OperationNotSupportedException("Trial run not allowed. Either you are not an admin or the problem is not in READY or PUBLISHED state");
+            } else return;
+        }
+
+        if(!status.equals(ProblemStatus.PUBLISHED)){
+            throw new OperationNotSupportedException("Problem is not published yet. Submissions are not allowed");
+        }
     }
 
     public SubmissionResponsePayload check(String submissionJobId) {
@@ -375,7 +396,7 @@ public class MainServiceImpl{
                                              .constructExecutionReport(executionReportJson);
 
             // Persist submission to db for submit code
-            if (!submissionMetadata.getIsRunCode()) {
+            if (submissionMetadata.getSubmissionType() == SubmissionType.SUBMIT_CODE) {
                 submissionService.saveSubmission(executionReport, submissionMetadata);
                 log.info("Persisted submission {} for user {}", submissionJobId,
                         submissionMetadata.getUsername());

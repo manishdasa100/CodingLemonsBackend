@@ -3,19 +3,14 @@ package com.codinglemonsbackend.Service;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.MethodParameter;
-import org.springframework.util.ReflectionUtils;
+
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
-import org.springframework.validation.BeanPropertyBindingResult;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,10 +22,11 @@ import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
-import com.codinglemonsbackend.Dto.TestcaseRegistryDto;
+import com.codinglemonsbackend.Dto.TestcaseOperations;
 import com.codinglemonsbackend.Dto.UserRankDto;
 import com.codinglemonsbackend.Entities.Company;
 import com.codinglemonsbackend.Entities.ProblemEntity;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
@@ -85,9 +81,7 @@ public class AdminServiceImpl {
     
     public ProblemEntity addProblem(ProblemDto payload) throws Exception {
         if(payload.getTopics().isEmpty()) throw new IllegalArgumentException("No matching topics were found. Please provide valid topics.");
-
         ProblemEntity savedEntity =  problemRepositoryService.addProblem(payload);
-
         return savedEntity;
     }
 
@@ -140,7 +134,7 @@ public class AdminServiceImpl {
         return savedRank.getRankName();
     }
     
-    public RegistryOperationResult syncTestcases(Integer problemId, TestcaseRegistryDto dto) {
+    public RegistryOperationResult syncTestcases(Integer problemId, TestcaseOperations dto) {
         RegistryOperationResult result = testcaseRepository.syncItems(problemId, dto);
         applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
         return result;
@@ -186,5 +180,9 @@ public class AdminServiceImpl {
         problemListEntity.setCreator("global");
         problemListEntity.setIsPublic(true);
         problemListRepositoryService.saveProblemList(problemListEntity);
+    }
+
+    public void calibrateProblem(Integer problemId, ProblemExecutionLimits executionLimits) {
+        problemRepositoryService.calibrateProblem(problemId, executionLimits);
     }
 }

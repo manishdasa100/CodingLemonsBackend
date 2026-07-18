@@ -24,7 +24,7 @@ public class SubmitCodeRequestPayload {
     private String userCode;
 
     @NotNull
-    private Boolean isRunCode;
+    private SubmissionType submissionType;
 
     @NotNull
     private Boolean b64Encoded;

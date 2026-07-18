@@ -4,11 +4,13 @@ import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
-import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
+import com.codinglemonsbackend.Entities.TestcaseRegistry;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
@@ -77,8 +79,8 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String userCode,
         String driverCode,
         String task,
-        int timeLimit,
-        int memoryLimit,
+        Integer timeLimit,
+        Integer memoryLimit,
         List<TestcasePair> testCases) {}
 
     @Override
@@ -102,8 +104,10 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     submissionMetadata.getProblemId() +
                     submissionMetadata.getUserCode() +
                     submissionMetadata.getLanguage() +
-                    submissionMetadata.getIsRunCode();
+                    submissionMetadata.getSubmissionType();
             messageDeduplicationId = generateHash(hashInput);
+        } catch (IllegalStateException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to prepare submission {} for queueing", submissionJobId, e);
             throw new RuntimeException("Failed to prepare submission for queue", e);
@@ -132,41 +136,52 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
     private SubmissionJob createSubmissionJob(SubmissionMetadata submissionMetadata) {
         String jobId = submissionMetadata.getSubmissionJobId();
         Integer problemId = submissionMetadata.getProblemId();
-        Boolean isRunCode = submissionMetadata.getIsRunCode();
+        SubmissionType submissionType = submissionMetadata.getSubmissionType();
         ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
-        ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
+        ProblemExecutionLimits executionDetails = submissionMetadata.getExecutionLimits();
 
         String driverCode = driverCodeRepository.getByProblemId(problemId)
-                .orElseThrow(() -> new IllegalArgumentException("Driver code registry not found for problem ID: " + problemId))
+                .orElseThrow(() -> new IllegalStateException("Driver code registry not found for problem ID: " + problemId))
                 .getDriverCodes()
                 .get(programmingLanguage);
 
-        List<TestcasePair> testCases = testcaseRepository.getByProblemId(problemId)
-                .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId))
-                .getTestcases();
-
-        List<TestcasePair> testCasesToRun = isRunCode
-                ? testCases.stream().limit(runCodeTestCaseCount).toList()
-                : testCases;
+        List<TestcasePair> testCases = this.getTargetTestcases(submissionType, problemId);
 
         String userCode = submissionMetadata.getUserCode();
         if (!submissionMetadata.getB64Encoded()) {
             userCode = Base64.getEncoder().encodeToString(userCode.getBytes());
         }
 
-        Float cpuTimeLimit = executionDetails.getCpuTimeLimit();
-        Float memoryLimit = executionDetails.getMemoryLimit();
+        Integer cpuTimeLimit = (executionDetails != null) ? executionDetails.getCpuTimeLimit() : null;
+        Integer memoryLimit = (executionDetails != null) ? executionDetails.getMemoryLimit() : null;
 
-        return new SubmissionJob(
+        return new SubmissionJob (
             jobId,
             programmingLanguage.name(),
             userCode,
             driverCode,
-            isRunCode ? "RUN_CODE" : "SUBMIT_CODE",
-            Math.round(cpuTimeLimit),
-            Math.round(memoryLimit),
-            testCasesToRun
+            submissionType.name(),
+            cpuTimeLimit,
+            memoryLimit,
+            testCases
         );
+    }
+
+    private List<TestcasePair> getTargetTestcases(SubmissionType submissionType, Integer problemId) {
+        TestcaseRegistry registry = testcaseRepository.getByProblemId(problemId)
+                .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId));
+        List<TestcasePair> testcases = switch (submissionType) {
+            case CALIBRATE -> registry.getCalibrationTestcases();
+            case SUBMIT_CODE -> registry.getJudgeTestcases();
+            case RUN_CODE -> registry.getJudgeTestcases().stream().limit(runCodeTestCaseCount).toList();
+            default -> throw new IllegalArgumentException("Unexpected value: " + submissionType);
+        };
+        if (testcases == null || testcases.isEmpty()) {
+            throw new IllegalStateException("No " + (submissionType == SubmissionType.CALIBRATE ? "calibration" : "judge")
+                + " testcases configured for problem " + problemId);
+        }
+
+        return testcases;
     }
 
     private String generateHash(String input) throws NoSuchAlgorithmException {
@@ -185,6 +200,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
     // Raw response POJOs - field names must match what the NSJAIL worker writes
     // to Redis. Adjust if your worker uses different field names.
     // -------------------------------------------------------------------------
+
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     private record NsjailTestcaseResult(
@@ -215,7 +231,9 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         List<NsjailTestcaseResult> testResults,
         NsjailTestcaseResult failedTestcase,  // Optional - can be null if all passed(only applicable for SUBMIT_CODE task)
         String compileError,
-        String runtimeError
+        String runtimeError,
+        String internalError,
+        Map<String, Object> calibration
     ) {}
 
     @Override
@@ -229,16 +247,16 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     ? List.of()
                     : raw.testResults().stream()
                             .map(r -> new TestcaseResult(
-                                    r.index(),
-                                    TestcaseStatus.valueOf(r.status()),
-                                    r.inputData(),
-                                    r.expectedOutput(),
-                                    r.actualOutput(),
-                                    r.stdOutput(),
-                                    r.stderr(),
-                                    r.runtimeMs(),
-                                    r.memoryMb(),
-                                    r.errorMessage()
+                                r.index(),
+                                TestcaseStatus.valueOf(r.status()),
+                                r.inputData(),
+                                r.expectedOutput(),
+                                r.actualOutput(),
+                                r.stdOutput(),
+                                r.stderr(),
+                                r.runtimeMs(),
+                                r.memoryMb(),
+                                r.errorMessage()
                             ))
                             .toList();
 
@@ -273,6 +291,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                     .failedTestcase(failedTestcase)
                     .compileError(raw.compileError())
                     .runtimeError(raw.runtimeError())
+                    .calibrationReport(raw.calibration())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse NSJAIL worker execution report", e);

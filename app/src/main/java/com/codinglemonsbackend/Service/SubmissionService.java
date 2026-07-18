@@ -47,8 +47,7 @@ public abstract class SubmissionService {
                         .totalCorrectOutput(executionReport.totalCorrect())
                         .runtimeMs(executionReport.runtimeMs())
                         .memoryMb(executionReport.memoryMb())
-                        .failedTestCase(executionReport.failedTestcase() != null
-                                ? executionReport.failedTestcase() : null)
+                        .failedTestCase(executionReport.failedTestcase())
                         .status(executionReport.status())
                         .build();
         submissionRepository.saveSubmission(submission);

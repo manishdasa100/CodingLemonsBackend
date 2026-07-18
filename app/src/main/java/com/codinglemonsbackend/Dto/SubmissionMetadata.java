@@ -3,6 +3,8 @@ package com.codinglemonsbackend.Dto;
 import java.time.ZoneId;
 
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +23,7 @@ public class SubmissionMetadata {
 
     private Integer solutionPoints;
 
-    private ProblemExecutionDetails executionDetails;
+    private ProblemExecutionLimits executionLimits;
 
     private ProgrammingLanguage language;
 
@@ -29,7 +31,7 @@ public class SubmissionMetadata {
 
     private String username;
 
-    private Boolean isRunCode;
+    private SubmissionType submissionType;
 
     private Boolean b64Encoded;
 

@@ -12,7 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class TestcaseRegistryDto { 
+public class TestcaseOperations {
+    private TestcaseType testcaseType; 
     private List<TestcasePair> additions;
     private List<TestcasePair> updates;
     private Set<String> deletions;

@@ -45,9 +45,6 @@ public class ProblemDtoDeserializer extends JsonDeserializer<ProblemDto>{
                 .constraints(extractConstraints(node))
                 .examples(extractExamples(node))
                 .difficulty(extractDifficulty(node))
-                .cpuTimeLimit(extractCpuTimeLimit(node))
-                .memoryLimit(extractMemoryLimit(node))
-                .stackLimit(extractStackLimit(node))
                 .topics(extractTopics(node))
                 .companies(extractCompanies(node))
                 .codeSnippets(extractCodeSnippets(node))
@@ -122,39 +119,6 @@ public class ProblemDtoDeserializer extends JsonDeserializer<ProblemDto>{
         }
     }
 
-    public Float extractCpuTimeLimit(JsonNode node) {
-        if (!node.has("cpuTimeLimit") || !node.get("cpuTimeLimit").isNumber()) {
-            throw new IllegalArgumentException("CPU time limit must be a number");
-        }
-        float cpuTimeLimit = node.get("cpuTimeLimit").floatValue();
-        if (cpuTimeLimit < 0.1f || cpuTimeLimit > 5.0f) {
-            throw new IllegalArgumentException("CPU time limit must be between 0.1 and 5.0 seconds");
-        }
-        return cpuTimeLimit;
-    }
-
-    public Float extractMemoryLimit(JsonNode node) {
-        if (!node.has("memoryLimit") || !node.get("memoryLimit").isNumber()) {
-            throw new IllegalArgumentException("Memory limit must be a number");
-        }
-        float memoryLimit = node.get("memoryLimit").floatValue();
-        if (memoryLimit < 100.0f || memoryLimit > 128000.0f) {
-            throw new IllegalArgumentException("Memory limit must be between 100.0 and 128000.0 MB");
-        }
-        return memoryLimit;
-    }
-
-    public Integer extractStackLimit(JsonNode node) {
-        if (!node.has("stackLimit") || !node.get("stackLimit").isNumber()) {
-            throw new IllegalArgumentException("Stack limit must be a number");
-        }
-        int stackLimit = node.get("stackLimit").intValue();
-        if (stackLimit < 1024 || stackLimit > 40000) {
-            throw new IllegalArgumentException("Stack limit must be between 1024 and 40000 KB");
-        }
-        return stackLimit;
-    }
-
     public Set<String> extractTopics(JsonNode node) {
         if (!node.has("topics") || !node.get("topics").isArray()) {
             throw new IllegalArgumentException("Topics must be an array");
@@ -212,16 +176,5 @@ public class ProblemDtoDeserializer extends JsonDeserializer<ProblemDto>{
             }
         });
         return codeSnippets;
-    }
-
-    public ProblemStatus extractStatus(JsonNode node) {
-        if (!node.has("status") || !node.get("status").isTextual()) {
-            throw new IllegalArgumentException("Status must be a string");
-        }
-        try {
-            return ProblemStatus.valueOf(node.get("status").asText());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid status value");
-        }
     }
 }

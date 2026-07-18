@@ -18,12 +18,13 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
-import com.codinglemonsbackend.Dto.ProblemExecutionDetails;
 import com.codinglemonsbackend.Dto.ProgrammingLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TestcaseRepository;
@@ -98,7 +99,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         private Integer solutionPoints;
 
-        private Boolean isRunCode;
+        private SubmissionType submissionType;
 
         private List<Judge0SubmissionRequestPayload> submissions;
 
@@ -159,13 +160,13 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         Integer problemId = submissionMetadata.getProblemId();
 
-        Boolean isRunCode = submissionMetadata.getIsRunCode();
+        SubmissionType submissionType = submissionMetadata.getSubmissionType();
 
         ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
 
         Integer languageId = programmingLanguage.getLanguagId();
 
-        ProblemExecutionDetails executionDetails = submissionMetadata.getExecutionDetails();
+        ProblemExecutionLimits executionDetails = submissionMetadata.getExecutionLimits();
 
         String driverCode = driverCodeRepository.getByProblemId(problemId)
                             .orElseThrow(() -> new IllegalArgumentException("Driver code registry not found for problem ID: " + problemId))
@@ -177,7 +178,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         List<TestcasePair> testCases = testcaseRepository.getByProblemId(problemId)
                                         .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId))
-                                        .getTestcases();
+                                        .getJudgeTestcases();
 
         testCases.stream().forEach(e -> System.out.println("Input:" + e.getInput() + " , " + "output: "+ e.getExpectedOutput()));
 
@@ -190,9 +191,9 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         String encodedSourceCode = Base64.getEncoder().encodeToString(sourceCode.getBytes());
 
-        Float cpuTimeLimit = executionDetails.getCpuTimeLimit();
+        Integer cpuTimeLimit = executionDetails.getCpuTimeLimit();
 
-        Float memoryLimit = executionDetails.getMemoryLimit();
+        Integer memoryLimit = executionDetails.getMemoryLimit();
 
         Integer stackLimit = executionDetails.getStackLimit();
 
@@ -204,7 +205,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         List<Judge0SubmissionRequestPayload> submissions = new ArrayList<Judge0SubmissionRequestPayload>();
 
-        testCases.stream().limit((isRunCode)?runCodeTestCaseCount:testCases.size()).forEach((entry) -> {
+        testCases.stream().limit((submissionType == SubmissionType.RUN_CODE) ? runCodeTestCaseCount : testCases.size()).forEach((entry) -> {
             System.out.println("test case : "+ entry.getInput());
             Judge0SubmissionRequestPayload payload = Judge0SubmissionRequestPayload.builder()
             .source_code(encodedSourceCode)
@@ -225,7 +226,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
             submissionMetadata.getUsername(), 
             submissionMetadata.getProblemId(), 
             submissionMetadata.getSolutionPoints(),
-            isRunCode, 
+            submissionType, 
             submissions
         );
         

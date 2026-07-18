@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Utils.ProblemDtoDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -80,17 +82,8 @@ public class ProblemDto implements Serializable {
     @NotEmpty
     private Map<ProgrammingLanguage, String> codeSnippets;
 
-    @NotNull
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private Float cpuTimeLimit;
-
-    @NotNull
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private Float memoryLimit;
-
-    @NotNull
-    @JsonProperty(access = Access.WRITE_ONLY)
-    private Integer stackLimit;
+    @JsonIgnore
+    private ProblemExecutionLimits executionLimits;
     
     @NotEmpty
     private Set<String> topics;

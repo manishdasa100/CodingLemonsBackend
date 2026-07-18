@@ -16,3 +16,4 @@ app/src/main/resources/application*.properties
 !app/src/main/resources/application-demo.properties
 
 DEPLOYMENT.md
+README.md
