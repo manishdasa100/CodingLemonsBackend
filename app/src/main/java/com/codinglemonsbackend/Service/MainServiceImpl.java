@@ -311,6 +311,8 @@ public class MainServiceImpl{
                                                 .language(payload.getLanguage())
                                                 .username(currentUser.getUsername())
                                                 .userCode(payload.getUserCode())
+                                                .slowCode(payload.getSlowCalibrationCode())
+                                                .hogCode(payload.getHogCalibrationCode())
                                                 .submissionType(payload.getSubmissionType())
                                                 .b64Encoded(payload.getB64Encoded())
                                                 .resolvedZoneId(zoneUtils.resolveZone(currentUser.getUsername(), timeZone))

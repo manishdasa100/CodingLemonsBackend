@@ -79,7 +79,7 @@ public class AdminController {
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
     public ResponseEntity<String> deleteProblemById(@PathVariable Integer id){
         adminService.deleteProblemById(id);
-        return ResponseEntity.ok().body(String.format("Problem with id {} deleted", id));
+        return ResponseEntity.ok().body(String.format("Problem with id %d deleted", id));
     }
 
     @DeleteMapping("/problem/delete/all")
@@ -89,11 +89,11 @@ public class AdminController {
         return ResponseEntity.ok().body("All problems deleted");
     }
 
-    @PostMapping("/problem/calibrate")
+    @PostMapping("/problem/calibrate/{id}")
     @PreAuthorize("hasAnyAuthority('ADMIN','SUPERADMIN')")
-    public ResponseEntity<String> calibrateProblem(@RequestParam Integer problemId, @Valid @RequestBody ProblemExecutionLimits executionLimits){
-        adminService.calibrateProblem(problemId, executionLimits);
-        return ResponseEntity.ok().body(String.format("Problem %d calibrated", problemId));
+    public ResponseEntity<String> calibrateProblem(@PathVariable Integer id, @Valid @RequestBody ProblemExecutionLimits executionLimits){
+        adminService.calibrateProblem(id, executionLimits);
+        return ResponseEntity.ok().body(String.format("Problem %d calibrated", id));
     }
 
     @PutMapping("/problem/publish/{id}")

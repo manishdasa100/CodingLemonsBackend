@@ -23,6 +23,10 @@ public class SubmitCodeRequestPayload {
     @NotEmpty
     private String userCode;
 
+    private String slowCalibrationCode;
+
+    private String hogCalibrationCode;
+
     @NotNull
     private SubmissionType submissionType;
 

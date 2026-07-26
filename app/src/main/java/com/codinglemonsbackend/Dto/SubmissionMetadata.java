@@ -29,6 +29,10 @@ public class SubmissionMetadata {
 
     private String userCode;
 
+    private String slowCode;
+
+    private String hogCode;
+
     private String username;
 
     private SubmissionType submissionType;

@@ -30,7 +30,7 @@ import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserRank;
-import com.codinglemonsbackend.Events.ProblemRegistryUpdatedEvent;
+import com.codinglemonsbackend.Events.ProblemArtifactsUpdatedEvent;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
@@ -136,25 +136,25 @@ public class AdminServiceImpl {
     
     public RegistryOperationResult syncTestcases(Integer problemId, TestcaseOperations dto) {
         RegistryOperationResult result = testcaseRepository.syncItems(problemId, dto);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
+        applicationEventPublisher.publishEvent(new ProblemArtifactsUpdatedEvent(this, problemId));
         return result;
     }
 
     public RegistryOperationResult deleteTestcaseRegistry(Integer problemId) {
         RegistryOperationResult result = testcaseRepository.deleteByProblemId(problemId);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
+        applicationEventPublisher.publishEvent(new ProblemArtifactsUpdatedEvent(this, problemId));
         return result;
     }
 
     public RegistryOperationResult syncDriverCodes(Integer problemId, DriverCodeRegistryDto dto) {
         RegistryOperationResult result = driverCodeRepository.syncItems(problemId, dto);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
+        applicationEventPublisher.publishEvent(new ProblemArtifactsUpdatedEvent(this, problemId));
         return result;
     }
 
     public RegistryOperationResult deleteDriverCodeRegistry(Integer problemId) {
         RegistryOperationResult result = driverCodeRepository.deleteByProblemId(problemId);
-        applicationEventPublisher.publishEvent(new ProblemRegistryUpdatedEvent(this, problemId));
+        applicationEventPublisher.publishEvent(new ProblemArtifactsUpdatedEvent(this, problemId));
         return result;
     }
 
@@ -184,5 +184,6 @@ public class AdminServiceImpl {
 
     public void calibrateProblem(Integer problemId, ProblemExecutionLimits executionLimits) {
         problemRepositoryService.calibrateProblem(problemId, executionLimits);
+        applicationEventPublisher.publishEvent(new ProblemArtifactsUpdatedEvent(this, problemId));
     }
 }

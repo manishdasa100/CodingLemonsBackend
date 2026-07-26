@@ -308,8 +308,7 @@ public class ProblemRepositoryService {
         problemsRepository.updateProblemProperties(
             problemId, 
             Map.of(
-                "executionLimits", executionLimits,
-                "status", ProblemStatus.CALIBRATED
+                "executionLimits", executionLimits
             )
         );
     }

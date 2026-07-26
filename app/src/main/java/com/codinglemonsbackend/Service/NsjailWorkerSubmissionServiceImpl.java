@@ -77,6 +77,8 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String jobId,
         String language,
         String userCode,
+        String slowCode,
+        String hogCode,
         String driverCode,
         String task,
         Integer timeLimit,
@@ -147,18 +149,26 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
 
         List<TestcasePair> testCases = this.getTargetTestcases(submissionType, problemId);
 
-        String userCode = submissionMetadata.getUserCode();
-        if (!submissionMetadata.getB64Encoded()) {
-            userCode = Base64.getEncoder().encodeToString(userCode.getBytes());
-        }
+        boolean alreadyEncoded = submissionMetadata.getB64Encoded();
+
+        String userCode = encode(submissionMetadata.getUserCode(), alreadyEncoded);
 
         Integer cpuTimeLimit = (executionDetails != null) ? executionDetails.getCpuTimeLimit() : null;
         Integer memoryLimit = (executionDetails != null) ? executionDetails.getMemoryLimit() : null;
+
+        String slowCode = null, hogCode = null;
+
+        if (submissionType == SubmissionType.CALIBRATE) {
+            slowCode = encode(submissionMetadata.getSlowCode(), alreadyEncoded);
+            hogCode = encode(submissionMetadata.getHogCode(), alreadyEncoded);
+        }
 
         return new SubmissionJob (
             jobId,
             programmingLanguage.name(),
             userCode,
+            slowCode,
+            hogCode,
             driverCode,
             submissionType.name(),
             cpuTimeLimit,
@@ -167,12 +177,16 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         );
     }
 
+    private String encode(String userCode, boolean alreadyEncoded) {
+        return (userCode == null || alreadyEncoded) ? userCode : Base64.getEncoder().encodeToString(userCode.getBytes());
+    }
+
     private List<TestcasePair> getTargetTestcases(SubmissionType submissionType, Integer problemId) {
         TestcaseRegistry registry = testcaseRepository.getByProblemId(problemId)
                 .orElseThrow(() -> new IllegalArgumentException("Test case registry not found for problem ID: " + problemId));
         List<TestcasePair> testcases = switch (submissionType) {
             case CALIBRATE -> registry.getCalibrationTestcases();
-            case SUBMIT_CODE -> registry.getJudgeTestcases();
+            case SUBMIT_CODE, TRIAL_RUN -> registry.getJudgeTestcases();
             case RUN_CODE -> registry.getJudgeTestcases().stream().limit(runCodeTestCaseCount).toList();
             default -> throw new IllegalArgumentException("Unexpected value: " + submissionType);
         };
