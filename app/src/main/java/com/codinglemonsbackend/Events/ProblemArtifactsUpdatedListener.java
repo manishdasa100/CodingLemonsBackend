@@ -7,11 +7,14 @@ import org.springframework.stereotype.Component;
 
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemStatus;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
+import com.codinglemonsbackend.Entities.DriverCodeRegistry;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
 import com.codinglemonsbackend.Repository.ProblemsRepository;
 import com.codinglemonsbackend.Repository.TestcaseRepository;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Component
@@ -30,17 +33,20 @@ public class ProblemArtifactsUpdatedListener {
     @EventListener
     public void onProblemArtifactsUpdated(ProblemArtifactsUpdatedEvent event) {
         Integer problemId = event.getProblemId();
-        boolean hasDriverCode = driverCodeRepository.getByProblemId(problemId).isPresent();
-        boolean hasTestcases = testcaseRepository.getByProblemId(problemId).isPresent() 
-                    && testcaseRepository.getByProblemId(problemId).get().getJudgeTestcases() != null
-                    && !testcaseRepository.getByProblemId(problemId).get().getJudgeTestcases().isEmpty();
+        boolean hasAllDriverCode = driverCodeRepository.getByProblemId(problemId)
+                                    .map(DriverCodeRegistry::getDriverCodes)
+                                    .filter(dc -> dc.keySet().containsAll(List.of(SupportedLanguage.values())))
+                                    .isPresent();
 
-        ProblemDto problem = problemsRepository.getProblemById(problemId).orElseThrow(() -> new NoSuchElementException("Problem not found for ID: " + problemId));
+        boolean hasEnoughTestcases = testcaseRepository.getByProblemId(problemId)
+                                    .map(t -> t.getJudgeTestcases()).map(List::size).orElse(0) >= 10;
+
+        boolean hasExecutionLimit = problemsRepository.getProblemById(problemId)
+                                    .map(ProblemDto::getExecutionLimits)
+                                    .map(limits -> limits.getCpuTimeLimit() != null && limits.getMemoryLimit() != null)
+                                    .orElse(false);
         
-        var executionLimits = problem.getExecutionLimits();
-        boolean isCalibrated = executionLimits != null && executionLimits.getCpuTimeLimit() != null && executionLimits.getMemoryLimit() != null;
-
-        ProblemStatus problemStatus = (hasDriverCode && hasTestcases && isCalibrated)? ProblemStatus.READY : ProblemStatus.DRAFT;
+        ProblemStatus problemStatus = (hasAllDriverCode && hasEnoughTestcases && hasExecutionLimit)? ProblemStatus.READY : ProblemStatus.DRAFT;
 
         problemsRepository.updateProblemProperties(
             problemId,

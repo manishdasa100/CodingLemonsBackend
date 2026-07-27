@@ -32,7 +32,7 @@ import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemUpdateDto;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Entities.ProblemEntity;
 import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.Topic;
@@ -217,10 +217,10 @@ public class ProblemRepositoryService {
             if (snippetsObj instanceof Map<?, ?>) {
                 Map<?, ?> snippetsMap = (Map<?, ?>) snippetsObj;
                 if (!snippetsMap.isEmpty()) {
-                    Map<ProgrammingLanguage, String> codeSnippets = new HashMap<>();
+                    Map<SupportedLanguage, String> codeSnippets = new HashMap<>();
                     for (Map.Entry<?, ?> entry : snippetsMap.entrySet()) {
                         try{
-                            ProgrammingLanguage language = ProgrammingLanguage.valueOf((String) entry.getKey());
+                            SupportedLanguage language = SupportedLanguage.valueOf((String) entry.getKey());
                             String code = (String) entry.getValue();
                             if (StringUtils.isBlank(code)) {
                                 throw new IllegalArgumentException(String.format("Code snippet for %s must be a non-empty String", language));

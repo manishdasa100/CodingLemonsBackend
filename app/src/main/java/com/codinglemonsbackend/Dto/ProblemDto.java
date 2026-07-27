@@ -80,7 +80,7 @@ public class ProblemDto implements Serializable {
     private List<Example> examples;
 
     @NotEmpty
-    private Map<ProgrammingLanguage, String> codeSnippets;
+    private Map<SupportedLanguage, String> codeSnippets;
 
     @JsonIgnore
     private ProblemExecutionLimits executionLimits;

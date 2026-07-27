@@ -25,7 +25,7 @@ public class SubmissionMetadata {
 
     private ProblemExecutionLimits executionLimits;
 
-    private ProgrammingLanguage language;
+    private SupportedLanguage language;
 
     private String userCode;
 

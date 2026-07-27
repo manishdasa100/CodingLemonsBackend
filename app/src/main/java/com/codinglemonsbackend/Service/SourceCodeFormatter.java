@@ -5,12 +5,12 @@ import java.util.Base64;
 
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 
 @Service
 public class SourceCodeFormatter {
     
-    public static String formatCode(String encodedDriverCode, String encodedUserCode, ProgrammingLanguage language) {
+    public static String formatCode(String encodedDriverCode, String encodedUserCode, SupportedLanguage language) {
 
         byte[] driverCodeBytes, userCodeBytes;
 

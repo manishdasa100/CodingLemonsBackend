@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.codinglemonsbackend.Dto.ProblemDto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemStatus;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
@@ -39,7 +39,7 @@ public class ProblemEntity {
     private List<String> constraints;
     private List<Example> examples;
     private Difficulty difficulty;
-    private Map<ProgrammingLanguage, String> codeSnippets;
+    private Map<SupportedLanguage, String> codeSnippets;
     private Set<String> topics;
     private Set<String> companies;
     private ProblemExecutionLimits executionLimits;

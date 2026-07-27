@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class DriverCodeRegistryDto {    
-    private EnumMap<ProgrammingLanguage, String> additions;
-    private EnumMap<ProgrammingLanguage, String> updates;
-    private Set<ProgrammingLanguage> deletions;
+    private EnumMap<SupportedLanguage, String> additions;
+    private EnumMap<SupportedLanguage, String> updates;
+    private Set<SupportedLanguage> deletions;
 }

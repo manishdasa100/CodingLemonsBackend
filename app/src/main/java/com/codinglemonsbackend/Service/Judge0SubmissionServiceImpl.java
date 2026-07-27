@@ -18,7 +18,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
@@ -162,7 +162,7 @@ public class Judge0SubmissionServiceImpl extends SubmissionService{
 
         SubmissionType submissionType = submissionMetadata.getSubmissionType();
 
-        ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
+        SupportedLanguage programmingLanguage = submissionMetadata.getLanguage();
 
         Integer languageId = programmingLanguage.getLanguagId();
 

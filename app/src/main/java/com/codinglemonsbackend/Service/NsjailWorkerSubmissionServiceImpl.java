@@ -5,7 +5,7 @@ import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
 import com.codinglemonsbackend.Payloads.SubmissionType;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
@@ -139,7 +139,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String jobId = submissionMetadata.getSubmissionJobId();
         Integer problemId = submissionMetadata.getProblemId();
         SubmissionType submissionType = submissionMetadata.getSubmissionType();
-        ProgrammingLanguage programmingLanguage = submissionMetadata.getLanguage();
+        SupportedLanguage programmingLanguage = submissionMetadata.getLanguage();
         ProblemExecutionLimits executionDetails = submissionMetadata.getExecutionLimits();
 
         String driverCode = driverCodeRepository.getByProblemId(problemId)

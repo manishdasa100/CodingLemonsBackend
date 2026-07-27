@@ -5,7 +5,7 @@ import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.codinglemonsbackend.Dto.ExecutionStatus;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class SubmissionEntity {
     private String submissionId;
     private String username;
     private Integer problemId;
-    private ProgrammingLanguage language;
+    private SupportedLanguage language;
     private String userCode;
     private int runtimeMs;
     private int memoryMb;

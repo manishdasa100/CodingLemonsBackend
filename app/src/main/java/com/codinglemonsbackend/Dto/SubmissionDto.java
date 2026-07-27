@@ -21,7 +21,7 @@ public class SubmissionDto {
     private String username;
     private Integer problemId;
     private ProblemDto problemData;
-    private ProgrammingLanguage language;
+    private SupportedLanguage language;
     private String userCode;
     private String dateOfSubmission;
     private Boolean runSucccess;

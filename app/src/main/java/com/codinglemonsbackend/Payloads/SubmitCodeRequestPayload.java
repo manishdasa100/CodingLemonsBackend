@@ -1,6 +1,6 @@
 package com.codinglemonsbackend.Payloads;
 
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -18,7 +18,7 @@ public class SubmitCodeRequestPayload {
     private Integer problemId;
 
     @NotNull
-    private ProgrammingLanguage language;
+    private SupportedLanguage language;
 
     @NotEmpty
     private String userCode;

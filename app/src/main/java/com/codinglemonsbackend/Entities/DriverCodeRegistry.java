@@ -5,7 +5,7 @@ import java.util.EnumMap;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,5 +20,5 @@ public class DriverCodeRegistry {
     @Id
     private Integer problemId;
 
-    private EnumMap<ProgrammingLanguage, String> driverCodes;
+    private EnumMap<SupportedLanguage, String> driverCodes;
 }

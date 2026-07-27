@@ -1,6 +1,6 @@
 package com.codinglemonsbackend.Dto;
 
-public enum ProgrammingLanguage {
+public enum SupportedLanguage {
     
     JAVA(62, "OpenJDK 13.0.1"),
     PYTHON(71, "3.8.1"),
@@ -10,7 +10,7 @@ public enum ProgrammingLanguage {
 
     private String languageVersion;
 
-    private ProgrammingLanguage(Integer languageId, String languageVersion){
+    private SupportedLanguage(Integer languageId, String languageVersion){
         this.languagId = languageId;
         this.languageVersion = languageVersion;
     }

@@ -16,7 +16,7 @@ import com.codinglemonsbackend.Dto.ProblemDto.Example;
 import com.codinglemonsbackend.Dto.ProblemDto;
 import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemStatus;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Service.CompanyService;
 import com.fasterxml.jackson.core.JacksonException;
@@ -157,15 +157,15 @@ public class ProblemDtoDeserializer extends JsonDeserializer<ProblemDto>{
                 .collect(Collectors.toSet());
     }
 
-    public Map<ProgrammingLanguage, String> extractCodeSnippets(JsonNode node) {
+    public Map<SupportedLanguage, String> extractCodeSnippets(JsonNode node) {
         if (!node.has("codeSnippets") || !node.get("codeSnippets").isObject()) {
             throw new IllegalArgumentException("Driver codes must be an object");
         }
-        Map<ProgrammingLanguage, String> codeSnippets = new HashMap<>();
+        Map<SupportedLanguage, String> codeSnippets = new HashMap<>();
         JsonNode codeSnippetsNode = node.get("codeSnippets");
         codeSnippetsNode.fields().forEachRemaining(entry -> {
             try {
-                ProgrammingLanguage lang = ProgrammingLanguage.valueOf(entry.getKey());
+                SupportedLanguage lang = SupportedLanguage.valueOf(entry.getKey());
                 if (entry.getValue().isTextual()) {
                     codeSnippets.put(lang, entry.getValue().asText());
                 } else {

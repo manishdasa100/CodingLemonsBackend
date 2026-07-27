@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import com.codinglemonsbackend.Dto.DriverCodeRegistryDto;
-import com.codinglemonsbackend.Dto.ProgrammingLanguage;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.RegistryOperationResult;
 import com.codinglemonsbackend.Entities.DriverCodeRegistry;
 
@@ -30,9 +30,9 @@ public class DriverCodeRepository {
     }
 
     public RegistryOperationResult syncItems(Integer problemId, DriverCodeRegistryDto dto) {
-        Set<ProgrammingLanguage> deletions = dto.getDeletions();
-        EnumMap<ProgrammingLanguage, String> updates = dto.getUpdates();
-        EnumMap<ProgrammingLanguage, String> additions = dto.getAdditions();
+        Set<SupportedLanguage> deletions = dto.getDeletions();
+        EnumMap<SupportedLanguage, String> updates = dto.getUpdates();
+        EnumMap<SupportedLanguage, String> additions = dto.getAdditions();
 
         boolean hasAnyOperation =
                 (deletions != null && !deletions.isEmpty()) ||
@@ -46,17 +46,17 @@ public class DriverCodeRepository {
         DriverCodeRegistry registry = getByProblemId(problemId).orElse(null);
 
         Set<String> ignoredDeletions = new HashSet<>();
-        List<ProgrammingLanguage> ignoredUpdates = new ArrayList<>();
-        List<ProgrammingLanguage> ignoredAdditions = new ArrayList<>();
+        List<SupportedLanguage> ignoredUpdates = new ArrayList<>();
+        List<SupportedLanguage> ignoredAdditions = new ArrayList<>();
 
         // 1. Deletions
         if (deletions != null && !deletions.isEmpty()) {
             if (registry == null) {
-                deletions.stream().map(ProgrammingLanguage::name).forEach(ignoredDeletions::add);
+                deletions.stream().map(SupportedLanguage::name).forEach(ignoredDeletions::add);
             } else {
-                EnumMap<ProgrammingLanguage, String> current = registry.getDriverCodes();
+                EnumMap<SupportedLanguage, String> current = registry.getDriverCodes();
                 deletions.stream().filter(lang -> !current.containsKey(lang))
-                        .map(ProgrammingLanguage::name)
+                        .map(SupportedLanguage::name)
                         .forEach(ignoredDeletions::add);
                 deletions.forEach(current::remove);
             }
@@ -67,7 +67,7 @@ public class DriverCodeRepository {
             if (registry == null) {
                 ignoredUpdates.addAll(updates.keySet());
             } else {
-                EnumMap<ProgrammingLanguage, String> current = registry.getDriverCodes();
+                EnumMap<SupportedLanguage, String> current = registry.getDriverCodes();
                 updates.keySet().stream().filter(lang -> !current.containsKey(lang)).forEach(ignoredUpdates::add);
                 updates.entrySet().stream()
                         .filter(e -> current.containsKey(e.getKey()))
@@ -80,7 +80,7 @@ public class DriverCodeRepository {
             if (registry == null) {
                 registry = new DriverCodeRegistry(problemId, new EnumMap<>(additions));
             } else {
-                EnumMap<ProgrammingLanguage, String> current = registry.getDriverCodes();
+                EnumMap<SupportedLanguage, String> current = registry.getDriverCodes();
                 additions.keySet().stream().filter(current::containsKey).forEach(ignoredAdditions::add);
                 additions.entrySet().stream()
                         .filter(e -> !current.containsKey(e.getKey()))
