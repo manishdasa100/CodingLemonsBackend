@@ -16,4 +16,5 @@ public class UserStreakDto {
     private Integer highestStreakDays;
     private LocalDate highestStreakDate; 
     private BadgeDto highestStreakBadge;
+    private Integer nextBadgeThreshold;
 }

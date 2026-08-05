@@ -106,7 +106,7 @@ public class BadgeService {
         }
     }
 
-    public BadgeDto getHighestStreakBadge(List<String> earnedBadgeIds) {
+    public BadgeDto getHighestEarnedStreakBadge(List<String> earnedBadgeIds) {
         if (earnedBadgeIds == null || earnedBadgeIds.isEmpty()) return null;
         return badgeRepository.findAllByIds(earnedBadgeIds).stream()
                 .filter(b -> b.getRule().getType() == BadgeRuleType.STREAK_DAYS)
@@ -126,8 +126,21 @@ public class BadgeService {
                     ));
     }
 
+    public Integer getNextBadgeThreshold(String badgeId) {
+        if (badgeId == null || badgeId.isEmpty()) return null;
+        BadgeEntity badge = badgeRepository.findById(badgeId)
+                .orElseThrow(() -> new NoSuchElementException("Badge not found with id: " + badgeId));
+
+        return badgeRepository.findByRuleType(badge.getRule().getType()).stream()
+                .filter(b -> b.getRule().getThreshold() > badge.getRule().getThreshold())
+                .min(Comparator.comparingInt(b -> b.getRule().getThreshold()))
+                .map(b -> b.getRule().getThreshold())
+                .orElse(null);
+    }
+
     private BadgeDto toDto(BadgeEntity badge) {
         return new BadgeDto(
+                badge.getId(),
                 badge.getName(),
                 badge.getDescription(),
                 badge.getRule(),

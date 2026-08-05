@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
@@ -17,6 +18,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BadgeDto {
+
+    @JsonIgnore
+    private String id;
 
     @NotBlank
     @Size(min = 2, max = 50)

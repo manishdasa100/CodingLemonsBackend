@@ -516,14 +516,16 @@ public class MainServiceImpl{
         String username = currentSignedInUser.getUsername();
         UserStreakEntity streak = userStreakService.getStreak(username, zoneId);
         List<String> earnedBadgeIds = userProfileRepository.getEarnedBadgeIds(username);
-        BadgeDto highestStreakBadge = badgeService.getHighestStreakBadge(earnedBadgeIds);
+        BadgeDto highestEarnedStreakBadge = badgeService.getHighestEarnedStreakBadge(earnedBadgeIds);
+        Integer nextBadgeThreshold = badgeService.getNextBadgeThreshold(highestEarnedStreakBadge != null ? highestEarnedStreakBadge.getId() : null);
         return new UserStreakDto(
                 streak.getUsername(),
                 streak.getStreakDays(),
                 streak.getLastSubmissionDate(),
                 streak.getHighestStreakDays(),
                 streak.getHighestStreakDate(),
-                highestStreakBadge
+                highestEarnedStreakBadge,
+                nextBadgeThreshold
         );
     }
 
