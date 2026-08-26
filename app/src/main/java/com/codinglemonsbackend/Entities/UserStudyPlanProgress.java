@@ -19,21 +19,14 @@ import lombok.NoArgsConstructor;
 @CompoundIndex(def = "{'listId':1, 'owner':1}")
 @Data
 public class UserStudyPlanProgress {
-
     @Transient
-    public static final String ENTITY_COLLECTION_NAME = "UserStudyPlanProgress";
-    
+    public static final String ENTITY_COLLECTION_NAME = "UserStudyPlanProgress";    
     @Id
     private String id;
-
     private String listId;
-
     private String owner;
-
     private LocalDate dateOfActivation;
-
     private Set<Integer> solvedProblemIds = new HashSet<>();
-
     public UserStudyPlanProgress(String listId, String owner, LocalDate dateOfActivation) {
         this.listId = listId;
         this.owner = owner;

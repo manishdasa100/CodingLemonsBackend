@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.io.FilenameUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -55,16 +54,15 @@ import com.codinglemonsbackend.Utils.ImageUtils;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping(value = "/api/v1")
+@RequiredArgsConstructor
 public class MainController {
 
-    @Autowired
-    private MainServiceImpl mainService;
+    private final MainServiceImpl mainService;
 
     @GetMapping("/hello")
     public String hello(){
@@ -264,5 +262,5 @@ public class MainController {
         UserStudyPlanProgress progress = mainService.getStudyPlanProgress(listId);
         return ResponseEntity.ok(progress);
     }
- 
+
 }

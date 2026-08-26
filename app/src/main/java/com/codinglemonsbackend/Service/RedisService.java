@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -12,33 +13,21 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RedisService {
-
     public static final String DEFAULT_CACHE = "DEFAULT";
-
     public static final String ALL_PROBLEMS_CACHE = "ALL PROBLEMS";
-
     public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
-
     public static final String PROBLEM_LIKES_COUNT_CACHE_PREFIX = "PROBLEM_LIKES_COUNT:";
-
     public static final String USER_PENDING_LIKES_PREFIX = "PENDING_LIKES:";
-
     public static final String USER_PENDING_DISLIKES_PREFIX = "PENDING_DISLIKES:";
-
     public static final String USER_LIKE_STATUS_CACHE_PREFIX = "LIKE_STATUS_CACHE:";
-
     public static final String SUBMISSION_DEDUP_KEY = "submission:dedup:";
-
     public static final String PROBLEM_COUNT_BY_DIFFICULTY_CACHE = "PROBLEM:COUNT:BY:DIFFICULTY";
-
     public static final String USER_RANKS = "USER_RANKS";
-
+    public static final String AI_HINT_COOLDOWN_PREFIX = "ai:hint:cooldown:";
+    public static final String AI_HINT_QUOTA_PREFIX = "ai:hint:quota:";
     private RedisTemplate<String, String> redisTemplate;
-    
     private HashOperations<String, String, String> hashOperations;
-
     private ValueOperations<String, String> stringOperations;
-
     private SetOperations<String, String> setOperations;
 
     public RedisService(RedisTemplate<String, String> redisTemplate) {
@@ -99,6 +88,10 @@ public class RedisService {
         return redisTemplate.hasKey(key);
     }
 
+    public Long increment(String key, long delta) {
+        return stringOperations.increment(key, delta);
+    }
+
     public void addToSet(String key, String... values) {
         setOperations.add(key, values);
     }
@@ -118,5 +111,13 @@ public class RedisService {
     public String addToStream(String streamKey, Map<String, String> fields) {
         RecordId recordId = redisTemplate.opsForStream().add(streamKey, fields);
         return recordId == null ? null : recordId.getValue();
+    }
+
+    public void setExpiry(String key, Instant instant) {
+        redisTemplate.expireAt(key, instant);
+    }
+
+    public Long getExpiry(String key) {
+        return redisTemplate.getExpire(key);
     }
 }

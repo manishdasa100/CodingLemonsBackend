@@ -96,6 +96,8 @@ public class SubmissionRepository {
 
     public List<SubmissionDto> getRecentUserSubmissions(String username, Integer limit) {
 
+        //TODO: Pagination required here
+
         MatchOperation matchOperation = Aggregation.match(Criteria.where("username").is(username));
 
         LookupOperation lookupOperation = LookupOperation.newLookup()
@@ -129,5 +131,17 @@ public class SubmissionRepository {
         Aggregation aggregation = Aggregation.newAggregation(operations);
 
         return mongoTemplate.aggregate(aggregation, SubmissionEntity.class, SubmissionDto.class).getMappedResults();
+    }
+
+    public Optional<SubmissionEntity> getLatestSubmissionForProblem(String username, Integer problemId) {
+        Criteria criteria = new Criteria().andOperator(
+            Criteria.where("username").is(username),
+            Criteria.where("problemId").is(problemId)
+        );
+
+        Query query = new Query(criteria).with(Sort.by(Sort.Direction.DESC, "dateOfSubmission"));
+
+        SubmissionEntity latestSubmissionEntity = mongoTemplate.findOne(query, SubmissionEntity.class);
+        return Optional.ofNullable(latestSubmissionEntity);
     }
 }

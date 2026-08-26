@@ -1,11 +1,14 @@
 package com.codinglemonsbackend.Exceptions;
 
-import lombok.NoArgsConstructor;
+import org.springframework.http.HttpStatus;
 
-@NoArgsConstructor
-public class ResourceNotFoundException extends Exception{
+public class ResourceNotFoundException extends ApplicationException{
     
     public ResourceNotFoundException(String message){
         super(message);
+    }
+
+    public HttpStatus getStatus() {
+        return HttpStatus.NO_CONTENT;
     }
 }

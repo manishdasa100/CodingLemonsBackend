@@ -1,7 +1,13 @@
 package com.codinglemonsbackend;
 
+import java.util.Map;
+
 import org.modelmapper.ModelMapper;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
@@ -16,6 +22,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.github.slugify.Slugify;
+
 import org.springframework.http.converter.json.SpringHandlerInstantiator;
 
 @SpringBootApplication
@@ -64,12 +71,24 @@ public class App {
         SpringApplication.run(App.class, args);
     }
 
-    /*@Bean
-    CommandLineRunner runner(S3Service s3Service, S3Buckets s3Buckets){
-        return args -> {
-            s3Service.putObject(s3Buckets.getCustomer(), "foo/bar", "HELLO WORLD".getBytes());
-            byte[] obj = s3Service.getObject(s3Buckets.getCustomer(), "foo/bar");
-            System.out.println(new String(obj));
-        };
-    }*/
+    // @Bean
+    // CommandLineRunner runner(Map<String, ChatModel> chatModels){
+    //     return args -> {
+    //         System.out.println("===================AI DEBUG WINDOW===================");
+    //         log.info("Available Chat Models:{}", chatModels.size());
+    //         chatModels.forEach((name, model) -> {
+    //             log.info("Model Name: {}, Model Details: {}", name, model);
+    //         });
+
+    //         chatModels.forEach((name, model) -> {
+    //             try {
+    //                 ChatResponse response = model.call(new Prompt("Reply with exactly: OK"));
+    //                 log.info("Model Name: {}, Reply: {}", name, response.getResult().getOutput().getText());
+    //                 log.info("Model Name: {}, Usage Details: {}", name, response.getMetadata().getUsage());
+    //             } catch (Exception e) {
+    //                 log.error("Exception for model {}: {}: {}", name, e.getClass().getSimpleName(), e.getMessage());
+    //             }
+    //         });
+    //     };
+    // }
 }

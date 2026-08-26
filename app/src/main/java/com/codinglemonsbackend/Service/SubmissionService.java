@@ -48,6 +48,7 @@ public abstract class SubmissionService {
                         .runtimeMs(executionReport.runtimeMs())
                         .memoryMb(executionReport.memoryMb())
                         .failedTestCase(executionReport.failedTestcase())
+                        .error(executionReport.compileError() != null ? executionReport.compileError() : executionReport.runtimeError())
                         .status(executionReport.status())
                         .build();
         submissionRepository.saveSubmission(submission);

@@ -60,7 +60,7 @@ public class SecurityConfigurer {
                     "/login/oauth2/**",
                     "/api/v1/hello",
                     "/actuator/**",
-                    "api/v1/profile/**"
+                    "/api/v1/profile/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )

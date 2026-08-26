@@ -34,4 +34,5 @@ public class SubmissionEntity {
     private Integer totalCorrectOutput;
     private TestcaseResult failedTestCase;
     private ExecutionStatus status;
+    private String error;
 }

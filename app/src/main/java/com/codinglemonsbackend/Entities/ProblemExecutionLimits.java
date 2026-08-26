@@ -25,4 +25,10 @@ public class ProblemExecutionLimits {
     @Min(value = 1, message = "Stack limit must be greater than zero")
     @Max(value = 1024, message = "Stack limit must be less than or equal to 1024 mb")
     private Integer stackLimit;
+
+    @NotNull
+    private String optimalTimeComplexity;
+
+    @NotNull
+    private String optimalSpaceComplexity;
 }

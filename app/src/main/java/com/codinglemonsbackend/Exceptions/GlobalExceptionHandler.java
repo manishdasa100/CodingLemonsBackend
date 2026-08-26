@@ -152,6 +152,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionMessage> handleIllegalStateException(IllegalStateException e) {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(AIHintException.class)
+    public ResponseEntity<ExceptionMessage> handleAIHintException(AIHintException e) {
+        return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), e.getStatus());
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ExceptionMessage> handleResourceNotFoundException(ResourceNotFoundException e) {
+        return new ResponseEntity<>(new ExceptionMessage(e.getMessage()), e.getStatus());
+    }
 }
     
 

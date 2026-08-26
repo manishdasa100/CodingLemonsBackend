@@ -4,6 +4,7 @@
     <springProperty scope="context" name="appVersion" source="application.version" defaultValue="unknown"/>
     <springProperty scope="context" name="logLevel" source="logging.level.root" defaultValue="INFO"/>
     <springProperty scope="context" name="logFilePath" source="logging.file.path" defaultValue="logs"/>
+    <springProperty scope="context" name="consoleLogLevel" source="logging.console.level" defaultValue="ERROR"/>
     <springProfile name="!prod">
         <springProperty scope="context" name="enableStructuredLogging" source="logging.structured" defaultValue="false"/>
     </springProfile>
@@ -13,8 +14,11 @@
 
     <property name="LOG_FILE" value="${logFilePath}/${appName}"/>
     
-    <!-- Console appender with human-readable format -->
+    <!-- Console appender with human-readable format; threshold from logging.console.level -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${consoleLogLevel}</level>
+        </filter>
         <encoder>
             <pattern>%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx</pattern>
         </encoder>
@@ -23,11 +27,9 @@
     <!-- File appender with structured JSON logging -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
             <totalSizeCap>10GB</totalSizeCap>
         </rollingPolicy>

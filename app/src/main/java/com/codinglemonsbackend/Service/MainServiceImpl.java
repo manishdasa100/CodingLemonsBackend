@@ -519,13 +519,13 @@ public class MainServiceImpl{
         BadgeDto highestEarnedStreakBadge = badgeService.getHighestEarnedStreakBadge(earnedBadgeIds);
         Integer nextBadgeThreshold = badgeService.getNextBadgeThreshold(highestEarnedStreakBadge != null ? highestEarnedStreakBadge.getId() : null);
         return new UserStreakDto(
-                streak.getUsername(),
-                streak.getStreakDays(),
-                streak.getLastSubmissionDate(),
-                streak.getHighestStreakDays(),
-                streak.getHighestStreakDate(),
-                highestEarnedStreakBadge,
-                nextBadgeThreshold
+            streak.getUsername(),
+            streak.getStreakDays(),
+            streak.getLastSubmissionDate(),
+            streak.getHighestStreakDays(),
+            streak.getHighestStreakDate(),
+            highestEarnedStreakBadge,
+            nextBadgeThreshold
         );
     }
 
