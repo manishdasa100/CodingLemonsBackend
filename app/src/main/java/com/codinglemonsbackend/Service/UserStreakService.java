@@ -7,11 +7,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Events.StreakUpdatedEvent;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
-import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Repository.UserStreakRepositoryService;
 import com.codinglemonsbackend.Utils.ZoneUtils;
 
@@ -69,11 +70,10 @@ public class UserStreakService {
         eventPublisher.publishEvent(new StreakUpdatedEvent(this, username, newStreakDays));
     }
 
-    @Async("applicationAsyncExecutor")
-    @EventListener
-    public void createUserStreak(UserAccountCreationEvent event) {
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void createUserStreak(String username) {
         UserStreakEntity entity = new UserStreakEntity(
-            event.getUser().getUsername(),
+            username,
             0,
             null,
             0,

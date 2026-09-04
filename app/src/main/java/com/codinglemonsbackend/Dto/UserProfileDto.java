@@ -5,14 +5,11 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codinglemonsbackend.Entities.UserLocation;
-import com.codinglemonsbackend.Validation.CrossFieldValidation;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -35,9 +32,6 @@ public class UserProfileDto {
     private String firstName;
 
     private String lastName;
-
-    @Email(message = "Email must be a valid email address")
-    private String email;
     
     @Size(min = 5, max = 20, 
     message = "User occupation must be between 5 and 20 characters")

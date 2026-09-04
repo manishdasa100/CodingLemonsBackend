@@ -26,7 +26,6 @@ public class UserProfileEntity {
     private String username;
     private String firstName;
     private String lastName;
-    private String email;
     private String profilePictureId;
     private String githubUrl;
     private String twitterUrl;

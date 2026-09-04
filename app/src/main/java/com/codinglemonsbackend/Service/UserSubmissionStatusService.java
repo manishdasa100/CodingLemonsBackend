@@ -3,13 +3,12 @@ package com.codinglemonsbackend.Service;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Entities.UserSubmissionStatusEntity;
-import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Repository.UserSubmissionStatusRepository;
 
 @Service
@@ -18,10 +17,8 @@ public class UserSubmissionStatusService {
     @Autowired
     private UserSubmissionStatusRepository userSubmissionStatusRepository;
 
-    @Async("applicationAsyncExecutor")
-    @EventListener
-    public void createForUser(UserAccountCreationEvent event) {
-        String username = event.getUser().getUsername();
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void createForUser(String username) {
         userSubmissionStatusRepository.createForUser(username);
     }
 

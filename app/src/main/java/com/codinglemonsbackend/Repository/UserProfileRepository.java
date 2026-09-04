@@ -26,12 +26,6 @@ public class UserProfileRepository {
         return Optional.ofNullable(userProfileEntity);
     }
 
-    public Optional<UserProfileEntity> findByEmail(String email) {
-        Query query = new Query(Criteria.where("email").is(email));
-        UserProfileEntity entity = mongoTemplate.findOne(query, UserProfileEntity.class);
-        return Optional.ofNullable(entity);
-    }
-
     public List<String> getEarnedBadgeIds(String username) {
         Query query = new Query(Criteria.where("_id").is(username));
         query.fields().include("earnedBadgeIds");

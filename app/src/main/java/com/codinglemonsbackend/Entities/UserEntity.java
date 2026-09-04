@@ -39,7 +39,7 @@ public class UserEntity implements UserDetails{
 
     private Role role;
 
-    @Indexed(unique = true)
+    @Indexed(unique = true, sparse = true)
     private String email;
     
     private String zoneId;

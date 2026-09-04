@@ -13,6 +13,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.CurrentUserDto;
@@ -24,42 +26,35 @@ import com.codinglemonsbackend.Entities.UserProfileEntity;
 import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
-import com.codinglemonsbackend.Events.UserAccountCreationEvent;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Properties.S3Properties;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
 import com.codinglemonsbackend.Utils.URIUtils;
 import com.github.slugify.Slugify;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserProfileService {
 
-    @Autowired
-    private UserProfileRepository userProfileRepository;
+    private final UserProfileRepository userProfileRepository;
 
-    @Autowired
-    private ModelMapper mapper;
+    private final ModelMapper mapper;
     
-    @Autowired
-    private S3Service s3Service;
+    private final S3Service s3Service;
 
-    @Autowired
-    private S3Properties s3Properties;
+    private final S3Properties s3Properties;
 
-    @Autowired
-    private UserRankService userRankService;
+    private final UserRankService userRankService;
 
-    @Autowired
-    private BadgeService badgeService;
+    private final BadgeService badgeService;
 
-    @Autowired
-    private CompanyService companyService;
+    private final CompanyService companyService;
 
-    @Autowired
-    private Slugify slugify;
+    private final Slugify slugify;
 
     @Value("${assets.domain}")
     private String ASSETS_DOMAIN;
@@ -127,29 +122,21 @@ public class UserProfileService {
         log.info("Score updated for user {} by {} points", username, points);
     }
 
-    @Async("applicationAsyncExecutor")
-    @EventListener
-    public void createUserProfile(UserAccountCreationEvent event) {
-        System.out.println("Received user account creation event");
-        UserDto newUser = event.getUser();
-        createUserProfile(newUser);
-    }
 
+    @Transactional(propagation = Propagation.MANDATORY)
     public void createUserProfile(UserDto user) {
         UserProfileEntity userProfileEntity = UserProfileEntity.builder()
                                                 .username(user.getUsername())
                                                 .firstName(user.getFirstName())
                                                 .lastName(user.getLastName())
-                                                .email(user.getEmail())
                                                 .score(0)
                                                 .rank(userRankService.getInitialRank().getRankName())
                                                 .build();
         userProfileRepository.saveUserProfile(userProfileEntity);
     }
     
+    @Transactional
     public Boolean updateUserProfile(String username, UserProfileDto newProfile) {
-
-        System.out.println("Received user profile update event");
 
         UserProfileDto currentProfile = getUserProfile(username);
         
@@ -169,14 +156,6 @@ public class UserProfileService {
                 newLastName = null; // Allow last name to be set to null
             }
             updatePropertiesMap.put("lastName", newLastName);
-        }
-
-        if (newProfile.getEmail() != null && !newProfile.getEmail().equals(currentProfile.getEmail())) {
-            String newEmail = newProfile.getEmail().trim();
-            if (newEmail.isEmpty()) {
-                newEmail = null; // Allow email to be set to null
-            }
-            updatePropertiesMap.put("email", newEmail);
         }
 
         if (newProfile.getGithubUrl() != null && !newProfile.getGithubUrl().equals(currentProfile.getGithubUrl())) {

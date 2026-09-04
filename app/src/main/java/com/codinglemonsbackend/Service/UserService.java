@@ -1,31 +1,54 @@
 package com.codinglemonsbackend.Service;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.codinglemonsbackend.Dto.UserDto;
-import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Entities.UserEntity;
-import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Repository.UserRepository;
 import com.mongodb.client.result.UpdateResult;
 
 @Service
 public class UserService implements UserDetailsService{
-    
+
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private UserProfileService userProfileService;
+
+    @Autowired
+    private UserStreakService userStreakService;
+
+    @Autowired
+    private UserSubmissionStatusService userSubmissionStatusService;
+
+    /**
+     * Creates a user and everything an account needs to be usable, as one unit.
+     * Both signup paths (local registration and OAuth) go through here - a user
+     * without a profile or streak document is a broken account: getUserProfile
+     * and getUserStreak both throw for it.
+     *
+     * This is the transaction boundary; the four steps below declare
+     * Propagation.MANDATORY so they can never be called outside one.
+     */
+    @Transactional(rollbackFor = UserAlreadyExistException.class)
+    public void provisionUser(UserEntity user, UserDto profile) throws UserAlreadyExistException {
+        saveUser(user);
+        userProfileService.createUserProfile(profile);
+        userStreakService.createUserStreak(user.getUsername());
+        userSubmissionStatusService.createForUser(user.getUsername());
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     public void saveUser(UserEntity user) throws UserAlreadyExistException{
         try{
             loadUserByUsername(user.getUsername());
@@ -49,26 +72,8 @@ public class UserService implements UserDetailsService{
         return false;
     }
 
-    // public boolean updateUserDetails(UserEntity user, UserUpdateRequestPayload updateRequest){
-    //     return userRepository.updateUserDetails(user, updateRequest);
-    // }
-    @Async("applicationAsyncExecutor")
-    @EventListener
-    public void updateUserEmail(UserProfileUpdateEvent updateEvent) {
-
-        String username = updateEvent.getUsername();
-
-        UserProfileDto newUserDetails = updateEvent.getNewUserProfileDetails();
-
-        Map<String, Object> updatePropertiesMap = new HashMap<>();
-        
-        if (newUserDetails.getEmail() !=  null && !newUserDetails.getEmail().trim().isEmpty()) {
-            updatePropertiesMap.put("email", newUserDetails.getEmail());
-        }
-        
-        if (updatePropertiesMap.isEmpty()) return; 
-
-        userRepository.updateUserDetails(username, updatePropertiesMap);
+    public void updateUserEmail(String username, String newEmail) {
+        if (newEmail != null && !newEmail.trim().isEmpty()) userRepository.updateUserEmail(username, newEmail);
     }
 
 }

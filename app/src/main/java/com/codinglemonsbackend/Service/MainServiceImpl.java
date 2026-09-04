@@ -445,19 +445,8 @@ public class MainServiceImpl{
     }
 
     public Boolean updateUserProfile(UserProfileDto newUserProfile) {
-
-        System.out.println("UPDATING USER PROFILE");
-
         UserEntity user = (UserEntity)getCurrentlySignedInUser();
-
-        System.out.println("Received user profile: " + newUserProfile.toString());
-
         Boolean profileUpdated = userProfileService.updateUserProfile(user.getUsername(), newUserProfile);
-
-        UserProfileUpdateEvent profileUpdateEvent = new UserProfileUpdateEvent(this, user.getUsername(), newUserProfile);
-
-        eventPublisher.publishEvent(profileUpdateEvent);
-
         return profileUpdated;
     } 
 
