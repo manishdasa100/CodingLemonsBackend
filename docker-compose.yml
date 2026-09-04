@@ -2,46 +2,53 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:latest
+    # Pinned to 8: mongodb_data was written by 8.0.6 and mongod refuses to
+    # start on a dbpath created by a newer release.
+    image: mongo:8
     container_name: mongodb_container
     restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
+      # Only applied when /data/db is empty. The existing volume already has
+      # these users; these are here to reproduce them after a wipe.
+      MONGO_INITDB_ROOT_USERNAME: mongoadmin
+      MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: admin
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+      # Creates cl_backend_dev on a fresh volume. Runs only on first init, so
+      # it is a no-op against an existing mongodb_data.
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - app_network
-
-  redis:
-    image: redis/redis-stack
-    container_name: redis_container
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-      - "8001:8001"  # Redis Insight
-    networks:
-      - app_network
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: rabbitmq_container
-    hostname: dev-rabbitmq
-    restart: unless-stopped
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
-    ports:
-      - "5672:5672"    # AMQP port
-      - "15672:15672"  # Management UI port
-    networks:
-      - app_network
+    # Single-node replica set: Mongo requires one for multi-document
+    # transactions. With auth on, a keyFile is mandatory even with no peers.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        [ -f /data/configdb/keyfile ] || openssl rand -base64 756 > /data/configdb/keyfile
+        chmod 400 /data/configdb/keyfile
+        chown mongodb:mongodb /data/configdb/keyfile
+        exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /data/configdb/keyfile --bind_ip_all
+    # Initiates the set on first boot; a no-op every run after that.
+    # host must be what the *client* reaches - the app runs on the host, not in
+    # app_network. Change to mongodb:27017 if the app ever moves in here.
+    healthcheck:
+      test: >
+        mongosh --quiet -u mongoadmin -p admin --authenticationDatabase admin --eval
+        "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}).ok }"
+      interval: 10s
+      start_period: 30s
+      retries: 10
 
 volumes:
   mongodb_data:
+    # Pinned. Without this compose creates <project>_mongodb_data and you boot
+    # an empty DB while the real dev data sits untouched in mongodb_data.
+    name: mongodb_data
 
 networks:
   app_network:
