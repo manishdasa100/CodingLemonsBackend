@@ -12,7 +12,7 @@ import javax.naming.OperationNotSupportedException;
 
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,32 +24,22 @@ import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Dto.CompanyDto;
 import com.codinglemonsbackend.Dto.EarnedBadgeDto;
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
-import com.codinglemonsbackend.Dto.ExecutionStatus;
-import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.ProblemDto;
-import com.codinglemonsbackend.Dto.ProblemDto.Difficulty;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Dto.ProblemOfTheDayDto;
-import com.codinglemonsbackend.Dto.ProblemSet;
 import com.codinglemonsbackend.Dto.ProblemStatus;
 import com.codinglemonsbackend.Dto.ProblemsPage;
 import com.codinglemonsbackend.Dto.StudyPlanOperation;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
-import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Dto.UserProfileDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatus;
-import com.codinglemonsbackend.Entities.SubmissionEntity;
 import com.codinglemonsbackend.Entities.Topic;
-import com.codinglemonsbackend.Entities.UserWorkExperience;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Entities.UserStreakEntity;
 import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
-import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TopicRepository;
 import com.codinglemonsbackend.Repository.UserProfileRepository;
-import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
-import com.codinglemonsbackend.Events.UserProfileUpdateEvent;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserSubmissionStatusEntity;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
@@ -66,14 +56,12 @@ import com.codinglemonsbackend.Utils.ImageUtils.ImageDimension;
 import com.codinglemonsbackend.Utils.ZoneUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.slugify.Slugify;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.validation.constraints.NotBlank;
 
 @Service
 @Slf4j
@@ -82,52 +70,32 @@ public class MainServiceImpl{
 
     private static final Integer MAX_PROBLEMSET_SIZE = 100;
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
-
     private final MeterRegistry meterRegistry;
-
     private final Counter codeExecutionCounter;
-
     private final Counter problemSubmissionCounter;
-
     private final LikeService likeService;
-
     private final UserProfileService userProfileService;
-
     private final ProblemRepositoryService problemRepositoryService;
-
     private final ProblemListRepositoryService problemListRepositoryService;
-
     private final StudyPlanRepositoryService studyPlanRepositoryService;
-
     private final UserStreakService userStreakService;
-
     private final SubmissionService submissionService;
-
-    private final SubmissionServiceRegistry submissionServiceRegistry;
-
+    private final SubmissionDispatcher submissionDispatcher;
+    private final SubmissionJobStore submissionJobStore;
     private final ProblemOfTheDayService problemOfTheDayService;
-
     private final UserSubmissionStatusService userSubmissionStatusService;
-
     private final BadgeService badgeService;
-
     private final CompanyService companyService;
-
     private final TopicRepository topicRepository;
-
     private final UserProfileRepository userProfileRepository;
-
     private final RedisService redisService;
-
-    private final ApplicationEventPublisher eventPublisher;
-
     private final ZoneUtils zoneUtils;
-
     private final ObjectMapper objectMapper;
-
     private final ModelMapper modelMapper;
 
-    private final String PENDING_SUBMISSION_REDIS_KEY_PREFIX = "submission:report";
+    /** How long a submission may sit without a result before the poll endpoint gives up on it. */
+    @Value("${executor.stuck-timeout-seconds:300}")
+    private long stuckSubmissionTimeoutSeconds;
 
     private UserEntity getCurrentlySignedInUser(){
         return (UserEntity) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -285,7 +253,8 @@ public class MainServiceImpl{
          
     }
 
-    public String submitCode(SubmitCodeRequestPayload payload, String listId, String timeZone) throws OperationNotSupportedException {
+    public String submitCode(SubmitCodeRequestPayload payload, String listId, String timeZone)
+            throws OperationNotSupportedException, FailedSubmissionException {
         ProblemDto problemDto = getProblem(payload.getProblemId());
 
         this.checkIfSubmissionAuthorised(problemDto, payload.getSubmissionType());
@@ -319,19 +288,8 @@ public class MainServiceImpl{
                                                 .listId(listId)
                                                 .build();
 
-        String submissionJobId = submissionService.queueSubmission(submissionMetadata);
-        log.info("Storing submission {} in Redis with key: {}", submissionJobId, PENDING_SUBMISSION_REDIS_KEY_PREFIX);
-
-        try {
-            String metadataJson = objectMapper.writeValueAsString(submissionMetadata);
-            redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "status", PendingOrdersStatus.QUEUED.name(), 3600);
-            redisService.storeHash(PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId, "submissionMetadata", metadataJson, 3600);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize submission metadata for job {}. Error: {}", submissionJobId, e);
-            throw new RuntimeException("Failed to store submission metadata in Redis", e);
-        }
-
-        return submissionJobId;
+        // Executor selection, deduplication and the fallback to Judge0 all live in the dispatcher.
+        return submissionDispatcher.submit(submissionMetadata);
     }
 
     private void checkIfSubmissionAuthorised(ProblemDto problemDto, SubmissionType submissionType) throws OperationNotSupportedException {
@@ -362,69 +320,44 @@ public class MainServiceImpl{
         }
     }
 
+    /**
+     * Short-polling endpoint. Reads what the result processor already wrote - no executor-specific
+     * work happens here, so the frontend cannot tell which executor ran the code.
+     */
     public SubmissionResponsePayload check(String submissionJobId) {
-        
-        String redisKey = PENDING_SUBMISSION_REDIS_KEY_PREFIX + ":" + submissionJobId;
 
-        if (!redisService.keyExist(redisKey)) {
-            log.info("No pending submission found in Redis for id {}", submissionJobId);
+        if (!submissionJobStore.exists(submissionJobId)) {
+            log.info("No pending submission found for id {}", submissionJobId);
             throw new NoSuchElementException("No pending submission found for id " + submissionJobId);
         }
 
-        PendingOrdersStatus status = PendingOrdersStatus.valueOf(
-            redisService.getHashValue(redisKey, "status")
-        );
+        PendingOrdersStatus status = submissionJobStore.getStatus(submissionJobId);
 
-        ExecutionReportDto executionReport = null;
-
-        if (status.equals(PendingOrdersStatus.COMPLETED)) {
-            // Read all required fields from Redis in one pass
-            String executionReportJson = redisService.getHashValue(redisKey, "executionReport");
-            String metadataJson        = redisService.getHashValue(redisKey, "submissionMetadata");
-            ExecutorWorkerType workerType = ExecutorWorkerType.valueOf(
-                redisService.getHashValue(redisKey, "workerType")
-            );
-
-            SubmissionMetadata submissionMetadata;
+        if (status == PendingOrdersStatus.COMPLETED) {
+            String reportJson = submissionJobStore.getReportJson(submissionJobId);
             try {
-                submissionMetadata = objectMapper.readValue(metadataJson, SubmissionMetadata.class);
+                ExecutionReportDto executionReport = objectMapper.readValue(reportJson, ExecutionReportDto.class);
+                return new SubmissionResponsePayload(PendingOrdersStatus.COMPLETED, executionReport);
             } catch (JsonProcessingException e) {
-                log.error("Failed to deserialize submission metadata for job {}", submissionJobId, e);
-                throw new RuntimeException("Failed to read submission metadata from Redis", e);
+                log.error("Failed to read the stored execution report for job {}", submissionJobId, e);
+                throw new RuntimeException("Failed to read the execution report", e);
             }
-
-            // Route to the executor-specific service to normalize the raw report
-            executionReport = submissionServiceRegistry.getService(workerType)
-                                             .constructExecutionReport(executionReportJson);
-
-            // Persist submission to db for submit code
-            if (submissionMetadata.getSubmissionType() == SubmissionType.SUBMIT_CODE) {
-                submissionService.saveSubmission(executionReport, submissionMetadata);
-                log.info("Persisted submission {} for user {}", submissionJobId,
-                        submissionMetadata.getUsername());
-                Boolean isNewSolve = false;
-                if (executionReport.status().equals(ExecutionStatus.ACC)) {
-                    isNewSolve = userSubmissionStatusService.addToSolvedAndRemoveFromAttempted(
-                            submissionMetadata.getUsername(), submissionMetadata.getProblemId(),
-                            submissionMetadata.getDifficulty().name(),
-                            submissionMetadata.getLanguage().name().toLowerCase());
-                } else {
-                    userSubmissionStatusService.addToAttemptedIfNotSolved(
-                            submissionMetadata.getUsername(), submissionMetadata.getProblemId());
-                }
-                eventPublisher.publishEvent(new SubmitCodeCompletedEvent(this, executionReport, submissionMetadata, isNewSolve));
-            }
-            redisService.deleteKey(redisKey);
-            return new SubmissionResponsePayload(PendingOrdersStatus.COMPLETED, executionReport);
-
-        } else if(status.equals(PendingOrdersStatus.FAILED)){
-            ExecutorWorkerType workerType = ExecutorWorkerType.valueOf(
-                redisService.getHashValue(redisKey, "workerType")
-            );
-            log.error("Submission {} has failed. Worker type: {}", submissionJobId, workerType.name());
-            redisService.deleteKey(redisKey);
         }
-            
+
+        if (status == PendingOrdersStatus.FAILED) {
+            log.warn("Submission {} failed: {}", submissionJobId, submissionJobStore.getFailureReason(submissionJobId));
+            return new SubmissionResponsePayload(PendingOrdersStatus.FAILED, null);
+        }
+
+        // A job nobody ever picked up - the worker died holding it, or its result never arrived.
+        // Failing it here lets the user resubmit, and that resubmission gets routed afresh.
+        long ageSeconds = submissionJobStore.ageSeconds(submissionJobId);
+        if (ageSeconds > stuckSubmissionTimeoutSeconds) {
+            submissionJobStore.markFailed(submissionJobId,
+                    "No result after " + ageSeconds + "s. Please submit again.");
+            return new SubmissionResponsePayload(PendingOrdersStatus.FAILED, null);
+        }
+
         return new SubmissionResponsePayload(status, null);
     }
 

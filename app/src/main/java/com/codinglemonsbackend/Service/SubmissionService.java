@@ -7,17 +7,18 @@ import java.util.NoSuchElementException;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
 
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
-import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.SubmissionDto;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Entities.SubmissionEntity;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Repository.SubmissionRepository;
 
-public abstract class SubmissionService {
+@Service
+public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
 
@@ -27,12 +28,6 @@ public abstract class SubmissionService {
         this.submissionRepository = submissionRepository;
         this.modelMapper = modelMapper;
     }
-
-    public abstract String queueSubmission(SubmissionMetadata submissionDto);
-
-    public abstract ExecutionReportDto constructExecutionReport(String report);
-
-    public abstract ExecutorWorkerType getWorkerType();
 
     public void saveSubmission(ExecutionReportDto executionReport, SubmissionMetadata submissionMetadata) {
         SubmissionEntity submission = SubmissionEntity.builder()

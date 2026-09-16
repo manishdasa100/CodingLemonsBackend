@@ -1,19 +1,24 @@
 package com.codinglemonsbackend.Service;
 
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import com.codinglemonsbackend.Dto.ExecutionReportDto;
 import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ExecutorWorkerType;
-import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
-import com.codinglemonsbackend.Payloads.SubmissionType;
-import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
+import com.codinglemonsbackend.Dto.SupportedLanguage;
 import com.codinglemonsbackend.Dto.TestcaseResult;
 import com.codinglemonsbackend.Dto.TestcaseStatus;
 import com.codinglemonsbackend.Entities.ProblemExecutionLimits;
 import com.codinglemonsbackend.Entities.TestcaseRegistry;
 import com.codinglemonsbackend.Entities.TestcaseRegistry.TestcasePair;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.codinglemonsbackend.Repository.DriverCodeRepository;
-import com.codinglemonsbackend.Repository.SubmissionRepository;
 import com.codinglemonsbackend.Repository.TestcaseRepository;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,55 +27,100 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Service;
-
-@Slf4j
-@Primary
+/**
+ * In-house executor: jobs go onto a Redis stream that the NSJAIL worker consumes, results come
+ * back on the execution-results stream. Nothing here is synchronous - the stream is also what
+ * makes the worker crash-safe and independently scalable.
+ */
 @Service
-public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
+@Slf4j
+public class NsJailExecutionServiceImpl implements ExecutionService {
 
-    private final DriverCodeRepository driverCodeRepository;
+    /** Refreshed by the worker inside its consume loop; absence means the loop is not turning. */
+    public static final String HEARTBEAT_KEY = "executor:nsjail:heartbeat";
 
-    private final TestcaseRepository testcaseRepository;
+    /** Consecutive internal errors - a worker that is up but broken trips this instead. */
+    public static final String CONSECUTIVE_IE_KEY = "executor:nsjail:consecutive-ie";
 
     private final ObjectMapper objectMapper;
-
     private final RedisService redisService;
-
+    private final DriverCodeRepository driverCodeRepository;
+    private final TestcaseRepository testcaseRepository;
     private final Integer runCodeTestCaseCount;
-
     private final String pendingSubmissionsStream;
+    private final boolean requireHeartbeat;
+    private final int maxConsecutiveIe;
+    private final long ieCooldownSeconds;
 
-    @Autowired
-    public NsjailWorkerSubmissionServiceImpl(
-        SubmissionRepository submissionRepository,
-        ModelMapper modelMapper,
-        DriverCodeRepository driverCodeRepository,
-        TestcaseRepository testcaseRepository,
-        ObjectMapper objectMapper,
-        RedisService redisService,
-        @Value("${testcase.runcode.count}") Integer runCodeTestCaseCount,
-        @Value("${queue.pending-submissions.stream}") String pendingSubmissionsStream
-    ) {
-        super(submissionRepository, modelMapper);
+    public NsJailExecutionServiceImpl(
+            DriverCodeRepository driverCodeRepository,
+            TestcaseRepository testcaseRepository,
+            ObjectMapper objectMapper,
+            RedisService redisService,
+            @Value("${testcase.runcode.count}") Integer runCodeTestCaseCount,
+            @Value("${queue.pending-submissions.stream}") String pendingSubmissionsStream,
+            // Defaults off: the worker does not publish a heartbeat yet, and defaulting on would
+            // park the only real executor on any environment that has not set this explicitly.
+            @Value("${executor.nsjail.require-heartbeat:false}") boolean requireHeartbeat,
+            @Value("${executor.nsjail.max-consecutive-ie:5}") int maxConsecutiveIe,
+            @Value("${executor.nsjail.ie-cooldown-seconds:600}") long ieCooldownSeconds) {
         this.driverCodeRepository = driverCodeRepository;
         this.testcaseRepository = testcaseRepository;
         this.objectMapper = objectMapper;
         this.redisService = redisService;
         this.runCodeTestCaseCount = runCodeTestCaseCount;
         this.pendingSubmissionsStream = pendingSubmissionsStream;
+        this.requireHeartbeat = requireHeartbeat;
+        this.maxConsecutiveIe = maxConsecutiveIe;
+        this.ieCooldownSeconds = ieCooldownSeconds;
+    }
+
+    @Override
+    public ExecutorWorkerType getWorkerType() {
+        return ExecutorWorkerType.NSJAIL_WORKER;
+    }
+
+    @Override
+    public boolean isAvailable() {
+        if (requireHeartbeat && !Boolean.TRUE.equals(redisService.keyExist(HEARTBEAT_KEY))) {
+            log.warn("NSJAIL worker heartbeat missing - executor considered unavailable");
+            return false;
+        }
+        String consecutiveIe = redisService.getValue(CONSECUTIVE_IE_KEY);
+        if (consecutiveIe != null && Integer.parseInt(consecutiveIe) >= maxConsecutiveIe) {
+            log.warn("NSJAIL worker returned {} consecutive internal errors - executor considered unavailable",
+                    consecutiveIe);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * A run of internal errors means the worker is up but cannot execute anything. The counter
+     * carries a TTL so the executor is retried automatically once the run stops.
+     */
+    @Override
+    public void recordOutcome(ExecutionReportDto report) {
+        if (report != null && report.status() == ExecutionStatus.IE) {
+            redisService.incrementWithTtl(CONSECUTIVE_IE_KEY, 1, ieCooldownSeconds);
+        } else {
+            redisService.deleteKey(CONSECUTIVE_IE_KEY);
+        }
+    }
+
+    @Override
+    public void dispatch(SubmissionMetadata submissionMetadata) {
+        String messageBody;
+        try {
+            messageBody = objectMapper.writeValueAsString(createSubmissionJob(submissionMetadata));
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to prepare submission for the NSJAIL queue", e);
+        }
+
+        redisService.addToStream(pendingSubmissionsStream, Map.of("body", messageBody));
+        log.info("Queued submission {} to stream {}", submissionMetadata.getSubmissionJobId(), pendingSubmissionsStream);
     }
 
     private record SubmissionJob(
@@ -84,56 +134,6 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         Integer timeLimit,
         Integer memoryLimit,
         List<TestcasePair> testCases) {}
-
-    @Override
-    public String queueSubmission(SubmissionMetadata submissionMetadata) {
-        
-        if (submissionMetadata == null) {
-            throw new IllegalArgumentException("Submission metadata cannot be null");
-        }
-
-        String submissionJobId = UUID.randomUUID().toString();
-        submissionMetadata.setSubmissionJobId(submissionJobId);
-
-        String messageBody;
-        String messageDeduplicationId;
-        try {
-            SubmissionJob submissionJob = createSubmissionJob(submissionMetadata);
-            messageBody = objectMapper.writeValueAsString(submissionJob);
-
-            // Create hash based on content that should trigger deduplication (excluding jobId)
-            String hashInput = submissionMetadata.getUsername() +
-                    submissionMetadata.getProblemId() +
-                    submissionMetadata.getUserCode() +
-                    submissionMetadata.getLanguage() +
-                    submissionMetadata.getSubmissionType();
-            messageDeduplicationId = generateHash(hashInput);
-        } catch (IllegalStateException e) {
-            throw e;
-        } catch (Exception e) {
-            log.error("Failed to prepare submission {} for queueing", submissionJobId, e);
-            throw new RuntimeException("Failed to prepare submission for queue", e);
-        }
-
-        String dedupKey = RedisService.SUBMISSION_DEDUP_KEY + messageDeduplicationId;
-
-        Boolean isNew = redisService.setIfAbsent(dedupKey, submissionJobId, 300);
-        if (!isNew) {
-            throw new DuplicateSubmissionException("A duplicate submission found. Please wait before resubmitting.");
-        }
-
-        try {
-            redisService.addToStream(pendingSubmissionsStream, Map.of("body", messageBody));
-            log.info("Successfully queued submission {} to stream {}", submissionJobId, pendingSubmissionsStream);
-        } catch (Exception e) {
-            // Roll back the dedup key so the user can retry immediately after a transient failure
-            redisService.deleteKey(dedupKey);
-            log.error("Failed to send submission {} to queue", submissionJobId, e);
-            throw new RuntimeException("Failed to send submission to queue", e);
-        }
-
-        return submissionJobId;
-    }
 
     private SubmissionJob createSubmissionJob(SubmissionMetadata submissionMetadata) {
         String jobId = submissionMetadata.getSubmissionJobId();
@@ -149,7 +149,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
 
         List<TestcasePair> testCases = this.getTargetTestcases(submissionType, problemId);
 
-        boolean alreadyEncoded = submissionMetadata.getB64Encoded();
+        boolean alreadyEncoded = Boolean.TRUE.equals(submissionMetadata.getB64Encoded());
 
         String userCode = encode(submissionMetadata.getUserCode(), alreadyEncoded);
 
@@ -198,28 +198,14 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         return testcases;
     }
 
-    private String generateHash(String input) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-        StringBuilder hexString = new StringBuilder();
-        for (byte b : hashBytes) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
-        }
-        return hexString.toString();
-    }
-
     // -------------------------------------------------------------------------
-    // Raw response POJOs - field names must match what the NSJAIL worker writes
-    // to Redis. Adjust if your worker uses different field names.
+    // Raw report shape - field names must match what the NSJAIL worker writes.
     // -------------------------------------------------------------------------
-
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     private record NsjailTestcaseResult(
         int index,
-        String status,          // PASSED(10), FAILED(20), TIMEOUT(30), MEMORY_EXCEED(40), OUTPUT_LIMIT(50), RUNTIME_ERROR(60), ERROR(70)
+        String status,          // PASSED, FAILED, TIMEOUT, MEMORY_EXCEED, OUTPUT_LIMIT, RUNTIME_ERROR, ERROR
         String inputData,
         String expectedOutput,
         String actualOutput,
@@ -236,14 +222,14 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
         String executionId,
         String language,
         String task,
-        String statusCode,          //  ACC(10), WA(20), TLE(30), MLE(40), OLE(50), CE(60), RE(70), IE(80)
+        String statusCode,          //  ACC, WA, TLE, MLE, OLE, CE, RE, IE
         String statusMsg,
         int totalTestcases,
         int totalCorrect,
         int runtimeMs,
         int memoryMb,
         List<NsjailTestcaseResult> testResults,
-        NsjailTestcaseResult failedTestcase,  // Optional - can be null if all passed(only applicable for SUBMIT_CODE task)
+        NsjailTestcaseResult failedTestcase,  // null when everything passed (SUBMIT_CODE only)
         String compileError,
         String runtimeError,
         String internalError,
@@ -251,7 +237,7 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
     ) {}
 
     @Override
-    public ExecutionReportDto constructExecutionReport(String report) {
+    public ExecutionReportDto parseReport(String report) {
         try {
             NsjailExecutionReport raw = objectMapper.readValue(report, NsjailExecutionReport.class);
 
@@ -292,28 +278,24 @@ public class NsjailWorkerSubmissionServiceImpl extends SubmissionService {
                             .build();
 
             return ExecutionReportDto.builder()
-                    .executionId(raw.executionId)
-                    .language(raw.language)
-                    .task(raw.task)
+                    .executionId(raw.executionId())
+                    .language(raw.language())
+                    .task(raw.task())
                     .status(status)
-                    .statusMsg(raw.statusMsg)
-                    .totalTestcases(raw.totalTestcases)
-                    .totalCorrect(raw.totalCorrect)
+                    .statusMsg(raw.statusMsg())
+                    .totalTestcases(raw.totalTestcases())
+                    .totalCorrect(raw.totalCorrect())
                     .runtimeMs(raw.runtimeMs())
                     .memoryMb(raw.memoryMb())
                     .testcaseResults(testcaseResults)
                     .failedTestcase(failedTestcase)
                     .compileError(raw.compileError())
                     .runtimeError(raw.runtimeError())
+                    .internalError(raw.internalError())
                     .calibrationReport(raw.calibration())
                     .build();
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse NSJAIL worker execution report", e);
         }
-    }
-
-    @Override
-    public ExecutorWorkerType getWorkerType() {
-        return ExecutorWorkerType.NSJAIL_WORKER;
     }
 }

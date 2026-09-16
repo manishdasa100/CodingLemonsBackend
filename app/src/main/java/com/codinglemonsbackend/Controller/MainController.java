@@ -40,6 +40,7 @@ import com.codinglemonsbackend.Entities.Topic;
 import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
 import com.codinglemonsbackend.Dto.UserStreakDto;
 import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
+import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
 import com.codinglemonsbackend.Exceptions.FileUploadFailureException;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
 import com.codinglemonsbackend.Payloads.ProblemListOperationRequest;
@@ -138,7 +139,8 @@ public class MainController {
     public ResponseEntity<SubmitCodeResponsePayload> submit(
         @Valid @RequestBody SubmitCodeRequestPayload payload,
         @RequestParam(required = false) String listId,
-        @RequestHeader(value = "X-Timezone", required = false) String zoneId) throws OperationNotSupportedException
+        @RequestHeader(value = "X-Timezone", required = false) String zoneId)
+        throws OperationNotSupportedException, FailedSubmissionException
     {
         String submissionId = mainService.submitCode(payload, listId, zoneId);
         SubmitCodeResponsePayload responsePayload = new SubmitCodeResponsePayload(submissionId);

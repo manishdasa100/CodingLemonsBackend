@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Dto.UserSubmissionStatusDto;
 import com.codinglemonsbackend.Entities.UserSubmissionStatusEntity;
 import com.codinglemonsbackend.Repository.UserSubmissionStatusRepository;
@@ -27,7 +28,11 @@ public class UserSubmissionStatusService {
      *
      * @return true if this is a new solve (problem was not previously in solved set)
      */
-    public boolean addToSolvedAndRemoveFromAttempted(String username, Integer problemId, String difficulty, String language) {
+    public boolean addToSolvedAndRemoveFromAttempted(SubmissionMetadata metadata) {
+        String username = metadata.getUsername();
+        Integer problemId = metadata.getProblemId();
+        String difficulty = metadata.getDifficulty().name();
+        String language = metadata.getLanguage().name().toLowerCase();
         return userSubmissionStatusRepository.addToSolvedAndRemoveFromAttempted(username, problemId, difficulty, language);
     }
 
@@ -46,7 +51,9 @@ public class UserSubmissionStatusService {
     /**
      * Adds problemId to the attempted set only if it is not already in the solved set.
      */
-    public void addToAttemptedIfNotSolved(String username, Integer problemId) {
+    public void addToAttemptedIfNotSolved(SubmissionMetadata metadata) {
+        String username = metadata.getUsername();
+        Integer problemId = metadata.getProblemId();
         userSubmissionStatusRepository.addToAttemptedIfNotSolved(username, problemId);
     }
 

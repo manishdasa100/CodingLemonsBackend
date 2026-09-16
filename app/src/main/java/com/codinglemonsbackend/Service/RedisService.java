@@ -1,13 +1,22 @@
 package com.codinglemonsbackend.Service;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.data.domain.Range;
+import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.stream.MapRecord;
+import org.springframework.data.redis.connection.stream.PendingMessages;
+import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
+import org.springframework.data.redis.core.StreamOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 
@@ -80,6 +89,10 @@ public class RedisService {
         return stringOperations.setIfAbsent(key, value, ttlSeconds, TimeUnit.SECONDS);
     }
 
+    public Boolean putHashIfAbsent(String key, String hashKey, String value) {
+        return hashOperations.putIfAbsent(key, hashKey, value);
+    }
+
     public String getValue(String key) {
         return stringOperations.get(key);
     }
@@ -108,9 +121,55 @@ public class RedisService {
         redisTemplate.delete(key);
     }
 
+    private StreamOperations<String, String, String> streamOps() {
+        return redisTemplate.opsForStream();
+    }
+
     public String addToStream(String streamKey, Map<String, String> fields) {
-        RecordId recordId = redisTemplate.opsForStream().add(streamKey, fields);
+        RecordId recordId = streamOps().add(streamKey, fields);
         return recordId == null ? null : recordId.getValue();
+    }
+
+    public Set<String> getSetMembers(String key) {
+        Set<String> members = setOperations.members(key);
+        return members == null ? Set.of() : members;
+    }
+
+    public Long incrementWithTtl(String key, long delta, long ttlSeconds) {
+        Long value = stringOperations.increment(key, delta);
+        redisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
+        return value;
+    }
+
+    /**
+     * Creates the consumer group, also creating the stream if it does not exist yet. Redis
+     * errors with BUSYGROUP when the group is already there, which is the normal case on
+     * every boot after the first.
+     */
+    public void createConsumerGroup(String streamKey, String group) {
+        try {
+            streamOps().createGroup(streamKey, ReadOffset.from("0"), group);
+        } catch (RedisSystemException e) {
+            String message = e.getMostSpecificCause().getMessage();
+            if (message == null || !message.contains("BUSYGROUP")) throw e;
+        }
+    }
+
+    public void acknowledge(String streamKey, String group, RecordId recordId) {
+        streamOps().acknowledge(streamKey, group, recordId);
+    }
+
+    public PendingMessages getPendingMessages(String streamKey, String group, long count) {
+        return streamOps().pending(streamKey, group, Range.unbounded(), count);
+    }
+
+    /**
+     * Takes ownership of entries another consumer left pending for longer than {@code minIdle},
+     * returning them for reprocessing.
+     */
+    public List<MapRecord<String, String, String>> claimPending(
+            String streamKey, String group, String consumer, Duration minIdle, RecordId... recordIds) {
+        return streamOps().claim(streamKey, group, consumer, minIdle, recordIds);
     }
 
     public void setExpiry(String key, Instant instant) {
