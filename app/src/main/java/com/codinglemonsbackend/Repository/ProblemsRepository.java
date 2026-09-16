@@ -264,7 +264,6 @@ public class ProblemsRepository {
         return mongoTemplate.remove(query, ProblemEntity.class);
     }
 
-    @Transactional
     public void removeAllProblems() {
         mongoTemplate.dropCollection(ProblemEntity.ENTITY_COLLECTION_NAME);
         

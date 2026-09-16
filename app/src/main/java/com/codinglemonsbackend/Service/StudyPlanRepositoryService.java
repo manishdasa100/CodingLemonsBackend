@@ -10,6 +10,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.ExecutionStatus;
 import com.codinglemonsbackend.Dto.ProblemListDto;
 import com.codinglemonsbackend.Entities.ProblemListEntity;
 import com.codinglemonsbackend.Entities.UserStudyPlanProgress;
@@ -57,6 +58,7 @@ public class StudyPlanRepositoryService {
     @Async("applicationAsyncExecutor")
     @EventListener
     public void addProblemIdToProgress(SubmitCodeCompletedEvent event) {
+        if (event.getExecutionReport().status() != ExecutionStatus.ACC) return;
         Integer problemId = event.getSubmissionMetadata().getProblemId();
         String listId = event.getSubmissionMetadata().getListId();
         String owner = event.getSubmissionMetadata().getUsername();

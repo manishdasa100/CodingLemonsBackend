@@ -72,7 +72,7 @@
         <appender-ref ref="ASYNC_FILE"/>
     </logger>
 
-    <root level="${logLevel}">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="ASYNC_FILE"/>
     </root>
