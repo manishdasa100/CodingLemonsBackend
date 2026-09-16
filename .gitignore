@@ -17,3 +17,4 @@ app/src/main/resources/application*.properties
 
 DEPLOYMENT.md
 README.md
+app/bin/
