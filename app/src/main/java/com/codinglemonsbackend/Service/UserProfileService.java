@@ -233,13 +233,13 @@ public class UserProfileService {
     }
 
     public void uploadUserProfilePicture(String username, byte[] imageFile) throws FileUploadFailureException{
-
         String profilePictureId = UUID.randomUUID().toString();
+        String s3Key = "%s/%s/%s".formatted(ASSETS_BASE_PATH, username, profilePictureId);
         Boolean s3Uploaded = false;
         try {
             s3Service.putObject(
-                s3Properties.getBucket(), 
-                ASSETS_BASE_PATH + "/" + username + "/" + profilePictureId, 
+                s3Properties.getBucket(),
+                s3Key,
                 imageFile
             );
             s3Uploaded = true;
@@ -248,7 +248,7 @@ public class UserProfileService {
             if (s3Uploaded) {
                 // Rollback S3
                 try {
-                    s3Service.deleteObject(s3Properties.getBucket(), "profile-picture/%s/%s".formatted(username, profilePictureId));
+                    s3Service.deleteObject(s3Properties.getBucket(), s3Key);
                 } catch (Exception deleteException) {
                     log.error("Failed to delete orphaned profile picture with id {} from S3 with message", profilePictureId, deleteException);
                 }
