@@ -76,14 +76,13 @@ public class ExecutionResultProcessor {
             return;
         }
 
-        executor.recordOutcome(report);
-
+        
         SubmissionMetadata metadata = jobStore.getMetadata(jobId);
         if (metadata == null) {
             jobStore.markFailed(jobId, "Submission metadata is no longer available");
             return;
         }
-
+        
         // Claiming before the side effects is what stops a redelivered result from scoring twice.
         if (!jobStore.claimForProcessing(jobId)) {
             log.info("Job {} was already processed - ignoring the duplicate result", jobId);
@@ -91,6 +90,9 @@ public class ExecutionResultProcessor {
         }
 
         try {
+            // Inside the claim so a redelivery cannot count the same verdict against the executor
+            // twice, and inside the try so a failure here releases the claim like any other.
+            executor.recordOutcome(report);
             if (metadata.getSubmissionType() == SubmissionType.SUBMIT_CODE) {
                 recordSubmission(report, metadata);
             }

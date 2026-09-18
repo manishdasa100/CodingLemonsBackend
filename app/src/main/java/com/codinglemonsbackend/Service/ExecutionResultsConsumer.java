@@ -92,7 +92,7 @@ public class ExecutionResultsConsumer {
                         .consumer(Consumer.from(consumerGroup, consumerName))
                         .autoAcknowledge(false)
                         .cancelOnError(throwable -> false)
-                        .errorHandler((Throwable throwable) ->
+                        .errorHandler((throwable) ->
                                 log.error("Error reading execution results from {} - will keep polling",
                                         resultsStream, throwable))
                         .build();
