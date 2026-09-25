@@ -1,5 +1,6 @@
 package com.codinglemonsbackend.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -9,11 +10,16 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions;
+import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.connection.stream.PendingMessages;
 import org.springframework.data.redis.connection.stream.ReadOffset;
 import org.springframework.data.redis.connection.stream.RecordId;
+import org.springframework.data.redis.connection.stream.StreamOffset;
+import org.springframework.data.redis.connection.stream.StreamReadOptions;
 import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StreamOperations;
@@ -26,9 +32,12 @@ public class RedisService {
     public static final String ALL_PROBLEMS_CACHE = "ALL PROBLEMS";
     public static final String PROBLEM_OF_THE_DAY_CACHE = "PROBLEM OF THE DAY";
     public static final String PROBLEM_LIKES_COUNT_CACHE_PREFIX = "PROBLEM_LIKES_COUNT:";
-    public static final String USER_PENDING_LIKES_PREFIX = "PENDING_LIKES:";
-    public static final String USER_PENDING_DISLIKES_PREFIX = "PENDING_DISLIKES:";
-    public static final String USER_LIKE_STATUS_CACHE_PREFIX = "LIKE_STATUS_CACHE:";
+    /**
+     * One hash per user, problem id to "1" or "0". It is both the answer to "has this user liked
+     * it" and the record of a click the batch has not stored yet - those were two structures
+     * saying the same thing, and keeping them apart meant every click had to write both.
+     */
+    public static final String USER_LIKE_STATUS_PREFIX = "LIKE_STATUS:";
     public static final String SUBMISSION_DEDUP_KEY = "submission:dedup:";
     public static final String PROBLEM_COUNT_BY_DIFFICULTY_CACHE = "PROBLEM:COUNT:BY:DIFFICULTY";
     public static final String USER_RANKS = "USER_RANKS";
@@ -49,6 +58,22 @@ public class RedisService {
     public void storeHash(String key, String hashKey, String value, long timeout) {
         hashOperations.put(key, hashKey, value);
         redisTemplate.expire(key, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Same as {@link #storeHash} but in one round trip instead of two. Written against the raw
+     * connection because that is the only way to pipeline; the template serializes keys, values
+     * and hash fields as plain strings, so these are the same bytes the typed operations produce.
+     */
+    public void storeHashPipelined(String key, String hashKey, String value, long ttlSeconds) {
+        redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            byte[] rawKey = key.getBytes(StandardCharsets.UTF_8);
+            connection.hashCommands().hSet(rawKey,
+                    hashKey.getBytes(StandardCharsets.UTF_8),
+                    value.getBytes(StandardCharsets.UTF_8));
+            connection.keyCommands().expire(rawKey, ttlSeconds);
+            return null;
+        });
     }
     
     public void incrementHashValue(String key, String hashKey, long value) {
@@ -113,10 +138,6 @@ public class RedisService {
         setOperations.remove(key, values);
     }
 
-    public Boolean isSetMember(String key, String value) {
-        return setOperations.isMember(key, value);
-    }
-
     public void deleteKey(String key) {
         redisTemplate.delete(key);
     }
@@ -155,8 +176,31 @@ public class RedisService {
         }
     }
 
-    public void acknowledge(String streamKey, String group, RecordId recordId) {
-        streamOps().acknowledge(streamKey, group, recordId);
+    /**
+     * Reads up to {@code count} entries never yet delivered to this group. Unlike a listener
+     * container, which hands over one record at a time, this returns the whole slice - which is
+     * what lets a consumer coalesce a batch before touching the database.
+     */
+    public List<MapRecord<String, String, String>> readGroup(
+            String streamKey, String group, String consumer, int count) {
+        List<MapRecord<String, String, String>> records = streamOps().read(
+                Consumer.from(group, consumer),
+                StreamReadOptions.empty().count(count),
+                StreamOffset.create(streamKey, ReadOffset.lastConsumed()));
+        return records == null ? List.of() : records;
+    }
+
+    public void acknowledge(String streamKey, String group, RecordId... recordIds) {
+        streamOps().acknowledge(streamKey, group, recordIds);
+    }
+
+    /**
+     * Acknowledging an entry only clears it from the group's pending list - the entry itself stays
+     * in the stream forever. Deleting it after the ack is what stops the stream growing without
+     * bound, and it can never drop unprocessed work because only acked ids are passed here.
+     */
+    public Long deleteFromStream(String streamKey, RecordId... recordIds) {
+        return streamOps().delete(streamKey, recordIds);
     }
 
     public PendingMessages getPendingMessages(String streamKey, String group, long count) {

@@ -129,10 +129,15 @@ public class ExecutionResultsConsumer {
     private void onRecord(MapRecord<String, String, String> record) {
         try {
             handle(record);
-            redisService.acknowledge(resultsStream, consumerGroup, record.getId());
+            retire(record.getId());
         } catch (Exception e) {
             log.error("Execution result {} failed to process - leaving it pending for retry", record.getId(), e);
         }
+    }
+
+    private void retire(RecordId id) {
+        redisService.acknowledge(resultsStream, consumerGroup, id);
+        redisService.deleteFromStream(resultsStream, id);
     }
 
     private void handle(MapRecord<String, String, String> record) throws Exception {
@@ -184,7 +189,7 @@ public class ExecutionResultsConsumer {
             Map<String, String> fields = record.getValue();
             if (!fields.isEmpty()) redisService.addToStream(deadLetterStream, fields);
         }
-        redisService.acknowledge(resultsStream, consumerGroup, id);
+        retire(id);
         log.error("Execution result {} failed {} times - moved to {}", id, deliveries, deadLetterStream);
     }
 }

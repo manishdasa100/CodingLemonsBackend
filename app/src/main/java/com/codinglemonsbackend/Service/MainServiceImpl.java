@@ -170,18 +170,11 @@ public class MainServiceImpl{
             redisService.storeValue(RedisService.PROBLEM_LIKES_COUNT_CACHE_PREFIX+Integer.toString(id), problemLikes, 300);
         }
         
-        // Get the problem like status for the currently signed in user and cache the result in redis
+        // Caching the like status is getLikeStatus's own job now - it is the same lookup the
+        // duplicate check needs, and reading it here separately only made the two disagree.
         String username = getCurrentlySignedInUser().getUsername();
-        Boolean likeStatus = null;
-        String redisLikeStatusKey = RedisService.USER_LIKE_STATUS_CACHE_PREFIX+username;
+        Boolean likeStatus = likeService.getLikeStatus(username, id);
 
-        if (redisService.hashKeyExists(redisLikeStatusKey, Integer.toString(id))) {
-            likeStatus = Boolean.parseBoolean(redisService.getHashValue(redisLikeStatusKey, Integer.toString(id)));
-        } else {
-            likeStatus = likeService.getLikeStatus(username, id);
-            redisService.storeHash(redisLikeStatusKey, Integer.toString(id), likeStatus.toString(), 300);
-        }
-        
         return new LikesData(problemLikes, likeStatus);
     }
         
@@ -242,7 +235,6 @@ public class MainServiceImpl{
             throw new NoSuchElementException("Problem with id " + problemId + " not found");
         }
         
-        System.out.println("Problem id exists");
         String username = getCurrentlySignedInUser().getUsername();
         Boolean isLike = request.getIsLike();
         if (isLike) {

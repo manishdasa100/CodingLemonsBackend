@@ -1,9 +1,6 @@
 package com.codinglemonsbackend.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,13 +9,23 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.codinglemonsbackend.Dto.LikeEvent;
-import com.codinglemonsbackend.Entities.UserLike;
 import com.codinglemonsbackend.Exceptions.DuplicateResourceException;
-import com.codinglemonsbackend.Payloads.LikesData;
 import com.codinglemonsbackend.Repository.LikeRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Liking is queued rather than written, so this class only has to answer one question - does this
+ * user currently like the problem - and keep that answer right between the click and the batch.
+ * A single hash field per user and problem holds it, which is why a click is one read and one
+ * write rather than a set to add to, a set to remove from and a cache to invalidate.
+ */
+@Slf4j
 @Service
 public class LikeService {
+
+    private static final String LIKED = "1";
+    private static final String NOT_LIKED = "0";
 
     @Autowired
     private LikeRepository likeRepository;
@@ -32,119 +39,60 @@ public class LikeService {
     @Value("${queue.like-events.stream}")
     private String likeEventsStream;
 
-    /*
-     * When this function is called
-     * 1. Check if the user has already liked the problem, if true then throw an exception
-     * 2. If not then:
-     *   a. Check if the problem id is in cache or bring the total like count into cache and increment the counter.
-     *   b. Send the like event to rabbit queue for aync processing. 
+    @Value("${like.status.ttl-seconds:900}")
+    private long statusTtlSeconds;
+
+    /** Liking something already liked is a no-op - the click only tells us what we already know. */
+    public void likeProblem(String username, Integer problemId) {
+        if (getLikeStatus(username, problemId)) return;
+        queue(username, problemId, true);
+        recordStatus(username, problemId, true);
+    }
+
+    public void dislikeProblem(String username, Integer problemId) throws DuplicateResourceException {
+        if (!getLikeStatus(username, problemId)) return;
+        queue(username, problemId, false);
+        recordStatus(username, problemId, false);
+    }
+
+    /**
+     * Whether the user currently likes the problem, counting clicks the batch has not stored yet.
+     * A miss is filled from the database, so the next read - and the next click's duplicate check -
+     * costs a single Redis call.
      */
-    public void likeProblem(String username, Integer problemId) throws DuplicateResourceException {
-        
-        if (problemAlreadyLiked(username, problemId)) {
-            throw new DuplicateResourceException(String.format("User %s has already liked problem %d", username, problemId));
-        }
+    public Boolean getLikeStatus(String username, Integer problemId) {
+        String field = Integer.toString(problemId);
+        String known = redisService.getHashValue(statusKey(username), field);
+        if (known != null) return LIKED.equals(known);
 
-        System.out.println(String.format("User %s liked problem %d", username, problemId));
+        boolean stored = likeRepository.isLiked(username, problemId);
+        recordStatus(username, problemId, stored);
+        return stored;
+    }
 
-        LikeEvent likeEvent = new LikeEvent(
-            problemId,
-            username,
-            LocalDateTime.now(ZoneId.of("UTC")),
-            true
-        );
+    /**
+     * Written only once the queue has taken the event, because the queued event is the durable
+     * copy. Marking the user first and then failing to queue would show a like that never happens
+     * and block the retry, since the duplicate check above reads this very field.
+     */
+    private void recordStatus(String username, Integer problemId, boolean liked) {
+        redisService.storeHashPipelined(statusKey(username), Integer.toString(problemId),
+                liked ? LIKED : NOT_LIKED, statusTtlSeconds);
+    }
 
+    private void queue(String username, Integer problemId, boolean isLike) {
+        LikeEvent likeEvent = new LikeEvent(problemId, username, isLike);
         try {
-            String messageBody = objectMapper.writeValueAsString(likeEvent);
-            redisService.addToStream(likeEventsStream, Map.of("body", messageBody));
+            redisService.addToStream(likeEventsStream,
+                    Map.of("body", objectMapper.writeValueAsString(likeEvent)));
         } catch (Exception e) {
-            System.err.println("Error sending like event to stream: " + e.getMessage());
+            log.error("Could not queue a {} by {} on problem {}",
+                    isLike ? "like" : "dislike", username, problemId, e);
             throw new RuntimeException("Failed to send like event to queue", e);
         }
-
-        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
-    }
-    
-    /*
-     * When this function is called
-     * 1. Check if the user hasn't liked the problem, if yes then throw an exception
-     * 2. If not then:
-     *   a. Check if the proble id is in cache or bring the total dislike count into cache and increment the counter.
-     *   b. Send the dislike event to rabbit queue for aync processing. 
-     */
-    public void dislikeProblem(String username, Integer problemId) throws DuplicateResourceException {
-        
-        if (problemAlreadyDisliked(username, problemId)) {
-            throw new DuplicateResourceException("You have not liked this problem or already disliked it");
-        }
-
-        System.out.println(String.format("User %s has disliked problem %d", username, problemId));
-
-        LikeEvent likeEvent = new LikeEvent(
-            problemId,
-            username,
-            LocalDateTime.now(ZoneId.of("UTC")),
-            false
-        );
-
-        try {
-            String messageBody = objectMapper.writeValueAsString(likeEvent);
-            redisService.addToStream(likeEventsStream, Map.of("body", messageBody));
-        } catch (Exception e) {
-            System.err.println("Error sending dislike event to stream: " + e.getMessage());
-            throw new RuntimeException("Failed to send dislike event to queue", e);
-        }
-
-        addProblemToRedisSet(username, problemId, likeEvent.getIsLike());
     }
 
-    private Boolean problemAlreadyLiked(String username, Integer problemId) {
-
-        /*Conditions under which a user cannot like a problem
-        1. The problem id should not be in the disliked set for the user
-        2. User has already liked the problem(i.e the problem id is in the liked set for the user)
-        3. User has liked the problem before
-        */
-        String redisLikesKey = RedisService.USER_PENDING_LIKES_PREFIX+username;
-        String redisDislikesKey = RedisService.USER_PENDING_DISLIKES_PREFIX+username;
-
-        if (redisService.isSetMember(redisDislikesKey, Integer.toString(problemId))) {
-            return false;
-        }
-        return redisService.isSetMember(redisLikesKey, Integer.toString(problemId)) ||
-        likeRepository.findByUsernameAndProblemId(username, problemId).isPresent();
-    }
-
-    private Boolean problemAlreadyDisliked(String username, Integer problemId) {
-
-        /*Conditions under which a user cannot dislike a problem
-        1. The problem id should not be in the liked set for the user
-        2. User has already disliked the problem(i.e. the problem id is in the disliked set for the user)
-        3. User has not liked the problem before
-        */
-        String redisLikesKey = RedisService.USER_PENDING_LIKES_PREFIX+username;
-        String redisDislikesKey = RedisService.USER_PENDING_DISLIKES_PREFIX+username;
-
-        if (redisService.isSetMember(redisLikesKey, Integer.toString(problemId))) {
-            return false;
-        }
-
-        return redisService.isSetMember(redisDislikesKey, Integer.toString(problemId)) || 
-        !likeRepository.findByUsernameAndProblemId(username, problemId).isPresent();
-    }
-
-    private void addProblemToRedisSet(String username, Integer problemId, Boolean isLike) {
-        if (isLike) {
-            redisService.addToSet(RedisService.USER_PENDING_LIKES_PREFIX+username, Integer.toString(problemId));
-            redisService.removeFromSet(RedisService.USER_PENDING_DISLIKES_PREFIX+username, Integer.toString(problemId));
-        } else {
-            redisService.removeFromSet(RedisService.USER_PENDING_LIKES_PREFIX+username, Integer.toString(problemId));
-            redisService.addToSet(RedisService.USER_PENDING_DISLIKES_PREFIX+username, Integer.toString(problemId));
-        }
-    }
-
-    public Boolean getLikeStatus(String username, Integer id) {
-        Optional<UserLike> userLike = likeRepository.findByUsernameAndProblemId(username, id);
-        return userLike.isPresent();
+    private String statusKey(String username) {
+        return RedisService.USER_LIKE_STATUS_PREFIX + username;
     }
 }

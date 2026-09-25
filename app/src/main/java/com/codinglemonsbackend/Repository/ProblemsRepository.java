@@ -229,6 +229,16 @@ public class ProblemsRepository {
         mongoTemplate.updateFirst(query, update, ProblemEntity.class);
     }
 
+    /**
+     * Moves a problem's like count by the net change of a whole batch, so a popular problem takes
+     * one write per batch instead of one per click - the single hot document is the only part of
+     * liking that does not scale by itself.
+     */
+    public void incrementLikes(Integer problemId, int delta) {
+        Query query = new Query(Criteria.where("_id").is(problemId));
+        mongoTemplate.updateFirst(query, new Update().inc("likes", delta), ProblemEntity.class);
+    }
+
     public Boolean problemExists(Integer problemId) {
         Query query = new Query(Criteria.where("_id").is(problemId));
         return mongoTemplate.exists(query, ProblemEntity.class);
