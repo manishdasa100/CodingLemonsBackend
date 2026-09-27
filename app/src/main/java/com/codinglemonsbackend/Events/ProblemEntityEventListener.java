@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.mapping.event.AbstractMongoEventListener;
 
+import org.springframework.data.mongodb.core.mapping.event.AfterSaveEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
 import org.springframework.data.mongodb.core.mapping.event.BeforeDeleteEvent;
 import org.springframework.stereotype.Component;
@@ -35,12 +36,25 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
         entityToSave.setAcceptedCount(0);
         entityToSave.setLikes(0);
         entityToSave.setStatus(ProblemStatus.DRAFT);
-        Optional<ProblemEntity> lastProblemEntity = problemsRepository.getLasEntity();
-        if (lastProblemEntity.isPresent()){
-            entityToSave.setPreviousProblemId(lastProblemEntity.get().getId());
-            //adminService.updateProblem(lastProblemEntity.get().getId(), ProblemUpdateDto.builder().nextProblemId(entityToSave.getId()).build());
-            problemsRepository.updateProblemProperties(lastProblemEntity.get().getId(), Collections.singletonMap("nextProblemId", entityToSave.getId()));
-        }
+        problemsRepository.getLasEntity()
+            .ifPresent(last -> entityToSave.setPreviousProblemId(last.getId()));
+    }
+
+    /**
+     * Links the previous problem forward, once there is something to link to. Doing it alongside
+     * previousProblemId above meant the pointer was written before the insert: a failed insert left
+     * the previous problem claiming a nextProblemId no document answers to, and walking the list
+     * from there ran into nothing.
+     *
+     * If this update is the one that fails the list is merely missing a forward link, which is
+     * recoverable by re-deriving it from the previousProblemId chain.
+     */
+    @Override
+    public void onAfterSave(AfterSaveEvent<ProblemEntity> event) {
+        ProblemEntity saved = event.getSource();
+        if (saved.getPreviousProblemId() == null) return;
+        problemsRepository.updateProblemProperties(saved.getPreviousProblemId(),
+            Collections.singletonMap("nextProblemId", saved.getId()));
     }
 
     @Override

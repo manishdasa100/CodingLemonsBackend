@@ -41,6 +41,8 @@ public class RedisService {
     public static final String SUBMISSION_DEDUP_KEY = "submission:dedup:";
     public static final String PROBLEM_COUNT_BY_DIFFICULTY_CACHE = "PROBLEM:COUNT:BY:DIFFICULTY";
     public static final String USER_RANKS = "USER_RANKS";
+    /** Dated, so it elects exactly one instance per day to pick the problem and then expires. */
+    public static final String POTD_ELECTION_PREFIX = "potd:election:";
     public static final String AI_HINT_COOLDOWN_PREFIX = "ai:hint:cooldown:";
     public static final String AI_HINT_QUOTA_PREFIX = "ai:hint:quota:";
     private RedisTemplate<String, String> redisTemplate;

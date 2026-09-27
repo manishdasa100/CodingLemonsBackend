@@ -325,14 +325,15 @@ public class ProblemsRepository {
 
         Aggregation aggregation = Aggregation.newAggregation(
             Aggregation.match(criteria),
-            Aggregation.sample(1)
+            Aggregation.sample(1),
+            Aggregation.project("_id")
         );
 
-        ProblemEntity result = mongoTemplate
-            .aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, ProblemEntity.class)
+        Document result = mongoTemplate
+            .aggregate(aggregation, ProblemEntity.ENTITY_COLLECTION_NAME, Document.class)
             .getUniqueMappedResult();
 
-        return Optional.ofNullable(result).map(ProblemEntity::getId);
+        return Optional.ofNullable(result).map(problem -> problem.getInteger("_id"));
     }
 
     public boolean isPublishedProblem(Integer problemId) {

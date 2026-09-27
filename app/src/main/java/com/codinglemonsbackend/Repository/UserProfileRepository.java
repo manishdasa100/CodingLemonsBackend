@@ -92,13 +92,27 @@ public class UserProfileRepository {
         return false;
     }
 
+    /**
+     * Appends the entry, or replaces the existing one for the same company.
+     *
+     * Append first, guarded on the company not already being listed, so the guard and the write are
+     * one atomic operation - two concurrent calls cannot both decide it is absent and both append.
+     * Only when that matches nothing is the company already there, and then the existing element is
+     * overwritten in place. The previous pull-then-push could fail between its two updates and
+     * leave the user's entry deleted outright.
+     */
     public void upsertWorkExperience(String username, UserWorkExperience experience) {
-        Query query = new Query(Criteria.where("_id").is(username));
-        mongoTemplate.updateFirst(query,
-            new Update().pull("workExperience", new org.bson.Document("companySlug", experience.getCompanySlug())),
-            UserProfileEntity.class);
-        mongoTemplate.updateFirst(query,
+        UpdateResult appended = mongoTemplate.updateFirst(
+            new Query(Criteria.where("_id").is(username)
+                .and("workExperience.companySlug").ne(experience.getCompanySlug())),
             new Update().push("workExperience", experience),
+            UserProfileEntity.class);
+        if (appended.getMatchedCount() > 0) return;
+
+        mongoTemplate.updateFirst(
+            new Query(Criteria.where("_id").is(username)
+                .and("workExperience.companySlug").is(experience.getCompanySlug())),
+            new Update().set("workExperience.$", experience),
             UserProfileEntity.class);
     }
 }

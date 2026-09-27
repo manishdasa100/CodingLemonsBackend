@@ -18,18 +18,8 @@ public class SequenceService {
     }
     
     public Integer getNextSequence(String sequenceName) {
-        
-        DatabaseSequence counter = sequenceGeneratorRepository.getNextSequence(sequenceName);
 
-        if (!Objects.isNull(counter)) {
-            return counter.getSeq();
-        } else {
-            sequenceGeneratorRepository.saveSequence(
-                new DatabaseSequence(sequenceName, 1)
-            );
-        }
-
-        return 1;
+        return sequenceGeneratorRepository.getNextSequence(sequenceName).getSeq();
     }
 
     public Integer getCurrentSequence(String sequenceName) {
