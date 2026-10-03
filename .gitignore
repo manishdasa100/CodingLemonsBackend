@@ -1,20 +1,14 @@
-# Ignore Gradle project-specific cache directory
 .gradle
-
-# Ignore Gradle build output directory
 build
-
-dummy_code_runner_payload.json
-
-Code Submission UML.pdf
-
-app/src/test/
-
-app/logs/
-
-app/src/main/resources/application*.properties
-!app/src/main/resources/application-demo.properties
-
-DEPLOYMENT.md
-README.md
 app/bin/
+app/logs/
+logs/
+
+.env
+*.local.properties
+
+app/src/main/resources/application-local.properties
+
+docs/
+
+test-credential-leak.sh
