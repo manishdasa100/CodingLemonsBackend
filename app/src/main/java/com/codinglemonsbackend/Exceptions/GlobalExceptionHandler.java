@@ -8,21 +8,21 @@ import javax.naming.OperationNotSupportedException;
 
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.data.redis.RedisConnectionFailureException;
 
-import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
 import com.codinglemonsbackend.Payloads.ExceptionMessage;
 
 import lombok.extern.slf4j.Slf4j;
@@ -64,8 +64,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<Map<String,String>>(errorsMap, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ExceptionMessage> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        return new ResponseEntity<>(new ExceptionMessage("Invalid value for parameter: " + e.getName()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ExceptionMessage> handleException(Exception e){
+        if (e instanceof ErrorResponse errorResponse) {
+            return new ResponseEntity<>(new ExceptionMessage(errorResponse.getBody().getTitle()), errorResponse.getStatusCode());
+        }
         logError("GeneralException", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("An internal server error occurred"), HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -74,7 +82,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionMessage> handleIllegalArgumentException(IllegalArgumentException e) {
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.BAD_REQUEST);
     }
-
    
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ExceptionMessage> handleBadCredentialsException(BadCredentialsException e){

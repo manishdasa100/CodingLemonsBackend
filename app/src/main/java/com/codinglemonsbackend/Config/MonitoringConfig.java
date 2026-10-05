@@ -43,35 +43,6 @@ public class MonitoringConfig {
         };
     }
 
-    @Bean
-    public HealthIndicator customHealthIndicator() {
-        return () -> {
-            try {
-                long freeMemory = Runtime.getRuntime().freeMemory();
-                long totalMemory = Runtime.getRuntime().totalMemory();
-                long usedMemory = totalMemory - freeMemory;
-                double memoryUsagePercentage = (double) usedMemory / totalMemory * 100;
-                
-                if (memoryUsagePercentage > 90) {
-                    return Health.down()
-                            .withDetail("memory-usage", memoryUsagePercentage + "%")
-                            .withDetail("reason", "High memory usage")
-                            .build();
-                }
-                
-                return Health.up()
-                        .withDetail("memory-usage", memoryUsagePercentage + "%")
-                        .withDetail("free-memory", freeMemory)
-                        .withDetail("total-memory", totalMemory)
-                        .build();
-            } catch (Exception e) {
-                return Health.down()
-                        .withDetail("error", e.getMessage())
-                        .build();
-            }
-        };
-    }
-
     @Bean("metricsFilter")
     public Filter metricsFilter() {
         return new Filter() {
