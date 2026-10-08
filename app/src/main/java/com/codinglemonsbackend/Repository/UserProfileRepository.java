@@ -43,7 +43,6 @@ public class UserProfileRepository {
 
     public void saveUserProfile(UserProfileEntity userProfileEntity) {
         mongoTemplate.save(userProfileEntity, UserProfileEntity.ENTITY_COLLECTION_NAME);
-        System.out.println("User profile saved");
     }
 
     // public void updateUserProfilePictureId(String username, String profilePictureId) {

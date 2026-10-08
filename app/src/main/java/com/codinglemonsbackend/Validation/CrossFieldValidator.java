@@ -5,7 +5,9 @@ import java.util.Arrays;
 
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j 
 public class CrossFieldValidator implements ConstraintValidator<CrossFieldValidation, Object>{
 
     private CrossFieldValidation.FieldRule[] rules;
@@ -45,7 +47,7 @@ public class CrossFieldValidator implements ConstraintValidator<CrossFieldValida
                 
             } catch (Exception e) {
                 // Log error in real application
-                System.err.println("CrossFieldValidator error for field " + rule.field() + ": " + e.getMessage());
+                log.warn("Cross-field rule on '{}' could not be evaluated: {}", rule.field(), e.getMessage());
                 // Continue validation for other rules
             }
         }

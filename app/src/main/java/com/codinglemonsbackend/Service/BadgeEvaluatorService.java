@@ -36,7 +36,7 @@ public class BadgeEvaluatorService {
     @Async("applicationAsyncExecutor")
     @EventListener
     public void onSubmitCodeCompleted(SubmitCodeCompletedEvent event) {
-        System.out.println("BadgeEvaluatorService - SubmitCodeCompleted event received for user: " + event.getSubmissionMetadata().getUsername() + ", isNewSolve: " + event.getIsNewSolve());
+        log.debug("BadgeEvaluatorService - SubmitCodeCompleted event received for user: {} (new solve: {})", event.getSubmissionMetadata().getUsername(), event.getIsNewSolve());
         if (!event.getIsNewSolve()) return;
 
         String username = event.getSubmissionMetadata().getUsername();

@@ -59,9 +59,7 @@ public class ProblemEntityEventListener extends AbstractMongoEventListener<Probl
 
     @Override
     public void onBeforeDelete(BeforeDeleteEvent<ProblemEntity> event){
-        System.out.println("BEFORE DELETE EVENT CALLED");
         Integer problemId = event.getSource().getInteger("_id");
-        System.out.println(problemId);
         Optional<ProblemDto> entityToDelete = problemsRepository.getProblemById(problemId);
         if (entityToDelete.isPresent()){
             Integer previousProblemId = entityToDelete.get().getPreviousProblemId();

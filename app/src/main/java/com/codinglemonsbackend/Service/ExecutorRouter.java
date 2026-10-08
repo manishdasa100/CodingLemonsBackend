@@ -66,7 +66,7 @@ public class ExecutorRouter {
             if (!service.isAvailable()) continue;
             candidates.add(service);
         }
-        candidates.forEach(e -> System.out.println(e.getWorkerType() + " is a candidate for submission type " + submissionType));
+        log.debug("Executors that can take a {} submission: {}", submissionType, candidates.stream().map(ExecutionService::getWorkerType).toList());
         return candidates;
     }
 

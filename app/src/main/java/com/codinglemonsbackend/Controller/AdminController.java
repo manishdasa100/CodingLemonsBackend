@@ -53,8 +53,6 @@ public class AdminController {
     @PostMapping("/add/admin")
     @PreAuthorize("hasAuthority('SUPERADMIN')")
     public void addAdmin(){
-        System.out.println("Adding admin");
-
         // TODO: implement add admin method
     }
 

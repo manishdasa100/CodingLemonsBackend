@@ -10,9 +10,8 @@ public class URIUtils {
     private static final String protocol = "https";
 
     public static URL createURI(String domain, String... pathSegments) {
-        URL url = null;
         try {
-            url = UriComponentsBuilder.newInstance()
+            return UriComponentsBuilder.newInstance()
                 .scheme(protocol)
                 .host(domain)
                 .pathSegment(pathSegments)
@@ -20,8 +19,7 @@ public class URIUtils {
                 .toUri()
                 .toURL();
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Cannot build an https URL for host: " + domain, e);
         }
-        return url;
     }
 }

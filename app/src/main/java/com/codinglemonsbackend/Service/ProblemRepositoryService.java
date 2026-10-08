@@ -59,12 +59,10 @@ public class ProblemRepositoryService {
 
     @Cacheable(cacheNames = RedisService.ALL_PROBLEMS_CACHE, condition = "!#isAdmin")
     public ProblemsPage getAllProblems(Integer page, Integer size, Boolean isAdmin) {
-        System.out.println("CACHE MISS");
         return problemsRepository.getProblems(null, null, null, page, size, isAdmin);
     }
 
     public ProblemsPage getFilteredProblems(String difficultyStr, String topicsStr, String companiesStr, int page, int size, Boolean isAdmin) {
-
         Difficulty[] difficulties = null;
         String[] topicSlugs = null;
         String[] companySlugs = null;
