@@ -44,7 +44,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ExceptionMessage> handleAccessDeniedException(AccessDeniedException e) {
-        logError("AccessDeniedException", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FORBIDDEN);
     }
     
@@ -107,7 +106,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FailedSubmissionException.class)
     public ResponseEntity<ExceptionMessage> handleSubmissionFailure(FailedSubmissionException e){
-        logError("FailedDependencyError", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.FAILED_DEPENDENCY);
     }
 
@@ -129,7 +127,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ExceptionMessage> handleMaxUploadSizeLimitExceedException(MaxUploadSizeExceededException e) {
-        logError("MaxUploadSizeException", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage(e.getMessage()), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
@@ -146,7 +143,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ExceptionMessage> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
-        logError("MissingServletRequestParameterException", e);
         return new ResponseEntity<ExceptionMessage>(new ExceptionMessage("You are missing a required parameter: " + e.getParameterName()), HttpStatus.BAD_REQUEST);
     }
 

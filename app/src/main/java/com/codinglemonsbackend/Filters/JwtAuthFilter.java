@@ -1,7 +1,8 @@
-package com.codinglemonsbackend.Config;
+package com.codinglemonsbackend.Filters;
 
 import java.io.IOException;
 
+import org.jboss.logging.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -9,7 +10,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Service.UserService;
@@ -77,6 +77,7 @@ public class JwtAuthFilter extends OncePerRequestFilter{
                 );
                 usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                MDC.put("user", userName);
             } else {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");

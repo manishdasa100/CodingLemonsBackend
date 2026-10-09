@@ -23,6 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.codinglemonsbackend.Exceptions.JwtAuthenticationEntrypoint;
+import com.codinglemonsbackend.Filters.JwtAuthFilter;
 import com.codinglemonsbackend.Service.CustomOAuth2UserService;
 
 @Configuration
