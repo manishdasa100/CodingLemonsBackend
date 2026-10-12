@@ -1,4 +1,4 @@
-package com.codinglemonsbackend.Config;
+package com.codinglemonsbackend.Dto;
 
 import java.util.Collection;
 import java.util.Map;

@@ -1,4 +1,4 @@
-package com.codinglemonsbackend.Config;
+package com.codinglemonsbackend.Service;
 
 import java.io.IOException;
 import java.net.URLEncoder;

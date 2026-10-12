@@ -10,6 +10,8 @@ import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,14 +37,17 @@ public class SubmissionJobStore {
 
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+    private final Counter failedSubmissionsCounter;
     private final long ttlSeconds;
 
     public SubmissionJobStore(
             RedisService redisService,
             ObjectMapper objectMapper,
+            MeterRegistry meterRegistry,
             @Value("${executor.job.ttl-seconds:1800}") long ttlSeconds) {
         this.redisService = redisService;
         this.objectMapper = objectMapper;
+        this.failedSubmissionsCounter = meterRegistry.counter("submissions.failed");
         this.ttlSeconds = ttlSeconds;
     }
 
@@ -150,5 +155,6 @@ public class SubmissionJobStore {
         redisService.storeHash(key, FIELD_FAILURE_REASON, reason, ttlSeconds);
         redisService.storeHash(key, FIELD_STATUS, PendingOrdersStatus.FAILED.name(), ttlSeconds);
         log.warn("Submission {} marked FAILED: {}", jobId, reason);
+        failedSubmissionsCounter.increment();
     }
 }

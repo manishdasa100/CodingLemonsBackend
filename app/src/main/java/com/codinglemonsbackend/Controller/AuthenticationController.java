@@ -25,9 +25,6 @@ import jakarta.validation.Valid;
 public class AuthenticationController {
 
     @Autowired
-    private MeterRegistry meterRegistry;
-
-    @Autowired
     private AuthenticationService authService;
 
     private final ConcurrentMap<String, Counter> counters = new ConcurrentHashMap<>();
@@ -35,13 +32,6 @@ public class AuthenticationController {
     @PostMapping("/register")
     public ResponseEntity<AuthenticationResponse> registerUser(@Valid @RequestBody UserDto userDto) throws UserAlreadyExistException{
         AuthenticationResponse response = new AuthenticationResponse(authService.registerUser(userDto, false));
-        Counter registrationCounter = counters.computeIfAbsent("user.registration", key -> 
-            Counter.builder("user.registration.total")
-                .description("Total number of user registrations")
-                .tag("type", "user-registration")
-                .register(meterRegistry)
-        );
-        registrationCounter.increment();
         return ResponseEntity.ok().body(response);
     }
 
@@ -53,13 +43,6 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> loginUser(@Valid @RequestBody LoginRequestPayload request){
         AuthenticationResponse response = new AuthenticationResponse(authService.loginUser(request));
-        Counter loginCounter = counters.computeIfAbsent("user.login", key -> 
-            Counter.builder("user.login.total")
-                .description("Total number of user logins")
-                .tag("type", "user-login")
-                .register(meterRegistry)
-        );
-        loginCounter.increment();
         return ResponseEntity.ok().body(response);
     }
 

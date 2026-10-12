@@ -60,9 +60,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -70,9 +67,6 @@ public class MainServiceImpl{
 
     private static final Integer MAX_PROBLEMSET_SIZE = 100;
     private static final Integer DEFAULT_PROBLEMSET_SIZE = 10;
-    private final MeterRegistry meterRegistry;
-    private final Counter codeExecutionCounter;
-    private final Counter problemSubmissionCounter;
     private final LikeService likeService;
     private final UserProfileService userProfileService;
     private final ProblemRepositoryService problemRepositoryService;
@@ -250,17 +244,6 @@ public class MainServiceImpl{
         ProblemDto problemDto = getProblem(payload.getProblemId());
 
         this.checkIfSubmissionAuthorised(problemDto, payload.getSubmissionType());
-        
-        // Track code execution metrics
-        if (payload.getSubmissionType() == SubmissionType.RUN_CODE) {
-            codeExecutionCounter.increment();
-            log.info("Code execution tracked for user: {} problem: {}", 
-                    getCurrentlySignedInUser().getUsername(), payload.getProblemId());
-        } else {
-            problemSubmissionCounter.increment();
-            log.info("Problem submission tracked for user: {} problem: {}", 
-                    getCurrentlySignedInUser().getUsername(), payload.getProblemId());
-        }
 
         UserEntity currentUser = getCurrentlySignedInUser();
         

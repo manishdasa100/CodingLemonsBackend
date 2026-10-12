@@ -1,5 +1,7 @@
 package com.codinglemonsbackend.Service;
 
+import java.time.Duration;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +14,7 @@ import com.codinglemonsbackend.Events.SubmitCodeCompletedEvent;
 import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +36,7 @@ public class ExecutionResultProcessor {
     private final UserSubmissionStatusService userSubmissionStatusService;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry meterRegistry;
 
     /**
      * @throws RuntimeException when the failure looks transient, so the caller leaves the stream
@@ -83,6 +87,10 @@ public class ExecutionResultProcessor {
             return;
         }
         
+        // Read before the claim: a Redis failure here is still a clean retry, whereas inside the
+        // claim's try below it would release a claim whose side effects had already committed.
+        long turnaroundSeconds = jobStore.ageSeconds(jobId);
+
         // Claiming before the side effects is what stops a redelivered result from scoring twice.
         if (!jobStore.claimForProcessing(jobId)) {
             log.info("Job {} was already processed - ignoring the duplicate result", jobId);
@@ -104,6 +112,22 @@ public class ExecutionResultProcessor {
             // window ever bites.
             jobStore.releaseClaim(jobId);
             throw e;
+        }
+
+        String executorName = workerType.name();
+        String task = metadata.getSubmissionType().name();
+        meterRegistry.counter(
+            "submissions.completed",
+            "executor", executorName,
+            "task", task,
+            "status", report.status().name()
+        ).increment();
+        if (turnaroundSeconds >= 0) {
+            meterRegistry.timer(
+                "submissions.turnaround",
+                "executor", executorName,
+                "task", task
+            ).record(Duration.ofSeconds(turnaroundSeconds));
         }
     }
 

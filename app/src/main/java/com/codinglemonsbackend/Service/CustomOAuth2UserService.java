@@ -9,16 +9,17 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.codinglemonsbackend.Config.CustomOAuth2User;
 import com.codinglemonsbackend.Config.OAuth2UserInfo;
 import com.codinglemonsbackend.Config.OAuth2UserInfoFactory;
 import com.codinglemonsbackend.Dto.AuthProvider;
+import com.codinglemonsbackend.Dto.CustomOAuth2User;
 import com.codinglemonsbackend.Dto.Role;
 import com.codinglemonsbackend.Dto.UserDto;
 import com.codinglemonsbackend.Entities.UserEntity;
 import com.codinglemonsbackend.Exceptions.UserAlreadyExistException;
 import com.codinglemonsbackend.Repository.UserRepository;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,6 +31,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
     private final UserService userService;
+
+    private final MeterRegistry meterRegistry;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
@@ -90,6 +93,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         } catch (UserAlreadyExistException e) {
             throw new OAuth2AuthenticationException(new OAuth2Error("username_conflict"), e.getMessage(), e);
         }
+
+        meterRegistry.counter(
+            "user.registrations", 
+            "provider", provider.name()).increment();
 
         log.info("Created new OAuth user: username={}, provider={}", username, provider);
         return newUser;

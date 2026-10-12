@@ -10,10 +10,13 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.codinglemonsbackend.Dto.ExecutorWorkerType;
 import com.codinglemonsbackend.Dto.SubmissionMetadata;
 import com.codinglemonsbackend.Exceptions.DuplicateSubmissionException;
 import com.codinglemonsbackend.Exceptions.FailedSubmissionException;
+import com.codinglemonsbackend.Payloads.SubmissionType;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -39,16 +42,26 @@ public class SubmissionDispatcher {
     private final ExecutorRouter executorRouter;
     private final SubmissionJobStore jobStore;
     private final RedisService redisService;
+    private final MeterRegistry meterRegistry;
     private final long dedupTtlSeconds;
 
     public SubmissionDispatcher(
             ExecutorRouter executorRouter,
             SubmissionJobStore jobStore,
             RedisService redisService,
+            MeterRegistry meterRegistry,
             @Value("${executor.dedup.ttl-seconds:300}") long dedupTtlSeconds) {
         this.executorRouter = executorRouter;
         this.jobStore = jobStore;
         this.redisService = redisService;
+        this.meterRegistry = meterRegistry;
+        // Registered at zero up front: a counter that first appears at 1 hides that first step
+        // from increase(), and the first fallback to Judge0 is exactly the one worth alerting on.
+        for (ExecutorWorkerType executorType : ExecutorWorkerType.values()) {
+            for (SubmissionType task : SubmissionType.values()) {
+                meterRegistry.counter("submissions.dispatched", "executor", executorType.name(), "task", task.name());
+            }
+        }
         this.dedupTtlSeconds = dedupTtlSeconds;
     }
 
@@ -92,6 +105,11 @@ public class SubmissionDispatcher {
             jobStore.create(jobId, metadata, executor.getWorkerType());
             try {
                 executor.dispatch(metadata);
+                meterRegistry.counter(
+                    "submissions.dispatched",
+                    "executor", executor.getWorkerType().name(),
+                    "task", metadata.getSubmissionType().name()
+                ).increment();
                 return jobId;
             } catch (RuntimeException e) {
                 lastFailure = e;

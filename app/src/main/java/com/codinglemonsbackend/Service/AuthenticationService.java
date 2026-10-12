@@ -17,6 +17,7 @@ import com.codinglemonsbackend.Payloads.LoginRequestPayload;
 import com.codinglemonsbackend.Utils.JwtUtils;
 import com.codinglemonsbackend.Utils.ZoneUtils;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +36,8 @@ public class AuthenticationService {
 
     private final ZoneUtils zoneUtils;
 
+    private final MeterRegistry meterRegistry;
+
     public String registerUser(UserDto userDto, Boolean isAdmin) throws UserAlreadyExistException{
         UserEntity user = UserEntity.builder()
                             .username(userDto.getUsername())
@@ -48,6 +51,9 @@ public class AuthenticationService {
         // Transaction lives in provisionUser. The token is only minted after it
         // commits, so a rollback never leaks a token for a half-built account.
         userService.provisionUser(user, userDto);
+        meterRegistry.counter(
+            "user.registrations", 
+            "provider", AuthProvider.LOCAL.name()).increment();
 
         log.info("User registered successfully: username={}, isAdmin={}", userDto.getUsername(), isAdmin);
         return jwtUtils.generateToken(user);
@@ -66,6 +72,11 @@ public class AuthenticationService {
             ));
         if (!authentication.isAuthenticated()) throw new BadCredentialsException("Username or password is incorrect");
         String jwtToken = jwtUtils.generateToken(user);
+        
+        meterRegistry.counter(
+            "user.logins",
+            "provider", AuthProvider.LOCAL.name()).increment();
+        
         log.info("User logged in successfully: username={}", request.getUsername());
         return jwtToken;
     } 

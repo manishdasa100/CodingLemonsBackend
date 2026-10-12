@@ -205,8 +205,8 @@ public class AIHintService {
                 }
 
                 Usage usage = response.getMetadata().getUsage();
-                recordTokens(model, status, level, "input", usage.getPromptTokens());
-                recordTokens(model, status, level, "output", usage.getCompletionTokens());
+                recordTokens(model, "input", usage.getPromptTokens());
+                recordTokens(model, "output", usage.getCompletionTokens());
                 log.info("AI hint generated: provider={} model={} status={} level={} in={} out={}",
                     provider.name(), model, status, level, usage.getPromptTokens(), usage.getCompletionTokens()
                 );
@@ -219,12 +219,10 @@ public class AIHintService {
         throw new ProviderUnavailableException("All AI provider failed to produce a hint");
     }
 
-    private void recordTokens(String model, ExecutionStatus status, int level, String type, Integer tokens) {
+    private void recordTokens(String model, String type, Integer tokens) {
         if (tokens == null) return;
         DistributionSummary.builder("ai.hint.tokens")
                             .tag("model", model)
-                            .tag("status", status.name())
-                            .tag("level", String.valueOf(level))
                             .tag("type", type)
                             .register(meterRegistry)
                             .record(tokens);

@@ -25,6 +25,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.codinglemonsbackend.Exceptions.JwtAuthenticationEntrypoint;
 import com.codinglemonsbackend.Filters.JwtAuthFilter;
 import com.codinglemonsbackend.Service.CustomOAuth2UserService;
+import com.codinglemonsbackend.Service.OAuth2AuthenticationFailureHandler;
+import com.codinglemonsbackend.Service.OAuth2AuthenticationSuccessHandler;
 
 @Configuration
 @EnableWebSecurity
