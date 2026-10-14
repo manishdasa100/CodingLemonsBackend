@@ -1,0 +1,59 @@
+// Grafana Alloy on the worker node (native package under systemd, Day 20): host metrics and the
+// journal. The worker has no HTTP metrics; its signals are CPU, disk, egress and cl-worker's logs.
+// Install as /etc/alloy/config.alloy with the GC_* variables in /etc/default/alloy.
+
+prometheus.exporter.unix "host" {
+	set_collectors = ["cpu", "meminfo", "filesystem", "netdev"]
+
+	filesystem {
+		mount_points_exclude = "^/(dev|proc|sys|run)($|/)"
+	}
+}
+
+prometheus.scrape "host" {
+	targets         = prometheus.exporter.unix.host.targets
+	scrape_interval = "60s"
+	forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+	// The egress alert keys on node="worker"; without this label it could never fire.
+	external_labels = {node = "worker"}
+
+	endpoint {
+		url = sys.env("GC_PROM_URL")
+
+		basic_auth {
+			username = sys.env("GC_PROM_USER")
+			password = sys.env("GC_TOKEN")
+		}
+	}
+}
+
+loki.relabel "journal" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "unit"
+	}
+}
+
+loki.source.journal "worker" {
+	forward_to    = [loki.write.grafana_cloud.receiver]
+	relabel_rules = loki.relabel.journal.rules
+	labels        = {job = "systemd-journal"}
+}
+
+loki.write "grafana_cloud" {
+	external_labels = {node = "worker"}
+
+	endpoint {
+		url = sys.env("GC_LOKI_URL")
+
+		basic_auth {
+			username = sys.env("GC_LOKI_USER")
+			password = sys.env("GC_TOKEN")
+		}
+	}
+}

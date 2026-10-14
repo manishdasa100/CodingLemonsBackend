@@ -1,0 +1,11 @@
+// Local harness only (docker-compose.dev.yml, profile "observability"). On a dev box the app runs on
+// the host and writes its JSON to logs/ rather than to container stdout. Everything downstream of
+// this source is the production pipeline in alloy-config.alloy.
+local.file_match "app" {
+	path_targets = [{__path__ = "/var/log/app/*.log"}]
+}
+
+loki.source.file "app" {
+	targets    = local.file_match.app.targets
+	forward_to = [loki.process.app.receiver]
+}

@@ -53,12 +53,53 @@ services:
     container_name: redis_container
     restart: unless-stopped
     # Keep in sync with spring.data.redis.password in application-dev.properties.
-    command: redis-server --requirepass cheeselings
+    # maxmemory + noeviction mirror prod (deploy/redis.conf, Day 7): a full Redis fails writes
+    # instead of evicting queued work, and the memory alert has a ceiling to measure against.
+    command: redis-server --requirepass cheeselings --maxmemory 256mb --maxmemory-policy noeviction
     ports:
       # Loopback only: unlike the properties file, this password is committed.
       - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - app_network
+
+  # Local observability harness: the production Alloy config, pointed at the app running on the
+  # host. Opt-in, so a plain `up` is unaffected:
+  #   docker compose -f docker-compose.dev.yml --profile observability up -d alloy
+  alloy:
+    image: grafana/alloy:v1.20.1
+    container_name: alloy_container
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      # A directory: every *.alloy file in it is loaded as one configuration.
+      - /etc/alloy
+    volumes:
+      - ./deploy/alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - ./deploy/alloy-local.alloy:/etc/alloy/local.alloy:ro
+      - ./logs:/var/log/app:ro
+      # Read-only, but it still lets Alloy read every container's config, environment included.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
+    extra_hosts:
+      # The app runs on the host in dev; this makes the prod config's backend:9090 reach it.
+      - "backend:host-gateway"
+    environment:
+      REDIS_PASSWORD: cheeselings
+      GC_PROM_URL: ${GC_PROM_URL:-}
+      GC_PROM_USER: ${GC_PROM_USER:-}
+      GC_LOKI_URL: ${GC_LOKI_URL:-}
+      GC_LOKI_USER: ${GC_LOKI_USER:-}
+      GC_TOKEN: ${GC_TOKEN:-}
+    ports:
+      # Alloy's debug UI, loopback only.
+      - "127.0.0.1:12345:12345"
     networks:
       - app_network
 

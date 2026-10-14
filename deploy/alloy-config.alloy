@@ -1,0 +1,164 @@
+// Grafana Alloy on the core node: app, Redis and host metrics, plus container logs, to Grafana Cloud.
+// Credentials come from the environment: deploy/.env on the node, the root .env on a dev box.
+
+// ── App metrics ──────────────────────────────────────────────────────────────
+// 9090 is never published; Alloy reaches the management port across the compose network.
+prometheus.scrape "backend" {
+	targets = [{
+		__address__ = "backend:9090",
+		job         = "codinglemon-backend",
+		instance    = "core",
+	}]
+	metrics_path = "/actuator/prometheus"
+	// 60s, not 15s: nothing here needs finer resolution, and it is a quarter of the work.
+	scrape_interval = "60s"
+	forward_to      = [prometheus.relabel.backend.receiver]
+}
+
+// Unused metric families are switched off in the app (management.metrics.enable.*).
+// These two can't be.
+prometheus.relabel "backend" {
+	forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+	// Requests for actuator endpoints are this scrape itself - nothing to learn from them.
+	rule {
+		source_labels = ["uri"]
+		regex         = "/actuator.*"
+		action        = "drop"
+	}
+
+	// A random id per MongoClient: every restart would mint a fresh set of driver series.
+	rule {
+		regex  = "cluster_id"
+		action = "labeldrop"
+	}
+}
+
+// ── Redis: the queue, the DLQ, the worker heartbeat, memory against noeviction ──
+prometheus.exporter.redis "redis" {
+	redis_addr     = "redis:6379"
+	redis_password = sys.env("REDIS_PASSWORD")
+
+	check_streams = [
+		"stream:pending-submissions",
+		"stream:execution-results",
+		"stream:execution-results-dlq",
+		"stream:like-events",
+	]
+
+	// The heartbeat holds a unix timestamp, so its age is expressible in PromQL. The IE counter
+	// shows a worker that is up but failing everything.
+	check_keys = [
+		"executor:nsjail:heartbeat",
+		"executor:nsjail:consecutive-ie",
+	]
+}
+
+prometheus.scrape "redis" {
+	targets         = prometheus.exporter.redis.redis.targets
+	scrape_interval = "60s"
+	forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ── Host ─────────────────────────────────────────────────────────────────────
+// Only the collectors a panel or alert reads; the defaults cost hundreds of unread series.
+prometheus.exporter.unix "host" {
+	set_collectors = ["cpu", "meminfo", "filesystem"]
+
+	// Alloy runs in a container: these are the host's /proc, /sys and / mounted read-only.
+	procfs_path = "/host/proc"
+	sysfs_path  = "/host/sys"
+	rootfs_path = "/host/root"
+
+	filesystem {
+		mount_points_exclude = "^/(dev|proc|sys|run|var/lib/docker/.+)($|/)"
+	}
+}
+
+prometheus.scrape "host" {
+	targets         = prometheus.exporter.unix.host.targets
+	scrape_interval = "60s"
+	forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+	// Every series from this agent says which node it came from; alerts key on it.
+	external_labels = {node = "core"}
+
+	endpoint {
+		url = sys.env("GC_PROM_URL")
+
+		basic_auth {
+			username = sys.env("GC_PROM_USER")
+			password = sys.env("GC_TOKEN")
+		}
+	}
+}
+
+// ── Logs: container stdout, which is JSON under the prod profile ─────────────
+discovery.docker "containers" {
+	host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+	targets = discovery.docker.containers.targets
+
+	// This stack's containers only (compose projects codinglemon and codinglemon-dev). Anything
+	// else on the machine keeps its logs to itself.
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		regex         = "codinglemon.*"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "container"
+	}
+}
+
+loki.source.docker "containers" {
+	host       = "unix:///var/run/docker.sock"
+	targets    = discovery.relabel.containers.output
+	forward_to = [loki.process.app.receiver]
+}
+
+loki.process "app" {
+	// Logs leave the node for a third party: mask anything email-shaped before they do.
+	stage.replace {
+		expression = "([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,})"
+		replace    = "<email>"
+	}
+
+	stage.json {
+		expressions = {
+			level   = "level",
+			service = "service",
+		}
+	}
+
+	// Only bounded values become labels. requestId, user and uri stay JSON fields: a label per
+	// request would create a Loki stream per request. Query them with | json | requestId="...".
+	stage.labels {
+		values = {
+			level   = "",
+			service = "",
+		}
+	}
+
+	forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+	external_labels = {node = "core"}
+
+	endpoint {
+		url = sys.env("GC_LOKI_URL")
+
+		basic_auth {
+			username = sys.env("GC_LOKI_USER")
+			password = sys.env("GC_TOKEN")
+		}
+	}
+}
