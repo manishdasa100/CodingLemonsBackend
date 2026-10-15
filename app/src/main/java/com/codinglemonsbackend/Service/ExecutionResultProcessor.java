@@ -15,6 +15,7 @@ import com.codinglemonsbackend.Payloads.SubmissionType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +38,21 @@ public class ExecutionResultProcessor {
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+
+    // Registered at zero up front, like submissions.dispatched: a counter that first appears at 1
+    // hides that first step from increase(), so after every restart the first verdict of each kind
+    // would go uncounted - at low traffic, most of them.
+    @PostConstruct
+    void registerVerdictCounters() {
+        for (ExecutorWorkerType executor : ExecutorWorkerType.values()) {
+            for (SubmissionType task : SubmissionType.values()) {
+                for (ExecutionStatus status : new ExecutionStatus[]{ExecutionStatus.ACC}) {
+                    meterRegistry.counter("submissions.completed",
+                            "executor", executor.name(), "task", task.name(), "status", status.name());
+                }
+            }
+        }
+    }
 
     /**
      * @throws RuntimeException when the failure looks transient, so the caller leaves the stream

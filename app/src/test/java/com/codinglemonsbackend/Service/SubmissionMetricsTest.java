@@ -75,6 +75,22 @@ class SubmissionMetricsTest {
         assertEquals(1, registry.get("submissions.turnaround").timer().count());
     }
 
+    @Test
+    void everyVerdictCounterStartsAtZeroSoTheFirstOneIsCounted() {
+        ExecutionResultProcessor processor = new ExecutionResultProcessor(mock(ExecutorRouter.class),
+                mock(SubmissionJobStore.class), mock(SubmissionService.class),
+                mock(UserSubmissionStatusService.class), mock(ApplicationEventPublisher.class),
+                new ObjectMapper(), registry);
+
+        processor.registerVerdictCounters();   // Spring calls @PostConstruct methods; a unit test calls it itself
+
+        int combinations = ExecutorWorkerType.values().length * SubmissionType.values().length
+                * ExecutionStatus.values().length;
+        assertEquals(combinations, registry.find("submissions.completed").counters().size());
+        assertEquals(0.0, registry.get("submissions.completed")
+                .tags("executor", "NSJAIL_WORKER", "task", "SUBMIT_CODE", "status", "ACC").counter().count());
+    }
+
     private static ExecutionService executor(ExecutorWorkerType type) {
         ExecutionService executor = mock(ExecutionService.class);
         when(executor.getWorkerType()).thenReturn(type);

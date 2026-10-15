@@ -18,6 +18,7 @@ import com.codinglemonsbackend.Utils.JwtUtils;
 import com.codinglemonsbackend.Utils.ZoneUtils;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +38,17 @@ public class AuthenticationService {
     private final ZoneUtils zoneUtils;
 
     private final MeterRegistry meterRegistry;
+
+    // At zero up front for every provider, the OAuth ones included (CustomOAuth2UserService and
+    // OAuth2AuthenticationSuccessHandler increment those): the first sign-up or sign-in per provider
+    // after a restart would otherwise be invisible to increase().
+    @PostConstruct
+    void registerAuthCounters() {
+        for (AuthProvider provider : AuthProvider.values()) {
+            meterRegistry.counter("user.registrations", "provider", provider.name());
+            meterRegistry.counter("user.logins", "provider", provider.name());
+        }
+    }
 
     public String registerUser(UserDto userDto, Boolean isAdmin) throws UserAlreadyExistException{
         UserEntity user = UserEntity.builder()
