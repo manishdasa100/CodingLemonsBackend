@@ -1,0 +1,170 @@
+# CodingLemons alert rules, in plain Prometheus format.
+#
+#   Tested by:  monitoring/alerts.test.yml   (promtool test rules)
+#   Loaded by:  mimirtool rules sync         (monitoring/README.md)
+#
+# Severity follows "will it recover on its own?", not "how many users does it touch":
+# critical = it needs you now; warning = look at it today.
+groups:
+  - name: api
+    rules:
+      - alert: ApiDown
+        # absent() makes this the dead-man switch as well: if Alloy dies, no data arrives, and
+        # that pages exactly like a dead backend would.
+        expr: up{job="codinglemon-backend"} == 0 or absent(up{job="codinglemon-backend"})
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: The backend is down, or no metrics are arriving from the core node.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#apidown
+
+      - alert: BackendRestarting
+        # A crash loop never trips ApiDown: Docker brings the app back within a minute, so `up` is
+        # never 0 for three minutes running. A deploy is one start; a deploy and its rollback, two.
+        expr: changes(process_start_time_seconds{job="codinglemon-backend"}[30m]) > 2
+        labels:
+          severity: critical
+        annotations:
+          summary: The backend has restarted {{ $value }} times in 30 minutes - it is crash-looping.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#backendrestarting
+
+      - alert: HighErrorRatio
+        # 424 means no executor could take a submission: a server-side failure despite the 4xx.
+        # The traffic floor stops two failed requests at 3am from reading as a 100% error rate.
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="codinglemon-backend", status=~"5..|424"}[5m]))
+            / sum(rate(http_server_requests_seconds_count{job="codinglemon-backend"}[5m])) > 0.05
+          and
+          sum(rate(http_server_requests_seconds_count{job="codinglemon-backend"}[5m])) > 0.02
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: More than 5% of API requests are failing.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#higherrorratio
+
+      - alert: SlowResponses
+        # Excludes what is slow by design: LLM calls, image uploads, admin operations, and requests
+        # handled entirely inside filters (the OAuth round trips), which report uri="UNKNOWN".
+        expr: |
+          max by (uri) (
+            http_server_requests_seconds{job="codinglemon-backend", quantile="0.95",
+              uri!~"/ai/hint/generate/.*|/api/v1/user/uploadProfilePic|/api/v1/admin/.*|UNKNOWN"}
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: p95 latency of {{ $labels.uri }} has been over 2s for 10 minutes.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#slowresponses
+
+      - alert: ErrorLogBurst
+        # Catches the failures that never become an HTTP status: stream consumers, schedulers and
+        # @Async listeners. Only works while ERROR stays reserved for "an operator should look".
+        expr: sum(increase(logback_events_total{job="codinglemon-backend", level="error"}[10m])) > 10
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 10 ERROR log lines in the last 10 minutes.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#errorlogburst
+
+  - name: redis
+    rules:
+      - alert: RedisUnhealthy
+        # Down, or failing to persist. After a failed BGSAVE Redis refuses writes
+        # (stop-writes-on-bgsave-error), which stops the queue as surely as an outage does.
+        expr: redis_up == 0 or redis_rdb_last_bgsave_status == 0 or redis_aof_last_write_status == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis is down or failing to persist, so writes are failing or about to.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#redisunhealthy
+
+      - alert: RedisMemoryHigh
+        # noeviction: at 100% every write fails, result delivery included. This alert is the other
+        # half of choosing noeviction - without it, an eviction policy would have been safer.
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis is over 80% of maxmemory; at 100% every write fails.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#redismemoryhigh
+
+  - name: pipeline
+    rules:
+      - alert: ResultsDeadLettered
+        # Reached only after 5 failed deliveries: the retry machinery has already given up, so
+        # nothing fixes this without you.
+        expr: redis_stream_length{stream="stream:execution-results-dlq"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: An execution result was dead-lettered, so a user is waiting on a verdict that will never come.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#resultsdeadlettered
+
+      - alert: SubmissionQueueBacklog
+        # Assumes the worker XDELs after XACK, as the backend does for results. If it doesn't, this
+        # fires forever - fix the worker: an untrimmed stream is a memory leak under noeviction.
+        expr: redis_stream_length{stream="stream:pending-submissions"} > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 50 submissions are waiting for the NSJAIL worker.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#submissionqueuebacklog
+
+      - alert: NsjailNotServing
+        # Three ways the in-house executor stops serving: its heartbeat expired, it went stale, or
+        # work goes to Judge0 regardless (the consecutive-IE breaker tripped, or a manual override).
+        expr: |
+          absent(redis_key_value{key="executor:nsjail:heartbeat"})
+          or (time() - redis_key_value{key="executor:nsjail:heartbeat"}) > 180
+          or sum(increase(submissions_dispatched_total{executor="JUDGE0_WORKER"}[15m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: The NSJAIL worker isn't serving; submissions are running on Judge0's small free quota.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#nsjailnotserving
+
+      - alert: SubmissionsFailing
+        # Async failures never surface as an HTTP status: the poll returns 200 with FAILED.
+        # `or vector(0)` keeps the ratio defined while nothing has completed since the restart.
+        expr: |
+          sum(increase(submissions_failed_total[15m]))
+            / (sum(increase(submissions_failed_total[15m])) + (sum(increase(submissions_completed_total[15m])) or vector(0)))
+            > 0.2
+          and
+          sum(increase(submissions_failed_total[15m])) >= 3
+        labels:
+          severity: warning
+        annotations:
+          summary: More than 20% of submissions failed in the last 15 minutes.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#submissionsfailing
+
+  - name: hosts
+    rules:
+      - alert: DiskFilling
+        # Redis's AOF and the Docker images share the boot volume; a full disk stops Redis writes.
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Under 15% disk free on {{ $labels.node }}.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#diskfilling
+
+      - alert: WorkerEgressSpike
+        # The worker should only talk to Redis and package mirrors. Sustained egress means a sandbox
+        # escape or a compromised host - and Oracle terminates free-tier accounts for abuse.
+        expr: rate(node_network_transmit_bytes_total{node="worker", device!~"lo|veth.*|docker.*"}[15m]) > 5e6
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: Worker egress on {{ $labels.device }} has been over 5 MB/s for 15 minutes.
+          runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#workeregressspike

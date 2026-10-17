@@ -1,0 +1,418 @@
+# Unit tests for alerts.yml: every alert gets a case where it must fire and one where it must not.
+# Run from the repo root in Git Bash:
+#   MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD/monitoring:/m" --entrypoint promtool \
+#     prom/prometheus:v3.15.0 test rules /m/alerts.test.yml
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # ── ApiDown ────────────────────────────────────────────────────────────────
+  - name: ApiDown fires once the backend has been down for 3 minutes
+    interval: 1m
+    input_series:
+      - series: 'up{job="codinglemon-backend", instance="core"}'
+        values: '1 1 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: ApiDown
+        exp_alerts: []                       # down for 2m: still pending
+      - eval_time: 5m
+        alertname: ApiDown
+        exp_alerts:
+          - exp_labels: {severity: critical, job: codinglemon-backend, instance: core}
+            exp_annotations: &apidown
+              summary: The backend is down, or no metrics are arriving from the core node.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#apidown
+
+  - name: ApiDown fires when nothing arrives at all - the agent itself is dead
+    interval: 1m
+    input_series:
+      - series: 'up{job="some-other-job"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: ApiDown
+        exp_alerts:
+          - exp_labels: {severity: critical, job: codinglemon-backend}
+            exp_annotations: *apidown
+
+  # ── BackendRestarting ──────────────────────────────────────────────────────
+  - name: BackendRestarting catches the crash loop that ApiDown never sees
+    interval: 1m
+    input_series:
+      # Started, then died and came back three times. Each time, one scrape found it down (_ = no sample).
+      - series: 'process_start_time_seconds{job="codinglemon-backend", instance="core"}'
+        values: '1000x4 _ 1300x4 _ 1600x4 _ 1900x4'
+      - series: 'up{job="codinglemon-backend", instance="core"}'
+        values: '1x4 0 1x4 0 1x4 0 1x4'
+    alert_rule_test:
+      - eval_time: 19m
+        alertname: BackendRestarting
+        exp_alerts:
+          - exp_labels: {severity: critical, job: codinglemon-backend, instance: core}
+            exp_annotations:
+              summary: The backend has restarted 3 times in 30 minutes - it is crash-looping.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#backendrestarting
+      - eval_time: 19m
+        alertname: ApiDown
+        exp_alerts: []                       # never down for 3 minutes running
+
+  - name: BackendRestarting allows a deploy and its rollback
+    interval: 1m
+    input_series:
+      - series: 'process_start_time_seconds{job="codinglemon-backend", instance="core"}'
+        values: '1000x9 1600x9 2200x20'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: BackendRestarting
+        exp_alerts: []
+
+  # ── HighErrorRatio ─────────────────────────────────────────────────────────
+  - name: HighErrorRatio counts a 424 (no executor available) as a server failure
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/problem/{id}", status="200"}'
+        values: '0+60x15'
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/submission/submit", status="424"}'
+        values: '0+6x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRatio
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations: &higherrorratio
+              summary: More than 5% of API requests are failing.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#higherrorratio
+
+  - name: HighErrorRatio fires on 5xx
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/problem/{id}", status="200"}'
+        values: '0+60x15'
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/me", status="503"}'
+        values: '0+6x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRatio
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations: *higherrorratio
+
+  - name: HighErrorRatio ignores 429s - throttling a user is not a server failure
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/problem/{id}", status="200"}'
+        values: '0+60x15'
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/submission/submit", status="429"}'
+        values: '0+30x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRatio
+        exp_alerts: []
+
+  - name: HighErrorRatio needs real traffic before a ratio means anything
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds_count{job="codinglemon-backend", uri="/api/v1/me", status="500"}'
+        values: '0+1x15'                     # one failure a minute: 100% errors, but 0.017 rps
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HighErrorRatio
+        exp_alerts: []
+
+  # ── SlowResponses ──────────────────────────────────────────────────────────
+  - name: SlowResponses flags a slow endpoint but not the LLM call that is slow by design
+    interval: 1m
+    input_series:
+      - series: 'http_server_requests_seconds{job="codinglemon-backend", uri="/api/v1/problem/{id}", method="GET", status="200", quantile="0.95"}'
+        values: '3x15'
+      - series: 'http_server_requests_seconds{job="codinglemon-backend", uri="/ai/hint/generate/{problemId}", method="POST", status="200", quantile="0.95"}'
+        values: '8x15'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: SlowResponses
+        exp_alerts: []                       # slow for 9m: still pending
+      - eval_time: 11m
+        alertname: SlowResponses
+        exp_alerts:
+          - exp_labels: {severity: warning, uri: "/api/v1/problem/{id}"}
+            exp_annotations:
+              summary: p95 latency of /api/v1/problem/{id} has been over 2s for 10 minutes.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#slowresponses
+
+  # ── ErrorLogBurst ──────────────────────────────────────────────────────────
+  - name: ErrorLogBurst fires on 20 errors in 10 minutes, and warnings never count
+    interval: 1m
+    input_series:
+      - series: 'logback_events_total{job="codinglemon-backend", level="error"}'
+        values: '0+2x15'
+      - series: 'logback_events_total{job="codinglemon-backend", level="warn"}'
+        values: '0+50x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ErrorLogBurst
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: More than 10 ERROR log lines in the last 10 minutes.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#errorlogburst
+
+  - name: ErrorLogBurst ignores a trickle
+    interval: 1m
+    input_series:
+      - series: 'logback_events_total{job="codinglemon-backend", level="error"}'
+        values: '0+0.5x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ErrorLogBurst
+        exp_alerts: []
+
+  # ── RedisUnhealthy ─────────────────────────────────────────────────────────
+  - name: RedisUnhealthy fires when Redis has been unreachable for 2 minutes
+    interval: 1m
+    input_series:
+      - series: 'redis_up'
+        values: '1 1 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: RedisUnhealthy
+        exp_alerts: []                       # down for 1m: still pending
+      - eval_time: 4m
+        alertname: RedisUnhealthy
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations: &redisunhealthy
+              summary: Redis is down or failing to persist, so writes are failing or about to.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#redisunhealthy
+
+  - name: RedisUnhealthy fires on a failed background save, even with Redis up
+    interval: 1m
+    input_series:
+      - series: 'redis_up'
+        values: '1x6'
+      - series: 'redis_rdb_last_bgsave_status'
+        values: '1 0 0 0 0 0 0'
+      - series: 'redis_aof_last_write_status'
+        values: '1x6'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: RedisUnhealthy
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations: *redisunhealthy
+
+  # ── RedisMemoryHigh ────────────────────────────────────────────────────────
+  - name: RedisMemoryHigh fires above 80% of maxmemory
+    interval: 1m
+    input_series:
+      - series: 'redis_memory_used_bytes'
+        values: '850x10'
+      - series: 'redis_memory_max_bytes'
+        values: '1000x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: RedisMemoryHigh
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: Redis is over 80% of maxmemory; at 100% every write fails.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#redismemoryhigh
+
+  - name: RedisMemoryHigh stays quiet at half full
+    interval: 1m
+    input_series:
+      - series: 'redis_memory_used_bytes'
+        values: '500x10'
+      - series: 'redis_memory_max_bytes'
+        values: '1000x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: RedisMemoryHigh
+        exp_alerts: []
+
+  # ── ResultsDeadLettered ────────────────────────────────────────────────────
+  - name: ResultsDeadLettered fires a minute after the first dead letter, whatever the results stream does
+    interval: 1m
+    input_series:
+      - series: 'redis_stream_length{stream="stream:execution-results-dlq"}'
+        values: '0 0 1 1 1 1'
+      - series: 'redis_stream_length{stream="stream:execution-results"}'
+        values: '3x5'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ResultsDeadLettered
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: ResultsDeadLettered
+        exp_alerts:
+          - exp_labels: {severity: critical, stream: "stream:execution-results-dlq"}
+            exp_annotations:
+              summary: An execution result was dead-lettered, so a user is waiting on a verdict that will never come.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#resultsdeadlettered
+
+  # ── SubmissionQueueBacklog ─────────────────────────────────────────────────
+  - name: SubmissionQueueBacklog fires on a backlog that lasts 10 minutes
+    interval: 1m
+    input_series:
+      - series: 'redis_stream_length{stream="stream:pending-submissions"}'
+        values: '60x15'
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: SubmissionQueueBacklog
+        exp_alerts:
+          - exp_labels: {severity: warning, stream: "stream:pending-submissions"}
+            exp_annotations:
+              summary: More than 50 submissions are waiting for the NSJAIL worker.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#submissionqueuebacklog
+
+  - name: SubmissionQueueBacklog ignores a burst that drains
+    interval: 1m
+    input_series:
+      - series: 'redis_stream_length{stream="stream:pending-submissions"}'
+        values: '60 60 60 60 60 0 0 0 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: SubmissionQueueBacklog
+        exp_alerts: []
+
+  # ── NsjailNotServing ───────────────────────────────────────────────────────
+  - name: NsjailNotServing fires when the heartbeat key has expired
+    interval: 1m
+    input_series:
+      - series: 'up{job="codinglemon-backend", instance="core"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: NsjailNotServing
+        exp_alerts:
+          - exp_labels: {severity: warning, key: "executor:nsjail:heartbeat"}
+            exp_annotations: &nsjail
+              summary: The NSJAIL worker isn't serving; submissions are running on Judge0's small free quota.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#nsjailnotserving
+
+  - name: NsjailNotServing stays quiet while the heartbeat is fresh and nothing falls back
+    interval: 1m
+    input_series:
+      - series: 'redis_key_value{db="db0", key="executor:nsjail:heartbeat"}'
+        values: '0+60x20'                    # refreshed every minute: always equal to time()
+      - series: 'submissions_dispatched_total{executor="JUDGE0_WORKER", task="RUN_CODE"}'
+        values: '0x20'                       # registered at zero at startup, never incremented
+      - series: 'submissions_dispatched_total{executor="NSJAIL_WORKER", task="RUN_CODE"}'
+        values: '0+3x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NsjailNotServing
+        exp_alerts: []
+
+  - name: NsjailNotServing fires on a heartbeat that went stale without expiring
+    interval: 1m
+    input_series:
+      - series: 'redis_key_value{db="db0", key="executor:nsjail:heartbeat"}'
+        values: '0 60 120 180 180 180 180 180 180 180 180 180 180 180 180 180'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: NsjailNotServing
+        exp_alerts:
+          - exp_labels: {severity: warning, db: db0, key: "executor:nsjail:heartbeat"}
+            exp_annotations: *nsjail
+
+  - name: NsjailNotServing fires when work falls back to Judge0 despite a healthy heartbeat
+    interval: 1m
+    input_series:
+      - series: 'redis_key_value{db="db0", key="executor:nsjail:heartbeat"}'
+        values: '0+60x20'
+      - series: 'submissions_dispatched_total{executor="JUDGE0_WORKER", task="RUN_CODE"}'
+        values: '0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: NsjailNotServing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: *nsjail
+
+  # ── SubmissionsFailing ─────────────────────────────────────────────────────
+  - name: SubmissionsFailing fires when over a fifth of submissions fail
+    interval: 1m
+    input_series:
+      - series: 'submissions_failed_total'
+        values: '0 0 2 4 6 6 6 6 6 6 6 6 6 6 6'
+      - series: 'submissions_completed_total{executor="NSJAIL_WORKER", task="SUBMIT_CODE", status="ACC"}'
+        values: '0+1x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SubmissionsFailing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: &failing
+              summary: More than 20% of submissions failed in the last 15 minutes.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#submissionsfailing
+
+  - name: SubmissionsFailing waits for at least three failures
+    interval: 1m
+    input_series:
+      - series: 'submissions_failed_total'
+        values: '0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SubmissionsFailing
+        exp_alerts: []
+
+  - name: SubmissionsFailing still fires before anything has completed since the restart
+    interval: 1m
+    input_series:
+      - series: 'submissions_failed_total'
+        values: '0 0 2 4 6 6 6 6 6 6 6 6'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SubmissionsFailing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations: *failing
+
+  # ── DiskFilling ────────────────────────────────────────────────────────────
+  - name: DiskFilling fires under 15% free, and only for the node that is filling
+    interval: 1m
+    input_series:
+      - series: 'node_filesystem_avail_bytes{node="core", mountpoint="/", device="/dev/sda1", fstype="ext4"}'
+        values: '10x20'
+      - series: 'node_filesystem_size_bytes{node="core", mountpoint="/", device="/dev/sda1", fstype="ext4"}'
+        values: '100x20'
+      - series: 'node_filesystem_avail_bytes{node="worker", mountpoint="/", device="/dev/sda1", fstype="ext4"}'
+        values: '60x20'
+      - series: 'node_filesystem_size_bytes{node="worker", mountpoint="/", device="/dev/sda1", fstype="ext4"}'
+        values: '100x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: DiskFilling
+        exp_alerts:
+          - exp_labels: {severity: warning, node: core, mountpoint: /, device: /dev/sda1, fstype: ext4}
+            exp_annotations:
+              summary: Under 15% disk free on core.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#diskfilling
+
+  # ── WorkerEgressSpike ──────────────────────────────────────────────────────
+  - name: WorkerEgressSpike fires on sustained worker egress - not the core node's, not loopback
+    interval: 1m
+    input_series:
+      - series: 'node_network_transmit_bytes_total{node="worker", device="enp0s6"}'
+        values: '0+360000000x30'             # 6 MB/s
+      - series: 'node_network_transmit_bytes_total{node="core", device="enp0s6"}'
+        values: '0+360000000x30'
+      - series: 'node_network_transmit_bytes_total{node="worker", device="lo"}'
+        values: '0+600000000x30'
+    alert_rule_test:
+      # rate(x[15m]) divides by the whole 15 minutes, so a series that starts at 0 under-reads until
+      # its window fills: 6 MB/s crosses 5 MB/s only at ~12.5m, and `for: 15m` then needs 15m more.
+      # A real spike takes about half an hour to page - sustained by design (pip/apt during deploys).
+      - eval_time: 20m
+        alertname: WorkerEgressSpike
+        exp_alerts: []
+      - eval_time: 29m
+        alertname: WorkerEgressSpike
+        exp_alerts:
+          - exp_labels: {severity: critical, node: worker, device: enp0s6}
+            exp_annotations:
+              summary: Worker egress on enp0s6 has been over 5 MB/s for 15 minutes.
+              runbook_url: https://github.com/manishdasa100/CodingLemonsBackend/blob/main/monitoring/runbook.md#workeregressspike
