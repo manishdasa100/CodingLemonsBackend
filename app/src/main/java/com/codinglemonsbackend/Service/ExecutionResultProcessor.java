@@ -46,7 +46,7 @@ public class ExecutionResultProcessor {
     void registerVerdictCounters() {
         for (ExecutorWorkerType executor : ExecutorWorkerType.values()) {
             for (SubmissionType task : SubmissionType.values()) {
-                for (ExecutionStatus status : new ExecutionStatus[]{ExecutionStatus.ACC}) {
+                for (ExecutionStatus status : ExecutionStatus.values()) {
                     meterRegistry.counter("submissions.completed",
                             "executor", executor.name(), "task", task.name(), "status", status.name());
                 }

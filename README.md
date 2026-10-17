@@ -54,7 +54,7 @@ Client ──submit──▶ Spring Boot ──enqueue──▶ Redis Streams �
 | **Study plans** | Curated learning tracks with activate/deactivate/reset and per-user progress tracking |
 | **Profiles** | Public profiles, submission history & stats, language-specific solve counts, work experience, ranks |
 | **Admin** | Problem/test-case/driver-code management, company & badge & topic administration, publish workflow |
-| **Ops** | Prometheus metrics, Grafana dashboards, ELK log pipeline, health indicators, request/latency instrumentation |
+| **Ops** | JSON logs with a per-request id, Micrometer metrics, a Grafana Cloud dashboard, 13 unit-tested alerts with a runbook, liveness/readiness probes |
 
 ---
 
@@ -66,7 +66,7 @@ Client ──submit──▶ Spring Boot ──enqueue──▶ Redis Streams �
 
 **Storage & infra** — MongoDB Atlas · Cloudflare R2 (S3-compatible object storage) · Docker / Docker Compose
 
-**Observability** — Micrometer + Prometheus · Grafana · Alertmanager · Logstash / Filebeat (ELK) · GeoIP2
+**Observability** — Micrometer · Grafana Alloy → Grafana Cloud (Prometheus + Loki) · promtool-tested alert rules · GeoIP2
 
 **Frontend** — React (separate repo) _[link it here]_
 
@@ -129,11 +129,11 @@ export JASYPT_ENCRYPTOR_PASSWORD=your-master-key
 # 2. Run the backend
 ./gradlew bootRun
 
-# 3. Bring up the observability stack (optional)
-docker compose -f docker-compose.monitoring.yml up -d
+# 3. Ship metrics and logs to Grafana Cloud (optional; needs the GC_* values in .env)
+docker compose -f docker-compose.dev.yml --profile observability up -d alloy
 ```
 
-Deployment is fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**; monitoring setup in **[MONITORING-SETUP.md](MONITORING-SETUP.md)**.
+Deployment is fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**; monitoring in **[monitoring/README.md](monitoring/README.md)**.
 
 ---
 
